@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Carlesso Family 3D Mahjong Solitaire 🀄</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🀄</text></svg>" />
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body>
+  <div id="canvas-container"></div>
+
+  <!-- Top Navigation & Game HUD -->
+  <header id="game-hud">
+    <div class="hud-left">
+      <div class="brand-title">
+        <span class="brand-icon">🀄</span>
+        <div class="brand-text">
+          <h1>Family Mahjong 3D</h1>
+          <span class="brand-sub">Carlesso Temple Edition • Blender 5.0.1 & Three.js</span>
+        </div>
+      </div>
+
+      <div class="track-picker">
+        <label for="track-select">Track:</label>
+        <select id="track-select">
+          <option value="easy">Easy • Lotus Courtyard (36 Tiles)</option>
+          <option value="medium">Medium • Jade Pagoda (72 Tiles)</option>
+          <option value="hard">Hard • Twin Dragon Bridge (108 Tiles)</option>
+          <option value="master" selected>Master • Imperial Turtle (144 Tiles)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="hud-center">
+      <div class="stat-badge">
+        <span class="stat-label">REMAINING</span>
+        <span id="stat-remaining" class="stat-value">144</span>
+      </div>
+      <div class="stat-badge">
+        <span class="stat-label">MATCHABLE</span>
+        <span id="stat-free-pairs" class="stat-value">--</span>
+      </div>
+      <div class="stat-badge">
+        <span class="stat-label">SCORE</span>
+        <span id="stat-score" class="stat-value">0</span>
+      </div>
+      <div class="stat-badge">
+        <span class="stat-label">COMBO</span>
+        <span id="stat-combo" class="stat-value">x1</span>
+      </div>
+    </div>
+
+    <div class="hud-right">
+      <div class="btn-group">
+        <button id="btn-hint" class="action-btn" title="Highlight a free matching pair">💡 Hint</button>
+        <button id="btn-undo" class="action-btn" title="Undo last matched pair">↩ Undo</button>
+        <button id="btn-shuffle" class="action-btn" title="Reshuffle remaining tiles solvably">🔀 Shuffle</button>
+        <button id="btn-restart" class="action-btn" title="Restart current track">🔄 Restart</button>
+        <button id="btn-demo" class="action-btn highlight" title="Toggle Auto-Play Demo Solver">▶ Demo Auto-Play</button>
+      </div>
+
+      <div class="toggle-group">
+        <button id="btn-surface-toggle" class="toggle-btn active" title="Toggle Surface: Table vs. Direct Temple Stone Pavement">
+          🏛️ Surface: <span id="surface-name">Rosewood Table</span>
+        </button>
+        <button id="btn-studio-toggle" class="toggle-btn" title="Toggle Studio Look-Dev Sliders">
+          🎛️ Studio Look-Dev
+        </button>
+        <button id="btn-rig-toggle" class="toggle-btn" title="Toggle Frame-by-Frame Rig Inspector">
+          🦴 Rig Inspector
+        </button>
+        <a href="/progress.html" class="toggle-btn link-btn" target="_blank" title="Open Progress Gallery">
+          🖼️ Progress Gallery
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Camera Presets Bar -->
+  <nav id="camera-bar">
+    <span class="cam-label">CAMERA:</span>
+    <button class="cam-btn active" data-cam="hero">Temple Hero (3/4)</button>
+    <button class="cam-btn" data-cam="topdown">Zen Top-Down</button>
+    <button class="cam-btn" data-cam="pavement">Low Pavement Closeup</button>
+    <button class="cam-btn" data-cam="macro">Coupled Tile Macro</button>
+    <button class="cam-btn" data-cam="orbit">Free 3D Orbit</button>
+  </nav>
+
+  <!-- Interactive Studio Look-Dev Control Panel -->
+  <aside id="studio-panel" class="panel hidden">
+    <div class="panel-header">
+      <h2>🎛️ Studio Look-Dev Controls</h2>
+      <div class="panel-actions">
+        <button id="btn-copy-json" class="tool-btn" title="Copy current settings as JSON">📋 Copy Settings as JSON</button>
+        <button id="btn-paste-json" class="tool-btn" title="Paste / Load JSON settings">📥 Paste JSON</button>
+        <button id="btn-close-studio" class="tool-btn close-btn">✕</button>
+      </div>
+    </div>
+
+    <div class="panel-body">
+      <!-- Section: Lighting -->
+      <section class="slider-section">
+        <h3>☀️ Lighting & Atmosphere</h3>
+        <div class="slider-row">
+          <label>Sun Intensity: <span id="val-sun-intensity">3.8</span></label>
+          <input type="range" id="sl-sun-intensity" min="0.5" max="8.0" step="0.1" value="3.8" />
+        </div>
+        <div class="slider-row">
+          <label>Sun Elevation (°): <span id="val-sun-elevation">46</span></label>
+          <input type="range" id="sl-sun-elevation" min="5" max="85" step="1" value="46" />
+        </div>
+        <div class="slider-row">
+          <label>Sun Azimuth (°): <span id="val-sun-azimuth">32</span></label>
+          <input type="range" id="sl-sun-azimuth" min="0" max="360" step="1" value="32" />
+        </div>
+        <div class="slider-row">
+          <label>Silk Lantern Warmth: <span id="val-lantern-glow">2.4</span></label>
+          <input type="range" id="sl-lantern-glow" min="0.2" max="6.0" step="0.1" value="2.4" />
+        </div>
+        <div class="slider-row">
+          <label>Ambient Fill: <span id="val-ambient">0.75</span></label>
+          <input type="range" id="sl-ambient" min="0.1" max="2.0" step="0.05" value="0.75" />
+        </div>
+        <div class="slider-row">
+          <label>Tone Mapping Exposure: <span id="val-exposure">1.10</span></label>
+          <input type="range" id="sl-exposure" min="0.4" max="2.5" step="0.05" value="1.10" />
+        </div>
+      </section>
+
+      <!-- Section: Textures & Materials -->
+      <section class="slider-section">
+        <h3>💎 Textures & PBR Materials</h3>
+        <div class="slider-row">
+          <label>White Marble Roughness: <span id="val-marble-roughness">0.14</span></label>
+          <input type="range" id="sl-marble-roughness" min="0.02" max="0.80" step="0.02" value="0.14" />
+        </div>
+        <div class="slider-row">
+          <label>Marble Clearcoat: <span id="val-marble-clearcoat">0.35</span></label>
+          <input type="range" id="sl-marble-clearcoat" min="0.0" max="1.0" step="0.05" value="0.35" />
+        </div>
+        <div class="slider-row">
+          <label>Obsidian Backing Metallic: <span id="val-obsidian-metallic">0.22</span></label>
+          <input type="range" id="sl-obsidian-metallic" min="0.0" max="1.0" step="0.05" value="0.22" />
+        </div>
+        <div class="slider-row highlight-slider">
+          <label>⭐ Bassorilievo Cameo Relief: <span id="val-bassorilievo">0.32</span></label>
+          <input type="range" id="sl-bassorilievo" min="0.0" max="1.5" step="0.02" value="0.32" />
+          <small class="slider-hint">0.0 = Pure Flat 2D Medallion • 1.5 = Deep Sculpted Classical Bas-Relief</small>
+        </div>
+        <div class="slider-row">
+          <label>PBR Normal Map Scale: <span id="val-normal-scale">1.0</span></label>
+          <input type="range" id="sl-normal-scale" min="0.1" max="2.5" step="0.1" value="1.0" />
+        </div>
+      </section>
+
+      <!-- Section: Camera & Viewport -->
+      <section class="slider-section">
+        <h3>🎥 Camera & Viewport</h3>
+        <div class="slider-row">
+          <label>Field of View (FOV): <span id="val-fov">38</span>°</label>
+          <input type="range" id="sl-fov" min="20" max="75" step="1" value="38" />
+        </div>
+        <div class="slider-row">
+          <label>Camera Distance: <span id="val-cam-distance">11.5</span></label>
+          <input type="range" id="sl-cam-distance" min="4.0" max="24.0" step="0.5" value="11.5" />
+        </div>
+        <div class="checkbox-row">
+          <label><input type="checkbox" id="chk-auto-rotate" /> Auto-Rotate Viewport</label>
+          <label><input type="checkbox" id="chk-shadows" checked /> Cast PBR Soft Shadows</label>
+        </div>
+      </section>
+
+      <div class="panel-footer">
+        <button id="btn-reset-settings" class="secondary-btn">Reset to Default Settings</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Frame-by-Frame Rig & Animation Inspector Modal -->
+  <aside id="rig-inspector" class="panel hidden">
+    <div class="panel-header">
+      <h2>🦴 Rig & Animation Inspector</h2>
+      <button id="btn-close-rig" class="tool-btn close-btn">✕</button>
+    </div>
+    <div class="panel-body">
+      <div class="rig-actions">
+        <label>Active Animation:</label>
+        <div class="btn-group">
+          <button class="anim-btn active" data-anim="Idle">Idle</button>
+          <button class="anim-btn" data-anim="Select">Select</button>
+          <button class="anim-btn" data-anim="Pair">Pair</button>
+          <button class="anim-btn" data-anim="Disappear">Disappear</button>
+        </div>
+      </div>
+
+      <div class="scrubber-box">
+        <div class="scrubber-header">
+          <span>Timeline Scrubber:</span>
+          <span id="rig-frame-display">Frame 0 / 60</span>
+        </div>
+        <input type="range" id="rig-scrubber" min="0" max="60" step="1" value="0" />
+        <div class="scrubber-controls">
+          <button id="btn-rig-play">▶ Play</button>
+          <button id="btn-rig-pause">⏸ Pause</button>
+          <button id="btn-rig-reset">⏮ Reset Frame</button>
+        </div>
+      </div>
+
+      <div class="bone-tree">
+        <h3>Hierarchical Armature Bones:</h3>
+        <ul>
+          <li><strong>Root_Bone</strong> (Origin & Board Positioning)
+            <ul>
+              <li><strong>Tile_Body_Bone</strong> (Imperial White Marble Body & Black Obsidian Backing)
+                <ul>
+                  <li><strong>Face_Overlay_Bone</strong> (2D Oval Cameo / Card Face & Bassorilievo Normal)</li>
+                  <li><strong>Alphabet_Glyph_Bone</strong> (Raised 3D Metallic Corner Badge A1..H2)</li>
+                </ul>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Selected Tile Preview Cartouche -->
+  <div id="selection-card" class="hidden">
+    <div class="sel-inner">
+      <span id="sel-badge" class="sel-badge">A1</span>
+      <div class="sel-info">
+        <span id="sel-title" class="sel-title">Ale & Sebi • Tang Silk I</span>
+        <span id="sel-status" class="sel-status">First tile selected — pick a matching coupled tile!</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Victory / Game Over Overlay Modal -->
+  <div id="victory-modal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-badge">🀄</div>
+      <h2>Temple Cleared! Solitaire Victory!</h2>
+      <p>All pairs harmoniously united in the sacred Chinese temple courtyard.</p>
+      <div class="modal-stats">
+        <div>Score: <strong id="vic-score">0</strong></div>
+        <div>Total Moves: <strong id="vic-moves">0</strong></div>
+        <div>Max Combo: <strong id="vic-combo">x1</strong></div>
+      </div>
+      <div class="modal-buttons">
+        <button id="btn-play-again" class="action-btn highlight">Play Next Layout</button>
+        <button id="btn-close-vic" class="secondary-btn">Review Board</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JSON Settings Modal -->
+  <div id="json-modal" class="modal-overlay hidden">
+    <div class="modal-card json-card">
+      <h2>📋 Look-Dev Settings JSON</h2>
+      <textarea id="json-textarea" rows="12"></textarea>
+      <div class="modal-buttons">
+        <button id="btn-apply-json" class="action-btn">Apply Settings</button>
+        <button id="btn-copy-json-clip" class="action-btn highlight">Copy to Clipboard</button>
+        <button id="btn-close-json" class="secondary-btn">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

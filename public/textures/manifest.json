@@ -1,0 +1,439 @@
+{
+  "tileCount": 50,
+  "suitsCount": 34,
+  "coupledCount": 16,
+  "tiles": [
+    {
+      "id": "char_1",
+      "suit": "characters",
+      "matchGroup": "char_1",
+      "glyph": "1萬",
+      "title": "1 Characters (一萬)",
+      "coupled": false
+    },
+    {
+      "id": "char_2",
+      "suit": "characters",
+      "matchGroup": "char_2",
+      "glyph": "2萬",
+      "title": "2 Characters (二萬)",
+      "coupled": false
+    },
+    {
+      "id": "char_3",
+      "suit": "characters",
+      "matchGroup": "char_3",
+      "glyph": "3萬",
+      "title": "3 Characters (三萬)",
+      "coupled": false
+    },
+    {
+      "id": "char_4",
+      "suit": "characters",
+      "matchGroup": "char_4",
+      "glyph": "4萬",
+      "title": "4 Characters (四萬)",
+      "coupled": false
+    },
+    {
+      "id": "char_5",
+      "suit": "characters",
+      "matchGroup": "char_5",
+      "glyph": "5萬",
+      "title": "5 Characters (五萬)",
+      "coupled": false
+    },
+    {
+      "id": "char_6",
+      "suit": "characters",
+      "matchGroup": "char_6",
+      "glyph": "6萬",
+      "title": "6 Characters (六萬)",
+      "coupled": false
+    },
+    {
+      "id": "char_7",
+      "suit": "characters",
+      "matchGroup": "char_7",
+      "glyph": "7萬",
+      "title": "7 Characters (七萬)",
+      "coupled": false
+    },
+    {
+      "id": "char_8",
+      "suit": "characters",
+      "matchGroup": "char_8",
+      "glyph": "8萬",
+      "title": "8 Characters (八萬)",
+      "coupled": false
+    },
+    {
+      "id": "char_9",
+      "suit": "characters",
+      "matchGroup": "char_9",
+      "glyph": "9萬",
+      "title": "9 Characters (九萬)",
+      "coupled": false
+    },
+    {
+      "id": "dots_1",
+      "suit": "dots",
+      "matchGroup": "dots_1",
+      "glyph": "1筒",
+      "title": "1 Circles (一筒)",
+      "coupled": false
+    },
+    {
+      "id": "dots_2",
+      "suit": "dots",
+      "matchGroup": "dots_2",
+      "glyph": "2筒",
+      "title": "2 Circles (二筒)",
+      "coupled": false
+    },
+    {
+      "id": "dots_3",
+      "suit": "dots",
+      "matchGroup": "dots_3",
+      "glyph": "3筒",
+      "title": "3 Circles (三筒)",
+      "coupled": false
+    },
+    {
+      "id": "dots_4",
+      "suit": "dots",
+      "matchGroup": "dots_4",
+      "glyph": "4筒",
+      "title": "4 Circles (四筒)",
+      "coupled": false
+    },
+    {
+      "id": "dots_5",
+      "suit": "dots",
+      "matchGroup": "dots_5",
+      "glyph": "5筒",
+      "title": "5 Circles (五筒)",
+      "coupled": false
+    },
+    {
+      "id": "dots_6",
+      "suit": "dots",
+      "matchGroup": "dots_6",
+      "glyph": "6筒",
+      "title": "6 Circles (六筒)",
+      "coupled": false
+    },
+    {
+      "id": "dots_7",
+      "suit": "dots",
+      "matchGroup": "dots_7",
+      "glyph": "7筒",
+      "title": "7 Circles (七筒)",
+      "coupled": false
+    },
+    {
+      "id": "dots_8",
+      "suit": "dots",
+      "matchGroup": "dots_8",
+      "glyph": "8筒",
+      "title": "8 Circles (八筒)",
+      "coupled": false
+    },
+    {
+      "id": "dots_9",
+      "suit": "dots",
+      "matchGroup": "dots_9",
+      "glyph": "9筒",
+      "title": "9 Circles (九筒)",
+      "coupled": false
+    },
+    {
+      "id": "bamboo_1",
+      "suit": "bamboo",
+      "matchGroup": "bamboo_1",
+      "glyph": "1索",
+      "title": "1 Bamboo (一索)",
+      "coupled": false
+    },
+    {
+      "id": "bamboo_2",
+      "suit": "bamboo",
+      "matchGroup": "bamboo_2",
+      "glyph": "2索",
+      "title": "2 Bamboo (二索)",
+      "coupled": false
+    },
+    {
+      "id": "bamboo_3",
+      "suit": "bamboo",
+      "matchGroup": "bamboo_3",
+      "glyph": "3索",
+      "title": "3 Bamboo (三索)",
+      "coupled": false
+    },
+    {
+      "id": "bamboo_4",
+      "suit": "bamboo",
+      "matchGroup": "bamboo_4",
+      "glyph": "4索",
+      "title": "4 Bamboo (四索)",
+      "coupled": false
+    },
+    {
+      "id": "bamboo_5",
+      "suit": "bamboo",
+      "matchGroup": "bamboo_5",
+      "glyph": "5索",
+      "title": "5 Bamboo (五索)",
+      "coupled": false
+    },
+    {
+      "id": "bamboo_6",
+      "suit": "bamboo",
+      "matchGroup": "bamboo_6",
+      "glyph": "6索",
+      "title": "6 Bamboo (六索)",
+      "coupled": false
+    },
+    {
+      "id": "bamboo_7",
+      "suit": "bamboo",
+      "matchGroup": "bamboo_7",
+      "glyph": "7索",
+      "title": "7 Bamboo (七索)",
+      "coupled": false
+    },
+    {
+      "id": "bamboo_8",
+      "suit": "bamboo",
+      "matchGroup": "bamboo_8",
+      "glyph": "8索",
+      "title": "8 Bamboo (八索)",
+      "coupled": false
+    },
+    {
+      "id": "bamboo_9",
+      "suit": "bamboo",
+      "matchGroup": "bamboo_9",
+      "glyph": "9索",
+      "title": "9 Bamboo (九索)",
+      "coupled": false
+    },
+    {
+      "id": "wind_E",
+      "suit": "winds",
+      "matchGroup": "wind_E",
+      "glyph": "東",
+      "title": "East Wind (東)",
+      "coupled": false
+    },
+    {
+      "id": "wind_S",
+      "suit": "winds",
+      "matchGroup": "wind_S",
+      "glyph": "南",
+      "title": "South Wind (南)",
+      "coupled": false
+    },
+    {
+      "id": "wind_W",
+      "suit": "winds",
+      "matchGroup": "wind_W",
+      "glyph": "西",
+      "title": "West Wind (西)",
+      "coupled": false
+    },
+    {
+      "id": "wind_N",
+      "suit": "winds",
+      "matchGroup": "wind_N",
+      "glyph": "北",
+      "title": "North Wind (北)",
+      "coupled": false
+    },
+    {
+      "id": "dragon_red",
+      "suit": "dragons",
+      "matchGroup": "dragon_red",
+      "glyph": "中",
+      "title": "Red Dragon (紅中)",
+      "coupled": false
+    },
+    {
+      "id": "dragon_green",
+      "suit": "dragons",
+      "matchGroup": "dragon_green",
+      "glyph": "發",
+      "title": "Green Dragon (發財)",
+      "coupled": false
+    },
+    {
+      "id": "dragon_white",
+      "suit": "dragons",
+      "matchGroup": "dragon_white",
+      "glyph": "白",
+      "title": "White Dragon (白板)",
+      "coupled": false
+    },
+    {
+      "id": "coupled_A1",
+      "suit": "coupled_family",
+      "matchGroup": "theme_A_tang_silk",
+      "glyph": "春A1",
+      "code": "A1",
+      "hanzi": "春",
+      "title": "Ale & Sebi • Tang Silk I",
+      "coupled": true
+    },
+    {
+      "id": "coupled_A2",
+      "suit": "coupled_family",
+      "matchGroup": "theme_A_tang_silk",
+      "glyph": "春A2",
+      "code": "A2",
+      "hanzi": "春",
+      "title": "Ale & Sebi • Tang Silk II",
+      "coupled": true
+    },
+    {
+      "id": "coupled_B1",
+      "suit": "coupled_family",
+      "matchGroup": "theme_B_sightseeing",
+      "glyph": "夏B1",
+      "code": "B1",
+      "hanzi": "夏",
+      "title": "Ale & Sebi • Great Wall I",
+      "coupled": true
+    },
+    {
+      "id": "coupled_B2",
+      "suit": "coupled_family",
+      "matchGroup": "theme_B_sightseeing",
+      "glyph": "夏B2",
+      "code": "B2",
+      "hanzi": "夏",
+      "title": "Ale & Sebi • Great Wall II",
+      "coupled": true
+    },
+    {
+      "id": "coupled_C1",
+      "suit": "coupled_family",
+      "matchGroup": "theme_C_cantonese_rice",
+      "glyph": "秋C1",
+      "code": "C1",
+      "hanzi": "秋",
+      "title": "Ale & Sebi • Cantonese Rice I",
+      "coupled": true
+    },
+    {
+      "id": "coupled_C2",
+      "suit": "coupled_family",
+      "matchGroup": "theme_C_cantonese_rice",
+      "glyph": "秋C2",
+      "code": "C2",
+      "hanzi": "秋",
+      "title": "Ale & Sebi • Cantonese Rice II",
+      "coupled": true
+    },
+    {
+      "id": "coupled_D1",
+      "suit": "coupled_family",
+      "matchGroup": "theme_D_kungfu",
+      "glyph": "冬D1",
+      "code": "D1",
+      "hanzi": "冬",
+      "title": "Ale & Sebi • Shaolin Kung Fu I",
+      "coupled": true
+    },
+    {
+      "id": "coupled_D2",
+      "suit": "coupled_family",
+      "matchGroup": "theme_D_kungfu",
+      "glyph": "冬D2",
+      "code": "D2",
+      "hanzi": "冬",
+      "title": "Ale & Sebi • Shaolin Kung Fu II",
+      "coupled": true
+    },
+    {
+      "id": "coupled_E1",
+      "suit": "coupled_family",
+      "matchGroup": "theme_E_panda",
+      "glyph": "梅E1",
+      "code": "E1",
+      "hanzi": "梅",
+      "title": "Ale & Sebi • Chengdu Pandas I",
+      "coupled": true
+    },
+    {
+      "id": "coupled_E2",
+      "suit": "coupled_family",
+      "matchGroup": "theme_E_panda",
+      "glyph": "梅E2",
+      "code": "E2",
+      "hanzi": "梅",
+      "title": "Ale & Sebi • Chengdu Pandas II",
+      "coupled": true
+    },
+    {
+      "id": "coupled_F1",
+      "suit": "coupled_family",
+      "matchGroup": "theme_F_expedition",
+      "glyph": "蘭F1",
+      "code": "F1",
+      "hanzi": "蘭",
+      "title": "Ale & Sebi • Dragon Peak I",
+      "coupled": true
+    },
+    {
+      "id": "coupled_F2",
+      "suit": "coupled_family",
+      "matchGroup": "theme_F_expedition",
+      "glyph": "蘭F2",
+      "code": "F2",
+      "hanzi": "蘭",
+      "title": "Ale & Sebi • Dragon Peak II",
+      "coupled": true
+    },
+    {
+      "id": "coupled_G1",
+      "suit": "coupled_family",
+      "matchGroup": "theme_G_compagni",
+      "glyph": "菊G1",
+      "code": "G1",
+      "hanzi": "菊",
+      "title": "Ghigna 🐹 & Pupurabbu 👾 I",
+      "coupled": true
+    },
+    {
+      "id": "coupled_G2",
+      "suit": "coupled_family",
+      "matchGroup": "theme_G_compagni",
+      "glyph": "菊G2",
+      "code": "G2",
+      "hanzi": "菊",
+      "title": "Ghigna 🐹 & Pupurabbu 👾 II",
+      "coupled": true
+    },
+    {
+      "id": "coupled_H1",
+      "suit": "coupled_family",
+      "matchGroup": "theme_H_mum_dad",
+      "glyph": "竹H1",
+      "code": "H1",
+      "hanzi": "竹",
+      "title": "Mamma Kate & Papà Ricc I",
+      "coupled": true
+    },
+    {
+      "id": "coupled_H2",
+      "suit": "coupled_family",
+      "matchGroup": "theme_H_mum_dad",
+      "glyph": "竹H2",
+      "code": "H2",
+      "hanzi": "竹",
+      "title": "Mamma Kate & Papà Ricc II",
+      "coupled": true
+    }
+  ]
+}

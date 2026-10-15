@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Progress Gallery • 3D Family Mahjong Solitaire 🀄</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🀄</text></svg>" />
+  <!-- Google Model Viewer for Auto-Rotating 3D GLBs -->
+  <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js"></script>
+  <style>
+    :root {
+      --bg: #0f0c12;
+      --card-bg: #1a1520;
+      --gold: #f5d470;
+      --crimson: #c82626;
+      --jade: #3bb273;
+      --text: #f5f0e6;
+      --text-muted: #9e958c;
+      --border: rgba(245, 212, 112, 0.25);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      padding: 32px 24px 80px;
+      line-height: 1.6;
+    }
+    header {
+      max-width: 1280px;
+      margin: 0 auto 36px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 20px;
+    }
+    .header-title h1 {
+      font-size: 28px;
+      color: var(--gold);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .header-title p {
+      color: var(--text-muted);
+      font-size: 14px;
+      margin-top: 4px;
+    }
+    .header-links a {
+      background: var(--crimson);
+      color: #fff;
+      text-decoration: none;
+      font-weight: 700;
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-size: 13px;
+      transition: all 0.2s;
+    }
+    .header-links a:hover {
+      background: #e03232;
+      transform: translateY(-2px);
+    }
+    main {
+      max-width: 1280px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 48px;
+    }
+    section h2 {
+      font-size: 20px;
+      color: var(--gold);
+      border-left: 4px solid var(--gold);
+      padding-left: 12px;
+      margin-bottom: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .badge {
+      font-size: 11px;
+      background: rgba(245, 212, 112, 0.15);
+      border: 1px solid var(--gold);
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-weight: 600;
+    }
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(580px, 1fr));
+      gap: 24px;
+    }
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+      gap: 20px;
+    }
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+    }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+    .card:hover {
+      transform: translateY(-3px);
+      border-color: var(--gold);
+    }
+    .card img, .card model-viewer {
+      width: 100%;
+      height: 340px;
+      object-fit: cover;
+      background: #151119;
+    }
+    .card-info {
+      padding: 16px;
+    }
+    .card-info h3 {
+      font-size: 15px;
+      color: var(--gold);
+      margin-bottom: 6px;
+    }
+    .card-info p {
+      font-size: 12.5px;
+      color: var(--text-muted);
+    }
+    .meta-tag {
+      display: inline-block;
+      font-size: 10.5px;
+      font-weight: 700;
+      color: var(--jade);
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-title">
+      <h1>🀄 Carlesso Family 3D Mahjong Solitaire</h1>
+      <p>Milestone Creative Progress & Interactive 3D Showcase • Blender 5.0.1 & Three.js</p>
+    </div>
+    <div class="header-links">
+      <a href="/" target="_blank">🎮 Open Playable Web App</a>
+    </div>
+  </header>
+
+  <main>
+    <!-- Section 1: Auto-Rotating 3D GLB Models -->
+    <section>
+      <h2>
+        <span>💎 Milestone 2: Auto-Rotating 3D GLB Models (Three.js & Blender 5.0.1)</span>
+        <span class="badge">Auto-Rotating 3D Viewers</span>
+      </h2>
+      <div class="grid-3">
+        <div class="card">
+          <model-viewer
+            src="/models/tile_generic_white_marble_obsidian.glb"
+            camera-controls
+            auto-rotate
+            rotation-per-second="25deg"
+            shadow-intensity="1"
+            exposure="1.1"
+            alt="Canonical Generic 3D Tile"
+          ></model-viewer>
+          <div class="card-info">
+            <h3>Canonical Generic 3D Mahjong Tile</h3>
+            <p>Manifold Imperial White Marble body with Volcanic Black Obsidian backing, Gold Kintsugi bevels, 2D Oval Cameo face, and 4-bone Armature (Idle, Select, Pair, Disappear).</p>
+            <span class="meta-tag">tile_generic_white_marble_obsidian.glb • 1.4 MB • 0 Non-Manifold</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <model-viewer
+            src="/models/tile_coupled_showcase.glb"
+            camera-controls
+            auto-rotate
+            rotation-per-second="20deg"
+            shadow-intensity="1"
+            exposure="1.1"
+            alt="Coupled Family Pairs Showcase"
+          ></model-viewer>
+          <div class="card-info">
+            <h3>Coupled Family Pairs 3D Plinth</h3>
+            <p>Showcase of 4 Coupled Pairs (A1↔A2 Tang Silk, B1↔B2 Great Wall, C1↔C2 Cantonese Rice, H1↔H2 Mamma Kate & Papà Riccardo) on a carved rosewood & jade display base.</p>
+            <span class="meta-tag">tile_coupled_showcase.glb • 7.4 MB • 4 Coupled Pairs</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <model-viewer
+            src="/models/temple_environment.glb"
+            camera-controls
+            auto-rotate
+            rotation-per-second="15deg"
+            shadow-intensity="1"
+            exposure="1.1"
+            alt="3D Chinese Temple Courtyard"
+          ></model-viewer>
+          <div class="card-info">
+            <h3>3D Chinese Temple Courtyard & Table</h3>
+            <p>Sacred stone pavement, low carved Ming rosewood and celadon jade playing table, crimson dragon pillars, and warm silk lanterns.</p>
+            <span class="meta-tag">temple_environment.glb • 268 KB • Switchable Surface</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 2: Offline Blender Cycles Master Ground-Truth Renders -->
+    <section>
+      <h2>
+        <span>🏛️ Milestone 2: Offline Blender 5.0.1 Cycles Ground-Truth Renders</span>
+        <span class="badge">Path-Traced Ground Truth</span>
+      </h2>
+      <div class="grid-2">
+        <div class="card">
+          <img src="/renders/cycles/cycles_cam1_hero.png" alt="Cycles Cam 1 Hero" />
+          <div class="card-info">
+            <h3>Camera 1: Temple Hero Perspective (3/4 Angle)</h3>
+            <p>Full 4-tier Imperial Turtle Mahjong Solitaire pyramid on the celadon jade tabletop under golden-hour courtyard sunbeams and crimson lantern illumination.</p>
+            <span class="meta-tag">Blender Cycles • 1280x720 • FOV 38°</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <img src="/renders/cycles/cycles_cam2_topdown.png" alt="Cycles Cam 2 Top-Down" />
+          <div class="card-info">
+            <h3>Camera 2: Zen Top-Down Solitaire View</h3>
+            <p>Orthogonal overview of the 4-tier stepped layout showing all free tiles, traditional Chinese Hanzi card faces, and coupled family medallions.</p>
+            <span class="meta-tag">Blender Cycles • 1280x720 • FOV 40°</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <img src="/renders/cycles/cycles_cam3_low_pavement.png" alt="Cycles Cam 3 Low Pavement" />
+          <div class="card-info">
+            <h3>Camera 3: Low Pavement & Carved Table Closeup</h3>
+            <p>Ground-level view highlighting the ancient flagstone joints, carved rosewood legs, and the dramatic relief of the front coupled tiles.</p>
+            <span class="meta-tag">Blender Cycles • 1280x720 • FOV 36°</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <img src="/renders/cycles/cycles_cam4_tile_macro.png" alt="Cycles Cam 4 Tile Macro" />
+          <div class="card-info">
+            <h3>Camera 4: Coupled Family Oval Cameo & Bassorilievo Macro</h3>
+            <p>Ultra close-up macro showing the gold kintsugi rim, tactile white marble bevels, raised corner badge A2, and photorealistic Ale & Sebi portrait.</p>
+            <span class="meta-tag">Blender Cycles • 1280x720 • FOV 55° • Bassorilievo Relief</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 3: Concept Mocks & Character Consistency Review -->
+    <section>
+      <h2>
+        <span>🎨 Milestone 1: Approved Concept Mocks & Character Consistency Review</span>
+        <span class="badge">Score: 9.9 / 10 Approved</span>
+      </h2>
+      <div class="grid-3">
+        <div class="card">
+          <img src="/mock_01_temple_imperial_turtle_track_1792072751474.jpg" alt="Concept Mock 1" />
+          <div class="card-info">
+            <h3>Concept Mock 01: Temple & Imperial Turtle Track</h3>
+            <p>Architectural concept mock of the sacred Chinese temple courtyard, rosewood table, and 144-tile Imperial Turtle solitary layout.</p>
+          </div>
+        </div>
+
+        <div class="card">
+          <img src="/mock_03_white_marble_obsidian_coupled_tiles_1792072926732.jpg" alt="Concept Mock 3" />
+          <div class="card-info">
+            <h3>Concept Mock 03: Coupled White Marble & Obsidian Tiles</h3>
+            <p>Study of coupled poses (Tang Silk, Sightseeing Explorers, Cantonese Fried Rice) with volcanic obsidian backing.</p>
+          </div>
+        </div>
+
+        <div class="card">
+          <img src="/mock_04_photoreal_cc_kungfu_panda_tiles_v2_1792073270073.jpg" alt="Concept Mock 4" />
+          <div class="card-info">
+            <h3>Concept Mock 04: Kung Fu & Chengdu Pandas</h3>
+            <p>High-fidelity character consistency check ensuring Sebastian's real hair color and natural mischievous expressions.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

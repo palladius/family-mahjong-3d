@@ -1,0 +1,12 @@
+[project]
+name = "family-mahjong-3d-pipeline"
+version = "1.0.0"
+description = "Headless Blender 3D asset, 2K PBR baking, Cycles master rendering, and Character Consistency pipeline for Carlesso Family Mahjong 3D"
+requires-python = "==3.11.*"
+dependencies = [
+    "bpy>=4.1.0",
+    "pillow>=10.0.0",
+    "numpy>=1.26.0",
+    "google-genai>=1.0.0",
+    "scipy>=1.11.0",
+]
