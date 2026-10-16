@@ -357,19 +357,19 @@ class MahjongSolitaireApp {
     const texLoader = new THREE.TextureLoader();
 
     // 1. Load Manifest
-    const res = await fetch("/textures/manifest.json");
+    const res = await fetch("./textures/manifest.json");
     this.manifest = await res.json();
 
     // Preload PBR Textures
     this.pbrTextures = {
-      marbleBase: texLoader.load("/textures/pbr/marble_basecolor_2k.png"),
-      marbleNorm: texLoader.load("/textures/pbr/marble_normal_2k.png"),
-      obsidianBase: texLoader.load("/textures/pbr/obsidian_basecolor_2k.png"),
-      obsidianNorm: texLoader.load("/textures/pbr/obsidian_normal_2k.png"),
-      rosewoodBase: texLoader.load("/textures/pbr/rosewood_basecolor_2k.png"),
-      jadeBase: texLoader.load("/textures/pbr/jade_basecolor_2k.png"),
-      pavementBase: texLoader.load("/textures/pbr/pavement_basecolor_2k.png"),
-      pavementNorm: texLoader.load("/textures/pbr/pavement_normal_2k.png"),
+      marbleBase: texLoader.load("./textures/pbr/marble_basecolor_2k.png"),
+      marbleNorm: texLoader.load("./textures/pbr/marble_normal_2k.png"),
+      obsidianBase: texLoader.load("./textures/pbr/obsidian_basecolor_2k.png"),
+      obsidianNorm: texLoader.load("./textures/pbr/obsidian_normal_2k.png"),
+      rosewoodBase: texLoader.load("./textures/pbr/rosewood_basecolor_2k.png"),
+      jadeBase: texLoader.load("./textures/pbr/jade_basecolor_2k.png"),
+      pavementBase: texLoader.load("./textures/pbr/pavement_basecolor_2k.png"),
+      pavementNorm: texLoader.load("./textures/pbr/pavement_normal_2k.png"),
     };
     Object.values(this.pbrTextures).forEach((t) => {
       t.wrapS = THREE.RepeatWrapping;
@@ -377,7 +377,7 @@ class MahjongSolitaireApp {
     });
 
     // 2. Load 3D Temple Environment GLB (Blender glTF exporter ALREADY outputs +Y Up!)
-    loader.load("/models/temple_environment.glb", (gltf) => {
+    loader.load("./models/temple_environment.glb", (gltf) => {
       this.templeEnv = gltf.scene;
       // IMPORTANT: Do NOT rotate templeEnv by -PI/2 around X! glTF is already +Y Up; rotating it turned the horizontal table & floor into a vertical wall cutting the board in half!
       this.templeEnv.rotation.set(0, 0, 0);
@@ -393,7 +393,7 @@ class MahjongSolitaireApp {
     });
 
     // 3. Load Canonical Tile GLB
-    loader.load("/models/tile_generic_white_marble_obsidian.glb", (gltf) => {
+    loader.load("./models/tile_generic_white_marble_obsidian.glb", (gltf) => {
       this.canonicalTileScene = gltf.scene;
       this.canonicalTileAnimations = gltf.animations;
       this.setupBoard("master");
@@ -710,11 +710,11 @@ class MahjongSolitaireApp {
 
     // 2. Face Overlay: 2D Oval Cameo (Classic) OR Dreamlike Whisper-Fade on White Marble (Modalità Onirica)
     if (!this.faceTextureCache[tileData.id]) {
-      const faceTex = texLoader.load(`/textures/tiles/${tileData.id}.png`);
+      const faceTex = texLoader.load(`./textures/tiles/${tileData.id}.png`);
       faceTex.colorSpace = THREE.SRGBColorSpace;
-      const oniricaTex = texLoader.load(`/textures/tiles_onirica/${tileData.id}.png`);
+      const oniricaTex = texLoader.load(`./textures/tiles_onirica/${tileData.id}.png`);
       oniricaTex.colorSpace = THREE.SRGBColorSpace;
-      const normTex = texLoader.load(`/textures/tiles_normal/${tileData.id}_normal.png`);
+      const normTex = texLoader.load(`./textures/tiles_normal/${tileData.id}_normal.png`);
       this.faceTextureCache[tileData.id] = { faceTex, oniricaTex, normTex };
     }
     const { faceTex, oniricaTex, normTex } = this.faceTextureCache[tileData.id];
@@ -1127,7 +1127,7 @@ class MahjongSolitaireApp {
 
     if (thumb) {
       const folder = this.oniricaMode ? "tiles_onirica" : "tiles";
-      thumb.src = `/textures/${folder}/${tile.data.id}.png`;
+      thumb.src = `./textures/${folder}/${tile.data.id}.png`;
     }
     badge.textContent = tile.data.code || tile.data.glyph;
     title.textContent = tile.data.title;
@@ -1162,9 +1162,9 @@ class MahjongSolitaireApp {
     const plusEl = document.getElementById("sel-pair-plus");
 
     const folder = this.oniricaMode ? "tiles_onirica" : "tiles";
-    if (thumb) thumb.src = `/textures/${folder}/${tileA.data.id}.png`;
+    if (thumb) thumb.src = `./textures/${folder}/${tileA.data.id}.png`;
     if (thumb2) {
-      thumb2.src = `/textures/${folder}/${tileB.data.id}.png`;
+      thumb2.src = `./textures/${folder}/${tileB.data.id}.png`;
       thumb2.classList.remove("hidden");
     }
     if (plusEl) plusEl.classList.remove("hidden");
@@ -1278,11 +1278,11 @@ class MahjongSolitaireApp {
     remainingTiles.forEach((tile, i) => {
       tile.data = datas[i] || pool[i];
       if (!this.faceTextureCache[tile.data.id]) {
-        const faceTex = texLoader.load(`/textures/tiles/${tile.data.id}.png`);
+        const faceTex = texLoader.load(`./textures/tiles/${tile.data.id}.png`);
         faceTex.colorSpace = THREE.SRGBColorSpace;
-        const oniricaTex = texLoader.load(`/textures/tiles_onirica/${tile.data.id}.png`);
+        const oniricaTex = texLoader.load(`./textures/tiles_onirica/${tile.data.id}.png`);
         oniricaTex.colorSpace = THREE.SRGBColorSpace;
-        const normTex = texLoader.load(`/textures/tiles_normal/${tile.data.id}_normal.png`);
+        const normTex = texLoader.load(`./textures/tiles_normal/${tile.data.id}_normal.png`);
         this.faceTextureCache[tile.data.id] = { faceTex, oniricaTex, normTex };
       }
       const { faceTex, oniricaTex, normTex } = this.faceTextureCache[tile.data.id];
