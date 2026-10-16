@@ -1086,23 +1086,23 @@ class MahjongSolitaireApp {
     const canvas = document.getElementById("wow-3d-canvas");
     if (!canvas) return;
     this.wowScene = new THREE.Scene();
-    this.wowCamera = new THREE.PerspectiveCamera(34, 1, 0.1, 20);
-    this.wowCamera.position.set(0, 1.65, 2.75);
+    this.wowCamera = new THREE.PerspectiveCamera(32, 1, 0.1, 20);
+    this.wowCamera.position.set(0, 0.35, 2.45);
     this.wowCamera.lookAt(0, 0, 0);
 
     this.wowRenderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
-    this.wowRenderer.setSize(210, 210);
+    this.wowRenderer.setSize(124, 124);
     this.wowRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.wowRenderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.wowRenderer.toneMappingExposure = 1.18;
+    this.wowRenderer.toneMappingExposure = 1.15;
 
-    const amb = new THREE.AmbientLight(0xfff4e0, 1.15);
-    const dir1 = new THREE.DirectionalLight(0xffe6aa, 3.6);
-    dir1.position.set(3.5, 4.5, 3.2);
-    const dir2 = new THREE.PointLight(0xa832ff, 2.2, 10);
-    dir2.position.set(-3, -2, 3);
+    const amb = new THREE.AmbientLight(0xfff6e6, 1.25);
+    const dir1 = new THREE.DirectionalLight(0xffe8b8, 3.4);
+    dir1.position.set(3.2, 4.0, 3.5);
+    const dir2 = new THREE.PointLight(0xfff0d4, 1.8, 10);
+    dir2.position.set(-2.8, 1.5, 3.0);
     // Raking incandescent amber light across the face to accentuate the 3D carved groove cavity ('il buco bassorilievo')
-    this.wowRakeLight = new THREE.PointLight(0xffb84d, 3.8, 12);
+    this.wowRakeLight = new THREE.PointLight(0xffb84d, 3.4, 12);
     this.wowRakeLight.position.set(2.4, 0.8, 2.2);
     this.wowScene.add(amb, dir1, dir2, this.wowRakeLight);
 
@@ -1121,21 +1121,21 @@ class MahjongSolitaireApp {
 
     const texLoader = new THREE.TextureLoader();
     const cloneA = this.createTileMesh(tileA.data, texLoader);
-    cloneA.rotation.x = Math.PI * 0.34;
+    // Stand tile upright (+Y face rotated to face +Z camera) so its carved face is 100% visible during ±30° oscillation
+    cloneA.rotation.x = Math.PI * 0.45;
+    if (cloneA.userData.selectionBorder) cloneA.userData.selectionBorder.visible = false;
     if (tileB) {
       const cloneB = this.createTileMesh(tileB.data, texLoader);
-      cloneB.rotation.x = Math.PI * 0.34;
-      cloneA.position.set(-0.62, 0, 0);
-      cloneB.position.set(0.62, 0, 0);
-      if (cloneA.userData.selectionBorder) cloneA.userData.selectionBorder.visible = true;
-      if (cloneB.userData.selectionBorder) cloneB.userData.selectionBorder.visible = true;
+      cloneB.rotation.x = Math.PI * 0.45;
+      if (cloneB.userData.selectionBorder) cloneB.userData.selectionBorder.visible = false;
+      cloneA.position.set(-0.56, 0, 0);
+      cloneB.position.set(0.56, 0, 0);
       this.wowGroup.add(cloneA, cloneB);
-      this.wowCamera.position.set(0, 1.85, 3.55);
+      this.wowCamera.position.set(0, 0.42, 3.35);
     } else {
       cloneA.position.set(0, 0, 0);
-      if (cloneA.userData.selectionBorder) cloneA.userData.selectionBorder.visible = true;
       this.wowGroup.add(cloneA);
-      this.wowCamera.position.set(0, 1.55, 2.55);
+      this.wowCamera.position.set(0, 0.35, 2.45);
     }
     this.wowCamera.lookAt(0, 0, 0);
 
@@ -1917,12 +1917,12 @@ class MahjongSolitaireApp {
     this.updateEnvironmentVisibility();
     this.renderer.render(this.scene, this.camera);
 
-    // Render Top Rotating 3D Tile GLB Showcase (#wow-3d-popup) when visible:
-    // Gently rock X tilt while rotating Y so raking light sweeps across the 3D carved groove cavity ('il buco bassorilievo')!
+    // Render Top-Left 3D Tile Showcase (#wow-3d-popup) when visible:
+    // Oscillate ±30° (Math.PI / 6 ≈ 0.5236 rad) left-right so the carved 3D face stays 100% visible!
     const wowPopup = document.getElementById("wow-3d-popup");
     if (this.wowRenderer && this.wowGroup && wowPopup && !wowPopup.classList.contains("hidden")) {
-      this.wowGroup.rotation.y = now * 0.0020;
-      this.wowGroup.rotation.x = Math.sin(now * 0.0028) * 0.22;
+      this.wowGroup.rotation.y = Math.sin(now * 0.0022) * (Math.PI / 6);
+      this.wowGroup.rotation.x = Math.sin(now * 0.0016) * 0.12;
       this.wowRenderer.render(this.wowScene, this.wowCamera);
     }
   }

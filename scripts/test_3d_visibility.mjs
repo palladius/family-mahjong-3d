@@ -42,6 +42,7 @@ assert(mainJs.includes("550") && mainJs.includes("showPairMatchCard"), "550ms ('
 assert(mainJs.includes('"2d":') && mainJs.includes("toggle2DMode"), "Dedicated 2D flat top-down camera preset & toggle are wired in src/main.js");
 assert(mainJs.includes("getDidYouKnowLore") && mainJs.includes("updateWow3DPreview"), "WOW rotating 3D tile inspector & 'Did you know?' cultural lore are wired in src/main.js");
 const indexHtml = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+const styleCss = fs.readFileSync(path.join(ROOT, "src/style.css"), "utf8");
 assert(
   indexHtml.includes('id="help-modal"') &&
     indexHtml.includes('id="btn-help-toggle"') &&
@@ -49,6 +50,14 @@ assert(
     mainJs.includes("toggleHelpModal") &&
     mainJs.includes('key === "h"'),
   "Tile Matching Guide modal ('Quale Tile va con Quale Tile', Key 'H') & live 'VA CON' partner strip are wired"
+);
+assert(
+  mainJs.includes("(Math.PI / 6)") &&
+    mainJs.includes("selectionBorder.visible = false") &&
+    !mainJs.includes("PointLight(0xa832ff") &&
+    styleCss.includes("right: 12px;") &&
+    styleCss.includes("max-width: 395px;"),
+  "3D Tile Inspector oscillates ±30° (Math.PI/6) face-forward without purple, and #selection-card is compact & tucked in top-right out of board view"
 );
 
 // 2. Parse actual binary public/models/temple_environment.glb & build Three.js bounding meshes

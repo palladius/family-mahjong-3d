@@ -13,3 +13,5 @@ log/
 .env
 .env.*
 !.env.dist
+public/portraits/candidates_s1/
+

@@ -1,5 +1,19 @@
 # Changelog - Carlesso Family Mahjong 3D 🀄🐉
 
+## [1.5.0] - 2026-10-16
+### Added
+- **🏆 Adversarial Net of 3 Critic Subagents & Top-3 `S1 春 • Solo Papà Riccardo` Remaster (`scripts/generate_s1_riccardo_candidates.py`, `scripts/finalize_s1_top3.py`)**:
+  - Generated 8 candidate portraits (`public/portraits/candidates_s1/s1_cand_01..08.png`) conditioned on tight high-res facial crops of Riccardo's real GIC photos (`ricc_crop_1_papino.jpg`, `ricc_crop_2_switzerland.jpg`, `ricc_crop_3_southafrica.jpg`, `ricc_crop_4_wine.jpg`, `ricc_crop_5_lake.jpg`).
+  - Dispatched a 3-judge Adversarial Net (`Judge 1: Forensic Craniofacial Likeness Critic`, `Judge 2: Adversarial Impostor Detector`, `Judge 3: Mahjong Cameo & Artistic Critic`) to score all 8 candidates and committed the **Top 3 portraits and Top 3 rendered Mahjong tiles**:
+    1. **🥇 TOP 1 (`s1_cand_01.png` — Ensemble `8.96/10`, Unanimous Top-3 across all 3 judges)**: `public/portraits/quartet_S1_papa_riccardo_top1.png` & `public/textures/tiles/coupled_A1_top1.png` (set as active default `coupled_A1.png`).
+    2. **🥈 TOP 2 (`s1_cand_04.png` — Ensemble `8.97/10`, Judge 2 Red-Team #1 Winner `9.70/10`)**: `public/portraits/quartet_S1_papa_riccardo_top2.png` & `public/textures/tiles/coupled_A1_top2.png`.
+    3. **🥉 TOP 3 (`s1_cand_08.png` — Ensemble `8.96/10`, Ranked #2 by both Judge 2 & Judge 3)**: `public/portraits/quartet_S1_papa_riccardo_top3.png` & `public/textures/tiles/coupled_A1_top3.png`.
+
+### Changed
+- **🎯 Minimal Non-Intrusive Selection UI & $\pm 30^\circ$ Face-Forward 3D Inspector (`index.html`, `src/main.js`, `src/style.css`)**:
+  - Removed all purple styling (`selectionBorder.visible = false`, removed `0xa832ff` purple point light, removed purple CSS borders/glows) from `#wow-3d-popup`, shrunk it to a compact `128px` glass card (`top: 74px; left: 12px`), and replaced full 360° spinning with a **$\pm 30^\circ$ (`Math.PI / 6`) face-forward oscillation** so the carved 3D face is always visible.
+  - Moved `#selection-card` out of the bottom-center of the board into a **compact, minimal glass bar in the top-right empty margin (`top: 74px; right: 12px; max-width: 395px;`)** with concise `9.5px–11px` typography so **0% of the Mahjong board is covered** while planning the next move.
+
 ## [1.4.1] - 2026-10-16
 ### Added
 - **📖 Visual Tile Matching Guide Modal (`#help-modal`, Tasto `H`) & Live `"🔗 VA CON:"` Partner Strip**:

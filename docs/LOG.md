@@ -244,3 +244,49 @@
    - Whenever any tile is clicked on the board, `showSelectionCard()` in `src/main.js` immediately populates `#sel-partners-list` with the exact thumbnail image(s) and code(s) of the partner tile(s) that match with the selected tile.
 3. **Unit Test & GitHub Pages Update**:
    - Added automated verification for `#help-modal`, `#btn-help-toggle`, `#sel-partners-box`, and `key === "h"` in `scripts/test_3d_visibility.mjs`, verified `just test`, and pushed `v1.4.1` to `main` and `gh-pages`.
+
+---
+
+## 2026-10-16T15:36:02+02:00 — Choreographic Director Feedback on Camera 5 (`cycles_cam5_carved_intaglio.png`)
+
+### 1. Verbatim User Feedback
+> "OMG fantastico 🔥 Camera 5: 3D Incandescent-Pen Carved Intaglio Macro (2筒, 4筒, 8萬) !!!"
+
+### 2. Telemetry Note
+- Validated that the dual-frequency 3D Incandescent-Pen Carving pipeline (`apply_incandescent_pen_carving` in `scripts/build_all_tile_textures.py` + `120×160` displaced BMesh in `scripts/blender/build_carved_intaglio_showcase.py` + `72×96` displaced `PlaneGeometry` in `src/main.js`) achieved the exact physical carved-groove look requested by RiccardinoCM26 🦖.
+
+---
+
+## 2026-10-16T16:13:55+02:00 — Milestone 8 (`v1.5.0`): Adversarial Net of 3 Critic Subagents for `S1 春 • Solo Papà Riccardo` Top 3 + Minimal Non-Intrusive Selection UI ($\pm 30^\circ$ Face-Forward 3D Inspector)
+
+### 1. Verbatim User Requests
+> 1. "purtroppo la S1 春 • Solo Papà Riccardo NON MI SOMGILIA! Rifalla 5-10 volte e usa una adversarial net of agents che scelga la migliore! Dammi la top 3 e committa la top 3 grazie."
+> 2. "l'hover occupa TUTTO lo spazio, rende il gioco ingiocabile, e' un po' pacchiano. Nella rotazione a sx togli il viola e ruota con faccia visibile se possibile, magari piu meno 30 gradi? Cerca la partte scritta di renderla piu' piccola e minimale, fuori dalla vista, voglio continuare a vedere la scacchiera e pianificare la prox mossa!"
+
+### 2. Root-Cause Analysis & 8-Candidate Portrait Generation (`scripts/generate_s1_riccardo_candidates.py`)
+- **Why the previous `quartet_S1_papa_riccardo.png` failed likeness**: The earlier prompt in `scripts/generate_remastered_portraits.py` asked for `"looking around age 36-38 with short dark brown/black hair"` and passed full landscape selfies where Riccardo's face was small in the frame.
+- **Fix**: Extracted 5 tight high-res facial crops (`public/portraits/candidates_s1/refs_crops/ricc_crop_1_papino.jpg` through `ricc_crop_5_lake.jpg`) from Riccardo's real GIC photos (`papino 2026-07-20.png`, `ricc-google-switzerland.png`, `riccardosouthafrica.png`, `ricc-za-wine-tasting.png`, `ricc-za-lake.png`) and generated 8 candidate portraits (`public/portraits/candidates_s1/s1_cand_01.png` .. `s1_cand_08.png`) using `gemini-3.1-flash-image-preview` and `gemini-3-pro-image-preview`, anchored on Riccardo's exact craniofacial features (receding hairline with wispy silver-grey crown hair, expressive forehead creases, deep-set warm brown eyes, closed-lip warm knowing smile, short silver-grey/salt-and-pepper stubble).
+
+### 3. Adversarial Net of 3 Critic Subagents & Consensus Top 3 (`scripts/finalize_s1_top3.py`)
+- Spawned 3 independent Critic Subagents in parallel (`invoke_subagent`):
+  1. **Judge 1 — Forensic Craniofacial Likeness Critic** (`conversation://04bdab1d-a60f-4062-b961-1c14ba10d816`): Ranked `#1: s1_cand_03 (9.70)`, `#2: s1_cand_07 (9.50)`, `#3: s1_cand_01 (9.35)` (and scored `s1_cand_04: 9.08`, `s1_cand_08: 8.85`).
+  2. **Judge 2 — Adversarial Impostor Detector ("Red Team Disqualifier")** (`conversation://ce6181b9-00b9-47ab-b911-e281f52c733a`): Ranked `#1: s1_cand_04 (9.70)`, `#2: s1_cand_08 (9.50)`, `#3: s1_cand_01 (9.30)`.
+  3. **Judge 3 — Mahjong Cameo & Artistic Critic** (`conversation://00f23166-2cff-4b05-9c29-b3434d96e95d`): Ranked `#1: s1_cand_06 (9.67)`, `#2: s1_cand_08 (8.53)`, `#3: s1_cand_01 (8.23)` (and `s1_cand_04: 8.13`).
+- **Consensus Top 3 Committed to Repository**:
+  - **🥇 TOP 1 (`s1_cand_01.png` — Ensemble `8.96/10`, Unanimous Top-3 across ALL 3 judges)**:
+    - Portrait: `public/portraits/quartet_S1_papa_riccardo_top1.png` (and active `quartet_S1_papa_riccardo.png`)
+    - Mahjong Tiles: `public/textures/tiles/coupled_A1_top1.png` (and active `coupled_A1.png`), `public/textures/tiles_onirica/coupled_A1_top1.png`
+  - **🥈 TOP 2 (`s1_cand_04.png` — Ensemble `8.97/10`, Judge 2 Red-Team #1 Winner `9.70/10`)**:
+    - Portrait: `public/portraits/quartet_S1_papa_riccardo_top2.png`
+    - Mahjong Tiles: `public/textures/tiles/coupled_A1_top2.png`, `public/textures/tiles_onirica/coupled_A1_top2.png`
+  - **🥉 TOP 3 (`s1_cand_08.png` — Ensemble `8.96/10`, Ranked #2 by both Judge 2 & Judge 3)**:
+    - Portrait: `public/portraits/quartet_S1_papa_riccardo_top3.png`
+    - Mahjong Tiles: `public/textures/tiles/coupled_A1_top3.png`, `public/textures/tiles_onirica/coupled_A1_top3.png`
+
+### 4. Minimal Non-Intrusive Selection UI & $\pm 30^\circ$ Face-Forward 3D Inspector (`index.html`, `src/main.js`, `src/style.css`)
+- **Top-Left `#wow-3d-popup` (`top: 74px; left: 12px; width: 128px;`)**:
+  - Removed all purple styling (`selectionBorder.visible = false` on the preview clone, removed the `0xa832ff` purple point light, removed the purple CSS border/glow).
+  - Oriented the preview tile upright facing the camera (`rotation.x = Math.PI * 0.45`) and replaced 360° spinning with a smooth **$\pm 30^\circ$ (`Math.sin(now * 0.0022) * (Math.PI / 6)`)** face-forward oscillation so the carved 3D bassorilievo face never turns its back to the player.
+- **Top-Right Minimal `#selection-card` (`top: 74px; right: 12px; max-width: 395px; padding: 5px 10px;`)**:
+  - Relocated out of the bottom-center of the board into the top-right empty margin with compact `9.5px–11px` typography and subtle gold/dark glass styling so **0% of the Mahjong board is obstructed**.
+
