@@ -205,3 +205,22 @@
    - Redesigned `#camera-bar` with custom stylized SVG icons and short visual labels: **`2D`** (flat overhead view with 3D rotation locked), **`3D`**, **`Zen`**, **`Basso`**, **`Macro`**, and **`360°`**, plus a top-bar **`📐 Passa a 2D / 2D Alto`** button (`?2d=1`).
 5. **WOW Effect: Top Rotating 3D Tile GLB Inspector (`#wow-3d-popup`) + Bottom `"💡 Did you know?"` Cultural & Family Lore (`#sel-did-you-know`)**:
    - Clicking any tile (or matching a pair) opens `#wow-3d-popup` in the top-left corner with a live 60 FPS WebGL canvas (`#wow-3d-canvas`) spinning the 3D Mahjong tile(s) (showing the Imperial White Marble, Black Obsidian back, Gold Kintsugi seam, and portrait/suit face), while the bottom `#selection-card` displays `"💡 Did you know? ..."` lore for all 50 tiles.
+
+---
+
+## 2026-10-16T15:03:58+02:00 — Milestone 7 (`v1.4.0`): GitHub Pages Live Deployment + 3D "Incandescent Pen" Carved Intaglio (`buco bassorilievo`) + Enlarged `2/4` Circles & `+10%` Chinese Calligraphy
+
+### 1. Verbatim User Request
+> "molto bello!
+> 1. push su GHP subito!
+> 2. non mi convincono molto le immagine proprioe . C'e' troppo spazio bianco, correi che i 2/4 pallino fossero un opo' piu grandi, e anche i simboli cinesi un pelino (5-10% di piu). E sono molto 2d -> mi piaceerebbe provassi a fare un carvingi 3d molto figo, magaeri testandolo su 1-2 pezzi e poi a crescere, come se una penna incandescente avesse scavato il tile un pochttino, che si vede il buco bassorilievo ruotando. se no il 3d e' inutile!"
+
+### 2. Agentic Loop & Engineering Execution
+1. **Immediate GitHub Pages Deployment (`https://palladius.github.io/family-mahjong-3d/`)**:
+   - Created `vite.config.js` (`base: "./"`), converted root-relative URLs to `./` across `index.html`, `src/main.js`, and `public/progress.html`, added `.github/workflows/deploy-ghp.yml`, and published `dist/` to the `gh-pages` branch.
+2. **Enlarged Suit Motifs (`2/4` Pallini `+51–56%` & `+10%` Chinese Calligraphy)**:
+   - Updated `scripts/build_all_tile_textures.py` so `dots_2` (`二筒`) radius grew from `95px` to `148px` (`+56%`) and `dots_4` (`四筒`) radius grew from `82px` to `124px` (`+51%`) with 12-petal carved coin rosettes, enlarged `dots_1..9` & `bamboo_5..9`, and increased Chinese calligraphy (`char_1..9`, `wind_*`, `dragon_*`) by `+10%` (`276px/298px` and `462px`).
+3. **True 3D "Incandescent Pen" Carved Intaglio (`buco bassorilievo scavato`)**:
+   - Built `apply_incandescent_pen_carving()` in `scripts/build_all_tile_textures.py` outputting 50 smooth chamfered 8-bit 3D vertex displacement maps (`public/textures/tiles_depth/{id}_depth.png`), high-slope normal maps (`strength=18.0`), and pyro-carved diffuse maps with scorched-umber inner groove wall shadows and molten-gold raised rims.
+   - Upgraded `src/main.js` (`initSharedTileResources` & `createTileMesh`) with a subdivided `72×96` `PlaneGeometry` face mesh (`displacementMap` + `displacementScale` + `normalScale`), recessed cavity body, and outer marble collar so rotating any tile in `#wow-3d-popup` or tilting the 3D board camera reveals a physical 3D excavated cavity.
+   - Created `scripts/blender/build_carved_intaglio_showcase.py` in Headless Blender 5.0.1 to export `public/models/tile_carved_intaglio_showcase.glb` (`120×160` displaced BMesh for `dots_2`, `dots_4`, `char_8`) and render the oblique raking-light Cycles ground truth `public/renders/cycles/cycles_cam5_carved_intaglio.png`.

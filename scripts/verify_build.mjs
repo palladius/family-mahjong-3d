@@ -28,6 +28,9 @@ assert(fs.existsSync(showcaseGlb) && fs.statSync(showcaseGlb).size > 100000, "Co
 const envGlb = path.join(ROOT, "public/models/temple_environment.glb");
 assert(fs.existsSync(envGlb) && fs.statSync(envGlb).size > 50000, "Temple Environment GLB exists and is non-empty");
 
+const carvedGlb = path.join(ROOT, "public/models/tile_carved_intaglio_showcase.glb");
+assert(fs.existsSync(carvedGlb) && fs.statSync(carvedGlb).size > 100000, "3D Carved Intaglio Showcase GLB exists and is non-empty");
+
 // 2. Topology audit
 const auditFile = path.join(ROOT, "public/models/topology_audit.json");
 assert(fs.existsSync(auditFile), "Topology audit report exists");
@@ -36,7 +39,7 @@ if (fs.existsSync(auditFile)) {
   assert(audit.allManifoldPass === true, `All meshes passed manifold check (0 non-manifold edges, 0 degenerate faces)`);
 }
 
-// 3. Textures, Portraits & Manifest
+// 3. Textures, Portraits, 3D Depth Maps & Manifest
 const manifestFile = path.join(ROOT, "public/textures/manifest.json");
 assert(fs.existsSync(manifestFile), "Tile textures manifest.json exists");
 if (fs.existsSync(manifestFile)) {
@@ -52,6 +55,10 @@ if (fs.existsSync(manifestFile)) {
     fs.existsSync(path.join(ROOT, "public/textures/tiles_onirica", `${t.id}.png`))
   );
   assert(oniricaExist, "All 50 Modalità Onirica ('Less is More' Whisper-Fade) tile textures exist");
+  const depthExist = manifest.tiles.every((t) =>
+    fs.existsSync(path.join(ROOT, "public/textures/tiles_depth", `${t.id}_depth.png`))
+  );
+  assert(depthExist, "All 50 3D Incandescent-Pen Carved Depth/Displacement maps ('*_depth.png') exist");
 }
 
 const requiredPortraits = [
@@ -83,6 +90,7 @@ const cyclesRenders = [
   "cycles_cam2_topdown.png",
   "cycles_cam3_low_pavement.png",
   "cycles_cam4_tile_macro.png",
+  "cycles_cam5_carved_intaglio.png",
 ];
 cyclesRenders.forEach((f) => {
   const p = path.join(ROOT, "public/renders/cycles", f);

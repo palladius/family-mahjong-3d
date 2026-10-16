@@ -1,5 +1,16 @@
 # Changelog - Carlesso Family Mahjong 3D 🀄🐉
 
+## [1.4.0] - 2026-10-16
+### Added
+- **🔥 3D "Incandescent Pen" Carved Intaglio (`buco bassorilievo scavato`)**:
+  - Built a dual-frequency 3D Incandescent-Pen Carving Engine (`apply_incandescent_pen_carving` in `scripts/build_all_tile_textures.py`) generating 50 smooth chamfered 8-bit 3D displacement maps (`public/textures/tiles_depth/*_depth.png`), high-slope normal maps (`strength=18.0`), and pyro-carved diffuse textures with scorched-umber inner groove wall shadows and molten-gold raised rims.
+  - Upgraded Three.js tile geometry (`src/main.js`) with a subdivided `72×96` face mesh (`displacementMap` + `displacementScale` + `normalScale`), recessed cavity body, and outer marble collar so rotating a tile in `#wow-3d-popup` or tilting the 3D camera reveals a physical 3D excavated cavity.
+  - Added Headless Blender 5.0.1 3D Carved Intaglio Showcase (`scripts/blender/build_carved_intaglio_showcase.py`) exporting `public/models/tile_carved_intaglio_showcase.glb` (`120×160` displaced BMesh for `dots_2`, `dots_4`, `char_8`) and rendering `public/renders/cycles/cycles_cam5_carved_intaglio.png`.
+- **🎯 Larger `2/4` Circles (`dots_2`, `dots_4`) & `+10%` Larger Chinese Calligraphy (Minimal Empty White Space)**:
+  - Enlarged `dots_2` (`二筒`) radius from `95px` to `148px` (`+56%`) and `dots_4` (`四筒`) radius from `82px` to `124px` (`+51%`) with 12-petal carved coin rosettes, plus fuller `dots_1..9` & `bamboo_5..9` stalks and `+10%` larger Chinese calligraphy (`char_1..9`, `wind_*`, `dragon_*`).
+- **🚀 GitHub Pages Live Deployment (`https://palladius.github.io/family-mahjong-3d/`)**:
+  - Added `vite.config.js` (`base: "./"`), relative asset paths across `index.html`, `src/main.js`, and `public/progress.html`, `.github/workflows/deploy-ghp.yml`, and direct `gh-pages` branch publishing.
+
 ## [1.3.0] - 2026-10-16
 ### Added
 - **Yellow-Purple Selection Double Border (`bordino giallo-viola`) & `550ms` Pair Visibility Pause**:

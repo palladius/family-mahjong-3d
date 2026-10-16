@@ -248,7 +248,7 @@ class MahjongSolitaireApp {
       marbleRoughness: 0.14,
       marbleClearcoat: 0.35,
       obsidianMetallic: 0.22,
-      bassorilievo: 0.32,
+      bassorilievo: 1.15,
       normalScale: 1.0,
       fov: 38,
       camDistance: 11.5,
@@ -494,7 +494,7 @@ class MahjongSolitaireApp {
     this.updateHUD();
   }
 
-  makeHollowRectGeometry(outerW, outerH, innerW, innerH) {
+  makeHollowRectShape(outerW, outerH, innerW, innerH) {
     const shape = new THREE.Shape();
     shape.moveTo(-outerW / 2, -outerH / 2);
     shape.lineTo(outerW / 2, -outerH / 2);
@@ -509,16 +509,26 @@ class MahjongSolitaireApp {
     hole.lineTo(-innerW / 2, innerH / 2);
     hole.closePath();
     shape.holes.push(hole);
+    return shape;
+  }
 
-    return new THREE.ShapeGeometry(shape);
+  makeHollowRectGeometry(outerW, outerH, innerW, innerH) {
+    return new THREE.ShapeGeometry(this.makeHollowRectShape(outerW, outerH, innerW, innerH));
   }
 
   initSharedTileResources() {
     if (this.sharedGeo) return;
+    const collarShape = this.makeHollowRectShape(TILE_W, TILE_H, TILE_W * 0.90, TILE_H * 0.91);
+    const collarGeo = new THREE.ExtrudeGeometry(collarShape, { depth: 0.080, bevelEnabled: false });
+    collarGeo.rotateX(-Math.PI / 2);
+
     this.sharedGeo = {
-      body: new THREE.BoxGeometry(TILE_W, TILE_D, TILE_H),
+      // Lowered inner cavity floor (-0.076) so downward-displaced 3D carved grooves ('il buco bassorilievo') are NEVER clipped!
+      body: new THREE.BoxGeometry(TILE_W, TILE_D - 0.076, TILE_H),
+      topCollar: collarGeo,
       kintsugi: new THREE.BoxGeometry(TILE_W * 1.004, TILE_D * 0.06, TILE_H * 1.004),
-      face: new THREE.PlaneGeometry(TILE_W * 0.90, TILE_H * 0.92),
+      // 72x96 high-density subdivided face mesh so displacementMap physically carves 3D grooves & pits into the tile!
+      face: new THREE.PlaneGeometry(TILE_W * 0.94, TILE_H * 0.95, 72, 96),
       // Top-center golden crown inlay bar (never occludes top-left or top-right corner glyphs!)
       badge: new THREE.BoxGeometry(0.24, 0.016, 0.032),
       // Yellow-Purple Selection Double Border ("bordino giallo-viola")
@@ -566,8 +576,19 @@ class MahjongSolitaireApp {
     const coupled = allDeckTiles.filter((t) => t.coupled);
     const standard = allDeckTiles.filter((t) => !t.coupled);
 
-    // Prioritize our 4 signature Bamboo & Gold emblems (1=Sparrow, 2=Hot Wheels, 3=Sirio il Dragone, 4=Ale's Gems & Rubies)
-    const priorityIds = new Set(["bamboo_1", "bamboo_2", "bamboo_3", "bamboo_4", "dragon_red", "dragon_green", "dragon_white"]);
+    // Prioritize our 4 signature Bamboo & Gold emblems + Enlarged 2/4 Dots + Carved Dragons & Characters!
+    const priorityIds = new Set([
+      "dots_2",
+      "dots_4",
+      "char_8",
+      "bamboo_1",
+      "bamboo_2",
+      "bamboo_3",
+      "bamboo_4",
+      "dragon_red",
+      "dragon_green",
+      "dragon_white",
+    ]);
     const prioritySuits = standard.filter((t) => priorityIds.has(t.id));
     const otherSuits = standard.filter((t) => !priorityIds.has(t.id));
     const orderedStandard = [...prioritySuits, ...otherSuits];
@@ -576,7 +597,6 @@ class MahjongSolitaireApp {
     let pairCount = 0;
 
     // Proportional Family Cardinality (~18% of board pairs, capped at 8 pairs on 144-tile Master board)
-    // so the board feels light, authentic, and never overloaded with oval portraits!
     const maxCoupledPairs = Math.max(3, Math.min(8, Math.round(numPairs * 0.18)));
 
     const coupledThemes = {};
@@ -600,7 +620,7 @@ class MahjongSolitaireApp {
       }
     });
 
-    // Fill remaining pairs from authentic Traditional Mahjong suits (starting with Bamboo 1..4 & Dragons!)
+    // Fill remaining pairs from authentic Traditional Mahjong suits
     let stdIdx = 0;
     while (pairCount < numPairs) {
       const st = orderedStandard[stdIdx % orderedStandard.length];
@@ -656,7 +676,6 @@ class MahjongSolitaireApp {
       }
       let idxA, idxB;
       if (freeList.length >= 2) {
-        // Pick two random currently-free slots (preferring higher layers first to keep pyramid peeling natural)
         freeList.sort((a, b) => slots[b].l - slots[a].l + (Math.random() - 0.5) * 0.8);
         idxA = freeList[0];
         idxB = freeList[1];
@@ -678,7 +697,7 @@ class MahjongSolitaireApp {
   createTileMesh(tileData, texLoader) {
     const root = new THREE.Group();
 
-    // 1. Tile Body: Imperial White Marble + Black Obsidian Backing
+    // 1. Tile Body: Imperial White Marble + Black Obsidian Backing (recessed top cavity for 3D carved grooves)
     const marbleMat = new THREE.MeshPhysicalMaterial({
       color: 0xfcf8ee,
       map: this.pbrTextures.marbleBase,
@@ -689,49 +708,62 @@ class MahjongSolitaireApp {
       clearcoatRoughness: 0.1,
     });
 
-    // Multi-material box: front & sides marble, bottom (-Y) shared obsidian
     const bodyMaterials = [
       marbleMat, // +X
       marbleMat, // -X
-      marbleMat, // +Y top face
+      marbleMat, // +Y inner cavity floor
       this.sharedMat.obsidian, // -Y bottom back
       marbleMat, // +Z
       marbleMat, // -Z
     ];
     const bodyMesh = new THREE.Mesh(this.sharedGeo.body, bodyMaterials);
+    bodyMesh.position.y = -0.038;
     bodyMesh.castShadow = true;
     bodyMesh.receiveShadow = true;
     root.add(bodyMesh);
+
+    // 1a. Outer Marble Top Collar Frame (flush with +TILE_D * 0.5 around the 3D carved face window)
+    const collarMesh = new THREE.Mesh(this.sharedGeo.topCollar, marbleMat);
+    collarMesh.position.y = TILE_D * 0.5 - 0.080;
+    collarMesh.castShadow = true;
+    collarMesh.receiveShadow = true;
+    root.add(collarMesh);
 
     // 1b. Gold Kintsugi Waist Seam (between White Marble upper body and Black Obsidian base)
     const kintsugiMesh = new THREE.Mesh(this.sharedGeo.kintsugi, this.sharedMat.kintsugiGold);
     kintsugiMesh.position.y = -TILE_D * 0.12;
     root.add(kintsugiMesh);
 
-    // 2. Face Overlay: 2D Oval Cameo (Classic) OR Dreamlike Whisper-Fade on White Marble (Modalità Onirica)
+    // 2. 3D Incandescent-Pen Carved Face Overlay (72x96 subdivided mesh with real vertex displacement + high-slope normal map!)
     if (!this.faceTextureCache[tileData.id]) {
       const faceTex = texLoader.load(`./textures/tiles/${tileData.id}.png`);
       faceTex.colorSpace = THREE.SRGBColorSpace;
       const oniricaTex = texLoader.load(`./textures/tiles_onirica/${tileData.id}.png`);
       oniricaTex.colorSpace = THREE.SRGBColorSpace;
       const normTex = texLoader.load(`./textures/tiles_normal/${tileData.id}_normal.png`);
-      this.faceTextureCache[tileData.id] = { faceTex, oniricaTex, normTex };
+      const depthTex = texLoader.load(`./textures/tiles_depth/${tileData.id}_depth.png`);
+      this.faceTextureCache[tileData.id] = { faceTex, oniricaTex, normTex, depthTex };
     }
-    const { faceTex, oniricaTex, normTex } = this.faceTextureCache[tileData.id];
+    const { faceTex, oniricaTex, normTex, depthTex } = this.faceTextureCache[tileData.id];
 
     const activeMap = this.oniricaMode ? oniricaTex : faceTex;
-    const activeRelief = this.oniricaMode ? 0.08 : this.settings.bassorilievo;
+    const activeRelief = this.oniricaMode ? 0.12 : this.settings.bassorilievo;
+    const dispScale = 0.076 * activeRelief;
 
     const faceMat = new THREE.MeshStandardMaterial({
       map: activeMap,
       normalMap: normTex,
-      normalScale: new THREE.Vector2(activeRelief, activeRelief),
-      roughness: this.oniricaMode ? 0.11 : 0.16,
-      metalness: 0.05,
+      normalScale: new THREE.Vector2(1.45 * activeRelief, 1.45 * activeRelief),
+      displacementMap: depthTex,
+      displacementScale: dispScale,
+      displacementBias: -0.88 * dispScale,
+      roughness: this.oniricaMode ? 0.11 : 0.17,
+      metalness: 0.08,
     });
     const faceMesh = new THREE.Mesh(this.sharedGeo.face, faceMat);
     faceMesh.rotation.x = -Math.PI / 2;
-    faceMesh.position.y = TILE_D * 0.5 + 0.006;
+    faceMesh.position.y = TILE_D * 0.5 + 0.002;
+    faceMesh.castShadow = true;
     faceMesh.receiveShadow = true;
     root.add(faceMesh);
 
@@ -753,7 +785,7 @@ class MahjongSolitaireApp {
     innerYellowMesh.position.y = 0.002;
     selectionBorder.add(outerPurpleMesh);
     selectionBorder.add(innerYellowMesh);
-    selectionBorder.position.y = TILE_D * 0.5 + 0.011;
+    selectionBorder.position.y = TILE_D * 0.5 + 0.012;
     selectionBorder.visible = false;
     root.add(selectionBorder);
 
@@ -763,6 +795,7 @@ class MahjongSolitaireApp {
       faceMesh: faceMesh,
       badgeMesh: badgeMesh,
       bodyMesh: bodyMesh,
+      collarMesh: collarMesh,
       kintsugiMesh: kintsugiMesh,
       selectionBorder: selectionBorder,
     };
@@ -1063,12 +1096,15 @@ class MahjongSolitaireApp {
     this.wowRenderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.wowRenderer.toneMappingExposure = 1.18;
 
-    const amb = new THREE.AmbientLight(0xfff4e0, 1.35);
-    const dir1 = new THREE.DirectionalLight(0xffe6aa, 3.2);
-    dir1.position.set(3, 5, 4);
+    const amb = new THREE.AmbientLight(0xfff4e0, 1.15);
+    const dir1 = new THREE.DirectionalLight(0xffe6aa, 3.6);
+    dir1.position.set(3.5, 4.5, 3.2);
     const dir2 = new THREE.PointLight(0xa832ff, 2.2, 10);
     dir2.position.set(-3, -2, 3);
-    this.wowScene.add(amb, dir1, dir2);
+    // Raking incandescent amber light across the face to accentuate the 3D carved groove cavity ('il buco bassorilievo')
+    this.wowRakeLight = new THREE.PointLight(0xffb84d, 3.8, 12);
+    this.wowRakeLight.position.set(2.4, 0.8, 2.2);
+    this.wowScene.add(amb, dir1, dir2, this.wowRakeLight);
 
     this.wowGroup = new THREE.Group();
     this.wowScene.add(this.wowGroup);
@@ -1283,11 +1319,13 @@ class MahjongSolitaireApp {
         const oniricaTex = texLoader.load(`./textures/tiles_onirica/${tile.data.id}.png`);
         oniricaTex.colorSpace = THREE.SRGBColorSpace;
         const normTex = texLoader.load(`./textures/tiles_normal/${tile.data.id}_normal.png`);
-        this.faceTextureCache[tile.data.id] = { faceTex, oniricaTex, normTex };
+        const depthTex = texLoader.load(`./textures/tiles_depth/${tile.data.id}_depth.png`);
+        this.faceTextureCache[tile.data.id] = { faceTex, oniricaTex, normTex, depthTex };
       }
-      const { faceTex, oniricaTex, normTex } = this.faceTextureCache[tile.data.id];
+      const { faceTex, oniricaTex, normTex, depthTex } = this.faceTextureCache[tile.data.id];
       tile.root.userData.faceMesh.material.map = this.oniricaMode ? oniricaTex : faceTex;
       tile.root.userData.faceMesh.material.normalMap = normTex;
+      tile.root.userData.faceMesh.material.displacementMap = depthTex;
       tile.root.userData.faceMesh.material.needsUpdate = true;
       tile.root.userData.badgeMesh.material = tile.data.coupled
         ? this.sharedMat.badgeCoupled
@@ -1386,14 +1424,17 @@ class MahjongSolitaireApp {
       btnEl.classList.toggle("active", this.oniricaMode);
     }
 
-    const activeRelief = this.oniricaMode ? 0.08 : this.settings.bassorilievo;
+    const activeRelief = this.oniricaMode ? 0.12 : this.settings.bassorilievo;
+    const dispScale = 0.076 * activeRelief;
     this.tiles.forEach((t) => {
       const cached = this.faceTextureCache[t.data.id];
       if (!cached) return;
       const mat = t.root.userData.faceMesh.material;
       mat.map = this.oniricaMode ? cached.oniricaTex : cached.faceTex;
-      mat.normalScale.set(activeRelief, activeRelief);
-      mat.roughness = this.oniricaMode ? 0.11 : 0.16;
+      mat.normalScale.set(1.45 * activeRelief, 1.45 * activeRelief);
+      mat.displacementScale = dispScale;
+      mat.displacementBias = -0.88 * dispScale;
+      mat.roughness = this.oniricaMode ? 0.11 : 0.17;
       mat.needsUpdate = true;
       if (t.data.coupled && !t.removed) {
         this.pulseTile(t);
@@ -1583,8 +1624,12 @@ class MahjongSolitaireApp {
       if (this.sharedMat) this.sharedMat.obsidian.metalness = val;
     });
     bindSlider("sl-bassorilievo", "bassorilievo", (val) => {
+      const dispScale = 0.076 * val;
       this.tiles.forEach((t) => {
-        t.root.userData.faceMesh.material.normalScale.set(val, val);
+        const mat = t.root.userData.faceMesh.material;
+        mat.normalScale.set(1.45 * val, 1.45 * val);
+        mat.displacementScale = dispScale;
+        mat.displacementBias = -0.88 * dispScale;
       });
     });
     bindSlider("sl-normal-scale", "normalScale", (val) => {
@@ -1633,7 +1678,7 @@ class MahjongSolitaireApp {
           marbleRoughness: 0.14,
           marbleClearcoat: 0.35,
           obsidianMetallic: 0.22,
-          bassorilievo: 0.32,
+          bassorilievo: 1.15,
           normalScale: 1.0,
           fov: 38,
           camDistance: 11.5,
@@ -1745,10 +1790,14 @@ class MahjongSolitaireApp {
     setVal("sl-normal-scale", this.settings.normalScale);
     setVal("sl-fov", this.settings.fov);
     setVal("sl-cam-distance", this.settings.camDistance);
+    const dispScale = 0.076 * this.settings.bassorilievo;
     this.tiles.forEach((t) => {
       t.root.userData.bodyMesh.material[0].roughness = this.settings.marbleRoughness;
       t.root.userData.bodyMesh.material[0].clearcoat = this.settings.marbleClearcoat;
-      t.root.userData.faceMesh.material.normalScale.set(this.settings.bassorilievo, this.settings.bassorilievo);
+      const mat = t.root.userData.faceMesh.material;
+      mat.normalScale.set(1.45 * this.settings.bassorilievo, 1.45 * this.settings.bassorilievo);
+      mat.displacementScale = dispScale;
+      mat.displacementBias = -0.88 * dispScale;
     });
   }
 
@@ -1781,10 +1830,12 @@ class MahjongSolitaireApp {
     this.updateEnvironmentVisibility();
     this.renderer.render(this.scene, this.camera);
 
-    // Render Top Rotating 3D Tile GLB Showcase (#wow-3d-popup) when visible
+    // Render Top Rotating 3D Tile GLB Showcase (#wow-3d-popup) when visible:
+    // Gently rock X tilt while rotating Y so raking light sweeps across the 3D carved groove cavity ('il buco bassorilievo')!
     const wowPopup = document.getElementById("wow-3d-popup");
     if (this.wowRenderer && this.wowGroup && wowPopup && !wowPopup.classList.contains("hidden")) {
-      this.wowGroup.rotation.y = now * 0.0018;
+      this.wowGroup.rotation.y = now * 0.0020;
+      this.wowGroup.rotation.x = Math.sin(now * 0.0028) * 0.22;
       this.wowRenderer.render(this.wowScene, this.wowCamera);
     }
   }

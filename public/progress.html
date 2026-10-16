@@ -194,8 +194,8 @@
 <body>
   <header>
     <div class="header-title">
-      <h1>🀄 Carlesso Family 3D Mahjong Solitaire (v1.2.0)</h1>
-      <p>Choreographic & Artistic Director Showcase • NB21 Remasters, Comedic Bamboo & Gold Suits, Modalità Onirica A/B & Blender Cycles</p>
+      <h1>🀄 Carlesso Family 3D Mahjong Solitaire (v1.4.0)</h1>
+      <p>Choreographic & Artistic Director Showcase • 3D Incandescent-Pen Carved Intaglio, Enlarged 2/4 Dots & +10% Hanzi, NB21 Remasters & Modalità Onirica A/B</p>
     </div>
     <div class="header-links">
       <a href="./?onirica=1" class="secondary" target="_blank">🌙 Play Modalità Onirica (?onirica=1)</a>
@@ -209,9 +209,26 @@
     <section>
       <h2>
         <span>💎 1. Auto-Rotating 3D GLB Models (Headless Blender 5.0.1 & Three.js)</span>
-        <span class="badge">Manifold Verified • 0 Non-Manifold Edges</span>
+        <span class="badge">Manifold Verified • 3D Incandescent-Pen Carved Intaglio</span>
       </h2>
-      <div class="grid-3">
+      <div class="grid-4">
+        <div class="card">
+          <model-viewer
+            src="./models/tile_carved_intaglio_showcase.glb"
+            camera-controls
+            auto-rotate
+            rotation-per-second="22deg"
+            shadow-intensity="1.2"
+            exposure="1.15"
+            alt="3D Incandescent-Pen Carved Intaglio Showcase"
+          ></model-viewer>
+          <div class="card-info">
+            <h3>🔥 3D Carved Intaglio Showcase (2筒, 4筒, 8萬)</h3>
+            <p>Real 3D vertex-excavated grooves ('buco bassorilievo scavato dalla penna incandescente') on 120×160 subdivided Imperial Marble meshes with enlarged 2/4 Dots and +10% Chinese calligraphy!</p>
+            <span class="meta-tag">tile_carved_intaglio_showcase.glb • 8.0 MB • 3D Excavated Cavities</span>
+          </div>
+        </div>
+
         <div class="card">
           <model-viewer
             src="./models/tile_generic_white_marble_obsidian.glb"
@@ -268,10 +285,19 @@
     <!-- Section 2: Offline Blender Cycles Master Ground-Truth Renders -->
     <section>
       <h2>
-        <span>🏛️ 2. Offline Blender 5.0.1 Cycles Ground-Truth Renders (Unobstructed Corner Glyphs)</span>
+        <span>🏛️ 2. Offline Blender 5.0.1 Cycles Ground-Truth Renders (3D Carved Intaglio & Unobstructed Glyphs)</span>
         <span class="badge">Path-Traced Ground Truth • 1280×720</span>
       </h2>
       <div class="grid-2">
+        <div class="card">
+          <img src="./renders/cycles/cycles_cam5_carved_intaglio.png" alt="Cycles Cam 5 3D Carved Intaglio" />
+          <div class="card-info">
+            <h3>🔥 Camera 5: 3D Incandescent-Pen Carved Intaglio Macro (2筒, 4筒, 8萬)</h3>
+            <p>Oblique raking-light Cycles render showing the physical 3D excavated holes ('il buco bassorilievo') on the enlarged 2-Circles (r=148), 4-Circles (r=124), and +10% larger 8-Characters (八萬).</p>
+            <span class="meta-tag">Blender Cycles • 1280x720 • 120×160 Displaced Mesh</span>
+          </div>
+        </div>
+
         <div class="card">
           <img src="./renders/cycles/cycles_cam1_hero.png" alt="Cycles Cam 1 Hero" />
           <div class="card-info">
@@ -287,15 +313,6 @@
             <h3>Camera 2: Zen Top-Down Solitaire View</h3>
             <p>Orthogonal overview of the 4-tier stepped layout showing all free tiles, unobstructed top-left/top-right corner glyphs, traditional Hanzi suits, and coupled family medallions.</p>
             <span class="meta-tag">Blender Cycles • 1280x720 • FOV 40°</span>
-          </div>
-        </div>
-
-        <div class="card">
-          <img src="./renders/cycles/cycles_cam3_low_pavement.png" alt="Cycles Cam 3 Low Pavement" />
-          <div class="card-info">
-            <h3>Camera 3: Low Pavement & Carved Table Closeup</h3>
-            <p>Ground-level view highlighting the ancient flagstone joints, carved rosewood legs, and the front Carlesso Family Quartet (S1 Papà Riccardo, S2 Mamma Kate, S3 Ale, S4 Sebi).</p>
-            <span class="meta-tag">Blender Cycles • 1280x720 • FOV 36°</span>
           </div>
         </div>
 
@@ -565,7 +582,38 @@
           <img src="./textures/tiles/dragon_green.png" alt="Green Dragon Fa" />
           <div class="card-info">
             <h3>Green Dragon 發</h3>
-            <p>Imperial Jade Fa Cai honour medallion.</p>
+            <p>Imperial Jade Fa Cai (+10% Larger Hanzi &amp; 3D Incandescent Carving).</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-4" style="margin-top: 20px;">
+        <div class="card tile-card">
+          <img src="./textures/tiles/dots_2.png" alt="2-Circles Enlarged & Carved" />
+          <div class="card-info">
+            <h3>2-Circles 2筒 (r=148px, +56% Larger)</h3>
+            <p>Enlarged 2-pallini coin medallions with scorched-umber inner groove wall &amp; molten-gold rim.</p>
+          </div>
+        </div>
+        <div class="card tile-card">
+          <img src="./textures/tiles/dots_4.png" alt="4-Circles Enlarged & Carved" />
+          <div class="card-info">
+            <h3>4-Circles 4筒 (r=124px, +51% Larger)</h3>
+            <p>Enlarged 4-pallini medallions filling the marble face with deep 3D incandescent carving.</p>
+          </div>
+        </div>
+        <div class="card tile-card">
+          <img src="./textures/tiles/char_8.png" alt="8-Characters +10% Larger & Carved" />
+          <div class="card-info">
+            <h3>8-Characters 八萬 (+10% Larger Hanzi)</h3>
+            <p>Enlarged Chinese calligraphy (276px / 298px) with incandescent-pen pyro-carved groove shading.</p>
+          </div>
+        </div>
+        <div class="card tile-card">
+          <img src="./textures/tiles_depth/dots_4_depth.png" alt="4-Circles 3D Displacement Heightmap" />
+          <div class="card-info">
+            <h3>3D Displacement Map (dots_4_depth.png)</h3>
+            <p>Smooth chamfered 8-bit heightfield driving the 72×96 Three.js &amp; 120×160 Blender 3D carved holes.</p>
           </div>
         </div>
       </div>
