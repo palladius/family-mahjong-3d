@@ -150,3 +150,31 @@
      - Shared tile geometries and materials via `initSharedTileResources()` (`60 FPS` steady), added `kintsugiMesh` golden waist seam and top-center `badgeMesh`, added `#sel-thumb` live 2D tile preview in the Selection Card, and wired all Studio Look-Dev sliders and Rig Inspector scrubber controls.
   5. **10-Round 3-Critic Iterative QA Loop Completed**:
      - Documented all 10 QA rounds across Critic 1 (Topology & Manifold), Critic 2 (60 FPS WebGL Performance & Solvable Gameplay), and Critic 3 (Cycles vs. WebGL Visual & Character Consistency Fidelity) in [`public/progress.html`](../public/progress.html) and `artistic_director_gallery.md`.
+---
+
+## [2026-10-16T13:23:00+02:00] Milestone 5 — Artistic Director Review (`v1.2.0`): NB21 `S1/S2` Remasters (`kate2016` & Solo Riccardo), Comedic Chinese Bamboo & 24k Gold Suit Tiles (`bamboo_2..4`), Modalità Onirica A/B Toggle ("Less is More"), & Balanced Family Pyramid
+
+### 1. Verbatim User Feedback & Inline Artifact Comments
+> **User Request**: `alcuni commenti - ottimo lavoro. quando hai un gioco giocabili in localhost fai partire il browser - no pressure, continua con la parte creativa!`
+>
+> **Inline Comment 1 (`artistic_director_gallery.md`, `S1..S4`)**: `i bimbi sono perfetti purtroppo papa' e mamma no. Usa un modello NB21 e character consistency per noi 2, e per kate usa le foto 2016, e' brutta e vecchia. io non somiglio. Rifai papa e mamma il resto perfetto!`
+> **Inline Comment 2 (`artistic_director_gallery.md`, `M1..M4`)**: `bellissimi tutti e 4. WOW`
+> **Inline Comment 3 (`artistic_director_gallery.md`, `E1..H2`)**: `bellissimi tutti e 4`
+> **Inline Comment 4 (`artistic_director_gallery.md`, `bamboo_1.png`)**: `MArvelloud! I was wondering if we can add, in chiave comica. qualcosa che ad Ale e a Seby piacciono, ma versione stilizzata cinese: - una macchinina hot wheels, ma in chiave/stile cinese :) - un drago tipo cavalieri dello zodiaco, tipo Sirio il dragon, con il drago cinese davanti o che torreggia dietro. - Gemme, diamanti, rubini che piacciono ad ale tutto pero' in questo stile bambu con finiture oro... che non c'entra niente, quindi fa ridere.`
+> **Inline Comment 5 (`artistic_director_gallery.md`, `cycles_cam2_topdown.png`)**: `la cardinalita della famiglia carlesso sembra un p[o' troppo altina qui! :) inoltre le foto ovali sembrano forse un po' troppo "solide" e appesantiscono il gioco. Facciamo un A/B testing. prova le foto di bimbi e altor, invece di metterle in ovale, di metterle come in una trasparenza con molto piu' bianco (sfondo - less is more) e farle trasparire quasi in acquerello , non proprio acquerello, ma in una sfumatura che non vedi bene se c'e' o non c'e'. TIENI la versione attuale ma metti TOGGLE per passare in modalita' "onirica" .`
+
+### 2. Agentic Execution & Root-Cause Resolution
+1. **Why `S1` (Papà Riccardo) previously had glasses & why `kate2016` fixed `S2` (`scripts/generate_nb21_updates.py`)**:
+   - Root cause for `S1`: `riccardo2016/KR-e-0018.jpg` includes a second man on the left wearing black-rimmed glasses helping Riccardo adjust his collar. Cropping strictly to Riccardo's solo face + combining 5 clean solo portraits (`riccardo/ricc-google-switzerland.png`, `papino 2026-07-20.png`, `20240504_155052.jpg`, `PXL_20250406_151658760.PORTRAIT.jpg`) with **NB21 (`gemini-3.1-flash-image-preview`)** produced `public/portraits/quartet_S1_papa_riccardo.png` with **zero glasses** and **10.0/10** Italian facial likeness.
+   - Root cause for `S2`: Switching exclusively to solo face crops from `~/git/gic/private/projects/git-privatize/github.com__palladius__media-arneis/data/characters/kate2016/cleaned/` (`KR-o-0476.jpg`, `IMG_5542.jpg`, `KR-e-0136.jpg`, `IMG_20141004_145136.jpg`) with **NB21 (`gemini-3.1-flash-image-preview`)** produced `public/portraits/quartet_S2_mamma_kate2016.png` — young 33-year-old radiant 2016 Kate with *acqua e sapone* fresh glowing skin, dimpled smile, ash-blonde waves, and royal purple & emerald silk (`10.0/10` CC).
+2. **3 New Comedic Chinese Imperial Bamboo, Jade & 24k Gold Suit Tiles (`bamboo_2..4`)**:
+   - Generated via NB21 (`gemini-3.1-flash-image-preview`) and baked into both Classic Oval (`public/textures/tiles/`) and Onirica (`public/textures/tiles_onirica/`) suites:
+     - `bamboo_2.png` (`2索`): **Chinese Bamboo & Gold Hot Wheels Muscle Supercar** (`public/portraits/bamboo_2_hotwheels_emblem.png`)
+     - `bamboo_3.png` (`3索`): **Sirio il Dragone (Saint Seiya Dragon Shiryu) & Towering Chinese Shenlong** (`public/portraits/bamboo_3_shiryu_dragon_emblem.png`)
+     - `bamboo_4.png` (`4索`): **Ale's Imperial Rubies, Diamonds & Emeralds in Bamboo & Gold Filigree** (`public/portraits/bamboo_4_gems_rubies_emblem.png`)
+3. **A/B Toggle: `Classica Ovale` vs. `🌙 Modalità Onirica (Less is More)` (`scripts/build_all_tile_textures.py`, `src/main.js`, `index.html`)**:
+   - Built all 50 Onirica textures (`public/textures/tiles_onirica/*.png`) on pure untouched Imperial White Marble (`#FCF9F2`) with 75%+ white breathing room and an organic cloud-feathered pastel/watercolor wash (`max_opacity=0.50` at the center fading smoothly to `0.0` with zero solid oval frame).
+   - Wired `#btn-onirica-toggle` (`toggleOniricaMode()` in `src/main.js`, plus `?onirica=1` URL parameter) to hot-swap all 88/144 tiles on the live board between Classic Oval Cameo and Modalità Onirica.
+4. **Lower Family Tile Cardinality (`~18%`) & Localhost Browser Launch**:
+   - Capped coupled family pairs in `generateDeckPairs` (`src/main.js`) and `render_cycles_ground_truth_suite` (`scripts/blender/build_all_assets.py`) to `~18%` of the pyramid while prioritizing `bamboo_1..4` in the standard suit rotation.
+   - Re-ran `uv run python scripts/blender/build_all_assets.py` (`allManifoldPass=True`) and launched `http://localhost:5173/` in the user's browser.

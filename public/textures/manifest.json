@@ -171,7 +171,7 @@
       "matchGroup": "bamboo_1",
       "cardinality": 2,
       "glyph": "1索",
-      "title": "1 Bamboo (一索)",
+      "title": "1 Bamboo • Imperial Sparrow (一索)",
       "coupled": false
     },
     {
@@ -180,7 +180,7 @@
       "matchGroup": "bamboo_2",
       "cardinality": 2,
       "glyph": "2索",
-      "title": "2 Bamboo (二索)",
+      "title": "2 Bamboo • Hot Wheels Bamboo & Gold Racer (二索)",
       "coupled": false
     },
     {
@@ -189,7 +189,7 @@
       "matchGroup": "bamboo_3",
       "cardinality": 2,
       "glyph": "3索",
-      "title": "3 Bamboo (三索)",
+      "title": "3 Bamboo • Sirio il Dragone Bamboo & Gold (三索)",
       "coupled": false
     },
     {
@@ -198,7 +198,7 @@
       "matchGroup": "bamboo_4",
       "cardinality": 2,
       "glyph": "4索",
-      "title": "4 Bamboo (四索)",
+      "title": "4 Bamboo • Ale's Rubies, Diamonds & Bamboo Gold (四索)",
       "coupled": false
     },
     {
@@ -329,7 +329,7 @@
       "glyph": "夏S2",
       "code": "S2",
       "hanzi": "夏",
-      "title": "S2 • Solo Mamma Kate (Family Quartet)",
+      "title": "S2 • Solo Mamma Kate 2016 (Family Quartet)",
       "coupled": true,
       "sliceMode": "custom_crop"
     },

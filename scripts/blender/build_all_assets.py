@@ -701,14 +701,15 @@ def render_cycles_ground_truth_suite():
         coat_weight=0.25,
     )
 
-    # Curated deck of Coupled Family Oval tiles + Traditional Mahjong Suits for the 4-layer Pyramid
+    # Balanced deck (~18% Coupled Family tiles + 82% Traditional Mahjong & Comedic Bamboo/Gold Suits: Hot Wheels, Sirio il Dragone, Ale's Gems)
     deck = [
-        "coupled_A1", "coupled_A2", "coupled_B1", "coupled_B2",
-        "coupled_C1", "coupled_C2", "coupled_D1", "coupled_D2",
-        "coupled_E1", "coupled_E2", "coupled_F1", "coupled_F2",
-        "coupled_G1", "coupled_G2", "coupled_H1", "coupled_H2",
-        "char_1", "char_9", "dots_5", "dots_8", "bamboo_1", "bamboo_8",
-        "wind_E", "wind_S", "dragon_red", "dragon_green", "dragon_white",
+        "bamboo_1", "bamboo_2", "bamboo_3", "bamboo_4", "coupled_A1",
+        "char_1", "dots_1", "dragon_red", "wind_E", "coupled_A2",
+        "bamboo_2", "char_5", "dots_5", "dragon_green", "coupled_B1",
+        "bamboo_3", "char_8", "dots_8", "dragon_white", "coupled_B2",
+        "bamboo_4", "char_9", "dots_9", "wind_S", "coupled_C1",
+        "bamboo_1", "bamboo_8", "wind_W", "wind_N", "coupled_E1",
+        "bamboo_2", "bamboo_3", "bamboo_4", "char_3", "dots_3", "coupled_E2",
     ]
 
     # Build a template mesh per unique tile_id in `deck` and instance it across the 4-layer Imperial Turtle layout

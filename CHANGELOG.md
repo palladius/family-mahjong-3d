@@ -1,5 +1,22 @@
 # Changelog - Carlesso Family Mahjong 3D 🀄🐉
 
+## [1.2.0] - 2026-10-16
+### Added
+- **NB21 (`gemini-3.1-flash-image-preview`) Remasters for `S1` (Papà Riccardo) & `S2` (Mamma Kate 2016)**:
+  - Regenerated `S1` (`coupled_A1.png`, `public/portraits/quartet_S1_papa_riccardo.png`) using NB21 conditioned strictly on solo face crops of Riccardo (zero glasses, 10/10 Italian facial likeness).
+  - Regenerated `S2` (`coupled_A2.png`, `public/portraits/quartet_S2_mamma_kate2016.png`) using NB21 conditioned on solo face crops from `kate2016/cleaned/` (young 33yo radiant dimpled smile, *acqua e sapone* fresh glowing skin, ash-blonde waves, royal purple & emerald silk).
+- **3 Comedic Chinese Imperial Bamboo, Jade & 24k Gold Suit Tiles (`bamboo_2..4`)**:
+  - `bamboo_2.png` (`2索`): **Chinese Bamboo & Gold Hot Wheels Muscle Supercar** 🏎️🎋
+  - `bamboo_3.png` (`3索`): **Sirio il Dragone (Saint Seiya Dragon Shiryu) & Towering Chinese Shenlong** 🐉🛡️
+  - `bamboo_4.png` (`4索`): **Ale's Imperial Rubies, Diamonds & Emeralds in Bamboo & Gold Filigree** 💎👑
+- **A/B Testing Toggle: `Classica Ovale` vs. `🌙 Modalità Onirica (Less is More)`**:
+  - Generated 50 ethereal watercolor/whisper-fade tile textures (`public/textures/tiles_onirica/*.png`) on 75%+ pure untouched White Imperial Marble (`#FCF9F2`) with zero solid oval border.
+  - Added live HUD toggle button (`#btn-onirica-toggle` and `?onirica=1` URL support) in `index.html` and `src/main.js`.
+
+### Changed
+- **Balanced Family Tile Cardinality (`~18%`)**:
+  - Reduced coupled family tile density on the Solitaire pyramid (both in Three.js `generateDeckPairs` and Blender Cycles `render_cycles_ground_truth_suite`) so the board breathes with authentic Mahjong calligraphy and the comedic `bamboo_1..4` suit tiles.
+
 ## [1.1.0] - 2026-10-16
 ### Added
 - **Cardinality-4 Family & Companion Quartets (`Any 2 Match`)**:

@@ -48,9 +48,15 @@ if (fs.existsSync(manifestFile)) {
   const diptyques = manifest.tiles.filter((t) => t.coupled && t.cardinality === 2);
   assert(quartets.length === 8, `8 Cardinality-4 Quartet tiles (S1..S4 Family Seasons + M1..M4 Magical Companions) present`);
   assert(diptyques.length === 8, `8 Cardinality-2 Diptyque Split-Pair tiles (E1..H2) present`);
+  const oniricaExist = manifest.tiles.every((t) =>
+    fs.existsSync(path.join(ROOT, "public/textures/tiles_onirica", `${t.id}.png`))
+  );
+  assert(oniricaExist, "All 50 Modalità Onirica ('Less is More' Whisper-Fade) tile textures exist");
 }
 
 const requiredPortraits = [
+  "quartet_S1_papa_riccardo.png",
+  "quartet_S2_mamma_kate2016.png",
   "diptyque_S1_S2_papa_mamma.png",
   "diptyque_S3_S4_ale_sebi_tang.png",
   "diptyque_A_great_wall.png",
@@ -62,6 +68,9 @@ const requiredPortraits = [
   "quartet_F3_solo_ghigna.png",
   "quartet_F4_solo_pupurabbu.png",
   "bamboo_1_sparrow_emblem.png",
+  "bamboo_2_hotwheels_emblem.png",
+  "bamboo_3_shiryu_dragon_emblem.png",
+  "bamboo_4_gems_rubies_emblem.png",
 ];
 requiredPortraits.forEach((f) => {
   const p = path.join(ROOT, "public/portraits", f);

@@ -232,6 +232,7 @@ class MahjongSolitaireApp {
     this.movesHistory = [];
     this.isDemoRunning = false;
     this.activeSurface = "table"; // "table" or "pavement"
+    this.oniricaMode = new URLSearchParams(window.location.search).get("onirica") === "1";
 
     // Look-Dev Settings with Defaults matching Blender Cycles Master Renders
     this.settings = {
@@ -499,13 +500,19 @@ class MahjongSolitaireApp {
     const coupled = allDeckTiles.filter((t) => t.coupled);
     const standard = allDeckTiles.filter((t) => !t.coupled);
 
+    // Prioritize our 4 signature Bamboo & Gold emblems (1=Sparrow, 2=Hot Wheels, 3=Sirio il Dragone, 4=Ale's Gems & Rubies)
+    const priorityIds = new Set(["bamboo_1", "bamboo_2", "bamboo_3", "bamboo_4", "dragon_red", "dragon_green", "dragon_white"]);
+    const prioritySuits = standard.filter((t) => priorityIds.has(t.id));
+    const otherSuits = standard.filter((t) => !priorityIds.has(t.id));
+    const orderedStandard = [...prioritySuits, ...otherSuits];
+
     const deckPairs = [];
     let pairCount = 0;
 
-    // First: Include all 16 Coupled Family & Companion tiles:
-    // - Quartet 1 (Cardinality 4: S1, S2, S3, S4 -> 2 pairs where ANY 2 match!)
-    // - Quartet 2 (Cardinality 4: M1, M2, M3, M4 -> 2 pairs where ANY 2 match!)
-    // - 4 Diptyque Split-Pairs (Cardinality 2: E1↔E2, F1↔F2, G1↔G2, H1↔H2)
+    // Proportional Family Cardinality (~18% of board pairs, capped at 8 pairs on 144-tile Master board)
+    // so the board feels light, authentic, and never overloaded with oval portraits!
+    const maxCoupledPairs = Math.max(3, Math.min(8, Math.round(numPairs * 0.18)));
+
     const coupledThemes = {};
     coupled.forEach((t) => {
       coupledThemes[t.matchGroup] = coupledThemes[t.matchGroup] || [];
@@ -513,7 +520,7 @@ class MahjongSolitaireApp {
     });
 
     Object.values(coupledThemes).forEach((groupList) => {
-      // Shuffle within a 4-tile Quartet so initial pairing order varies organically
+      if (pairCount >= maxCoupledPairs) return;
       const list = [...groupList];
       if (list.length > 2) {
         for (let i = list.length - 1; i > 0; i--) {
@@ -521,16 +528,16 @@ class MahjongSolitaireApp {
           [list[i], list[j]] = [list[j], list[i]];
         }
       }
-      for (let k = 0; k + 1 < list.length && pairCount < numPairs; k += 2) {
+      for (let k = 0; k + 1 < list.length && pairCount < maxCoupledPairs && pairCount < numPairs; k += 2) {
         deckPairs.push([list[k], list[k + 1]]);
         pairCount++;
       }
     });
 
-    // Fill remaining pairs from authentic Traditional Mahjong suits (including bamboo_1 Sparrow!)
+    // Fill remaining pairs from authentic Traditional Mahjong suits (starting with Bamboo 1..4 & Dragons!)
     let stdIdx = 0;
     while (pairCount < numPairs) {
-      const st = standard[stdIdx % standard.length];
+      const st = orderedStandard[stdIdx % orderedStandard.length];
       deckPairs.push([st, st]);
       pairCount++;
       stdIdx++;
@@ -635,20 +642,25 @@ class MahjongSolitaireApp {
     kintsugiMesh.position.y = -TILE_D * 0.12;
     root.add(kintsugiMesh);
 
-    // 2. Face Overlay: 2D Oval Cameo / Card Texture with Bassorilievo Normal Relief
+    // 2. Face Overlay: 2D Oval Cameo (Classic) OR Dreamlike Whisper-Fade on White Marble (Modalità Onirica)
     if (!this.faceTextureCache[tileData.id]) {
       const faceTex = texLoader.load(`/textures/tiles/${tileData.id}.png`);
       faceTex.colorSpace = THREE.SRGBColorSpace;
+      const oniricaTex = texLoader.load(`/textures/tiles_onirica/${tileData.id}.png`);
+      oniricaTex.colorSpace = THREE.SRGBColorSpace;
       const normTex = texLoader.load(`/textures/tiles_normal/${tileData.id}_normal.png`);
-      this.faceTextureCache[tileData.id] = { faceTex, normTex };
+      this.faceTextureCache[tileData.id] = { faceTex, oniricaTex, normTex };
     }
-    const { faceTex, normTex } = this.faceTextureCache[tileData.id];
+    const { faceTex, oniricaTex, normTex } = this.faceTextureCache[tileData.id];
+
+    const activeMap = this.oniricaMode ? oniricaTex : faceTex;
+    const activeRelief = this.oniricaMode ? 0.08 : this.settings.bassorilievo;
 
     const faceMat = new THREE.MeshStandardMaterial({
-      map: faceTex,
+      map: activeMap,
       normalMap: normTex,
-      normalScale: new THREE.Vector2(this.settings.bassorilievo, this.settings.bassorilievo),
-      roughness: 0.16,
+      normalScale: new THREE.Vector2(activeRelief, activeRelief),
+      roughness: this.oniricaMode ? 0.11 : 0.16,
       metalness: 0.05,
     });
     const faceMesh = new THREE.Mesh(this.sharedGeo.face, faceMat);
@@ -900,7 +912,8 @@ class MahjongSolitaireApp {
     const thumb = document.getElementById("sel-thumb");
 
     if (thumb) {
-      thumb.src = `/textures/tiles/${tile.data.id}.png`;
+      const folder = this.oniricaMode ? "tiles_onirica" : "tiles";
+      thumb.src = `/textures/${folder}/${tile.data.id}.png`;
     }
     badge.textContent = tile.data.code || tile.data.glyph;
     title.textContent = tile.data.title;
@@ -1012,11 +1025,13 @@ class MahjongSolitaireApp {
       if (!this.faceTextureCache[tile.data.id]) {
         const faceTex = texLoader.load(`/textures/tiles/${tile.data.id}.png`);
         faceTex.colorSpace = THREE.SRGBColorSpace;
+        const oniricaTex = texLoader.load(`/textures/tiles_onirica/${tile.data.id}.png`);
+        oniricaTex.colorSpace = THREE.SRGBColorSpace;
         const normTex = texLoader.load(`/textures/tiles_normal/${tile.data.id}_normal.png`);
-        this.faceTextureCache[tile.data.id] = { faceTex, normTex };
+        this.faceTextureCache[tile.data.id] = { faceTex, oniricaTex, normTex };
       }
-      const { faceTex, normTex } = this.faceTextureCache[tile.data.id];
-      tile.root.userData.faceMesh.material.map = faceTex;
+      const { faceTex, oniricaTex, normTex } = this.faceTextureCache[tile.data.id];
+      tile.root.userData.faceMesh.material.map = this.oniricaMode ? oniricaTex : faceTex;
       tile.root.userData.faceMesh.material.normalMap = normTex;
       tile.root.userData.faceMesh.material.needsUpdate = true;
       tile.root.userData.badgeMesh.material = tile.data.coupled
@@ -1097,6 +1112,37 @@ class MahjongSolitaireApp {
       t.basePos.y = newY;
       this.addTween(t.root.position, "y", newY, 0.35);
     });
+  }
+
+  toggleOniricaMode(forceMode = null) {
+    this.oniricaMode = forceMode !== null ? forceMode : !this.oniricaMode;
+    const nameEl = document.getElementById("onirica-name");
+    const btnEl = document.getElementById("btn-onirica-toggle");
+    if (nameEl) {
+      nameEl.textContent = this.oniricaMode ? "Onirica (Less is More)" : "Classica Ovale";
+    }
+    if (btnEl) {
+      btnEl.classList.toggle("active", this.oniricaMode);
+    }
+
+    const activeRelief = this.oniricaMode ? 0.08 : this.settings.bassorilievo;
+    this.tiles.forEach((t) => {
+      const cached = this.faceTextureCache[t.data.id];
+      if (!cached) return;
+      const mat = t.root.userData.faceMesh.material;
+      mat.map = this.oniricaMode ? cached.oniricaTex : cached.faceTex;
+      mat.normalScale.set(activeRelief, activeRelief);
+      mat.roughness = this.oniricaMode ? 0.11 : 0.16;
+      mat.needsUpdate = true;
+      if (t.data.coupled && !t.removed) {
+        this.pulseTile(t);
+      }
+    });
+
+    if (this.selectedTile) {
+      this.showSelectionCard(this.selectedTile);
+    }
+    sfx.playClick();
   }
 
   setCameraPreset(presetKey) {
@@ -1191,6 +1237,15 @@ class MahjongSolitaireApp {
     });
     document.getElementById("btn-demo").addEventListener("click", () => this.toggleDemoSolver());
     document.getElementById("btn-surface-toggle").addEventListener("click", () => this.toggleSurface());
+    const btnOnirica = document.getElementById("btn-onirica-toggle");
+    if (btnOnirica) {
+      btnOnirica.addEventListener("click", () => this.toggleOniricaMode());
+      if (this.oniricaMode) {
+        btnOnirica.classList.add("active");
+        const nameEl = document.getElementById("onirica-name");
+        if (nameEl) nameEl.textContent = "Onirica (Less is More)";
+      }
+    }
 
     // Camera buttons
     document.querySelectorAll(".cam-btn").forEach((btn) => {

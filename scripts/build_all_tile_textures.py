@@ -225,6 +225,88 @@ def save_tile_and_normal(canvas: Image.Image, tile_id: str, is_oval: bool = Fals
     norm_im.save(NORMALS_DIR / f"{tile_id}_normal.png", "PNG")
 
 
+ONIRICA_DIR = PROJECT_DIR / "public" / "textures" / "tiles_onirica"
+ONIRICA_DIR.mkdir(parents=True, exist_ok=True)
+
+
+def build_onirica_tile(
+    W: int,
+    H: int,
+    src_crop: Image.Image,
+    glyph_left: str,
+    glyph_right: str,
+    col_rgb: tuple[int, int, int],
+    tile_id: str,
+    max_opacity: float = 0.50,
+):
+    """
+    Modalità Onirica ('Less is More'):
+    - Pure luminous white marble canvas with wide white breathing room (no solid oval frame, no bottom box).
+    - The portrait/emblem is softly infused into the white stone like an ethereal watercolor/memory wash
+      ('una sfumatura che non vedi bene se c'e' o non c'e'').
+    """
+    canvas = Image.new("RGB", (W, H), (252, 249, 243))
+    draw = ImageDraw.Draw(canvas)
+    for y in range(H):
+        t = y / (H - 1)
+        c = (int(253 - 4 * t), int(250 - 5 * t), int(244 - 6 * t))
+        draw.line([(0, y), (W, y)], fill=c)
+
+    # Pure untouched Imperial White Marble (no diagonal vein line crossing the face)
+    soft_gold = (226, 202, 145)
+    draw.rounded_rectangle([24, 24, W - 25, H - 25], radius=32, outline=soft_gold, width=2)
+
+    # Prepare ethereal watercolor-like stone wash of src_crop in a compact central region (lots of white space!)
+    wash_w, wash_h = int(W * 0.62), int(H * 0.52)
+    wx0 = (W - wash_w) // 2
+    wy0 = int(H * 0.23)
+
+    im_fit = ImageOps.fit(src_crop, (wash_w, wash_h), method=Image.Resampling.LANCZOS, centering=(0.5, 0.42))
+    im_soft = im_fit.filter(ImageFilter.GaussianBlur(radius=0.9))
+    arr = np.asarray(im_soft, dtype=np.float32) / 255.0
+    luma = 0.299 * arr[:, :, 0] + 0.587 * arr[:, :, 1] + 0.114 * arr[:, :, 2]
+
+    # Watercolor-pastel stone blend: preserve warm skin & character colors while lifting dark background shadows
+    pastel = np.zeros_like(arr)
+    tint = np.array([col_rgb[0] / 255.0, col_rgb[1] / 255.0, col_rgb[2] / 255.0], dtype=np.float32)
+    for c_i in range(3):
+        pastel[:, :, c_i] = arr[:, :, c_i] * 0.74 + (luma * 0.85 + tint[c_i] * 0.15) * 0.26
+    # Gently lift deep shadows so it reads like a luminous watercolor wash on white marble
+    pastel = 1.0 - (1.0 - pastel) * 0.76
+    pastel_im = Image.fromarray(np.clip(pastel * 255.0, 0, 255).astype(np.uint8))
+
+    # Build a tight, organic cloud-like radial fade mask focused on the face/center (75%+ pure white marble around it)
+    yy, xx = np.mgrid[0:wash_h, 0:wash_w]
+    nx = (xx - wash_w * 0.50) / (wash_w * 0.41)
+    ny = (yy - wash_h * 0.45) / (wash_h * 0.42)
+    dist2 = nx * nx + ny * ny
+    cloud = (
+        0.09 * np.sin(xx * 0.045 + yy * 0.03)
+        + 0.07 * np.cos(xx * 0.03 - yy * 0.05)
+        + 0.05 * np.sin((xx + yy) * 0.07)
+    )
+    radial = np.clip(1.0 - (dist2 + cloud), 0.0, 1.0) ** 2.05
+    detail_weight = np.clip(1.0 - luma * 0.30, 0.65, 1.0)
+    alpha = np.clip(radial * detail_weight * max_opacity * 255.0, 0, 255).astype(np.uint8)
+    alpha_im = Image.fromarray(alpha, mode="L").filter(ImageFilter.GaussianBlur(radius=8.0))
+
+    canvas.paste(pastel_im, (wx0, wy0), alpha_im)
+
+    # Subtle, airy corner glyphs in muted ink/theme tint
+    soft_col = (
+        int(col_rgb[0] * 0.72 + 55),
+        int(col_rgb[1] * 0.72 + 50),
+        int(col_rgb[2] * 0.72 + 50),
+    )
+    draw.text((52, 40), glyph_left, font=latin_font(56, bold=True), fill=soft_col)
+    draw.text((W - 114, 42), glyph_right, font=cjk_font(56), fill=soft_col)
+
+    out_path = ONIRICA_DIR / f"{tile_id}.png"
+    canvas.save(out_path, "PNG")
+    if ARTIFACT_DIR.exists():
+        shutil.copy2(out_path, ARTIFACT_DIR / f"onirica_{tile_id}.png")
+
+
 def generate_original_mahjong_suits() -> list[dict]:
     print("[MahjongArt] Generating 34 Original Traditional Mahjong Suit & Honour Tile Textures...")
     W, H = 768, 1024
@@ -246,6 +328,7 @@ def generate_original_mahjong_suits() -> list[dict]:
         draw_centered_text(draw, (W / 2, H * 0.34), cn, font=cjk_font(250), fill=BLUE, stroke_fill=(15, 25, 65), stroke_width=4)
         draw_centered_text(draw, (W / 2, H * 0.70), "萬", font=cjk_font(270), fill=RED, stroke_fill=(110, 15, 15), stroke_width=4)
         save_tile_and_normal(canvas, tid)
+        shutil.copy2(TILES_DIR / f"{tid}.png", ONIRICA_DIR / f"{tid}.png")
         manifest.append({"id": tid, "suit": "characters", "matchGroup": tid, "cardinality": 2, "glyph": f"{idx}萬", "title": f"{idx} Characters ({cn}萬)", "coupled": False})
 
     # 2. Circles / Dots (一筒 .. 九筒)
@@ -271,9 +354,10 @@ def generate_original_mahjong_suits() -> list[dict]:
         for nx, ny, rad, col in dot_layouts[idx]:
             draw_mahjong_circle(draw, W * nx, H * ny, rad, col)
         save_tile_and_normal(canvas, tid)
+        shutil.copy2(TILES_DIR / f"{tid}.png", ONIRICA_DIR / f"{tid}.png")
         manifest.append({"id": tid, "suit": "dots", "matchGroup": tid, "cardinality": 2, "glyph": f"{idx}筒", "title": f"{idx} Circles ({cn_nums[idx-1]}筒)", "coupled": False})
 
-    # 3. Bamboos / Tiao (一索 .. 九索)
+    # 3. Bamboos / Tiao (一索 .. 九索) — with Special Comedic Carved Bamboo & Gold Emblems on 1..4!
     bam_layouts = {
         2: [(0.50, 0.37, 230, BLUE), (0.50, 0.71, 230, GREEN)],
         3: [(0.50, 0.35, 210, BLUE), (0.33, 0.71, 210, GREEN), (0.67, 0.71, 210, GREEN)],
@@ -286,36 +370,43 @@ def generate_original_mahjong_suits() -> list[dict]:
         + [(x, 0.54, 155, RED if x == 0.50 else BLUE) for x in [0.28, 0.50, 0.72]]
         + [(x, 0.78, 155, RED if x == 0.50 else GREEN) for x in [0.28, 0.50, 0.72]],
     }
-    sparrow_path = PORTRAITS_DIR / "bamboo_1_sparrow_emblem.png"
+    special_bamboos = {
+        1: (PORTRAITS_DIR / "bamboo_1_sparrow_emblem.png", (0.235, 0.215, 0.785, 0.765), "1 Bamboo • Imperial Sparrow (一索)"),
+        2: (PORTRAITS_DIR / "bamboo_2_hotwheels_emblem.png", (0.06, 0.12, 0.94, 0.88), "2 Bamboo • Hot Wheels Bamboo & Gold Racer (二索)"),
+        3: (PORTRAITS_DIR / "bamboo_3_shiryu_dragon_emblem.png", (0.10, 0.08, 0.90, 0.93), "3 Bamboo • Sirio il Dragone Bamboo & Gold (三索)"),
+        4: (PORTRAITS_DIR / "bamboo_4_gems_rubies_emblem.png", (0.08, 0.08, 0.92, 0.92), "4 Bamboo • Ale's Rubies, Diamonds & Bamboo Gold (四索)"),
+    }
     for idx in range(1, 10):
         tid = f"bamboo_{idx}"
         canvas, draw = make_marble_face_canvas(W, H, accent_rgb=GOLD)
         draw.text((52, 42), str(idx), font=latin_font(64, bold=True), fill=INK)
         draw.text((W - 116, 44), "索", font=cjk_font(56), fill=GREEN)
-        if idx == 1 and sparrow_path.exists():
-            # Authentic ornate 1-Bamboo Imperial Sparrow/Peacock inside Gold-Rimmed Oval Medallion
-            oval_w, oval_h = int(W * 0.74), int(H * 0.66)
-            ox0, oy0 = (W - oval_w) // 2, int(H * 0.18)
+        if idx in special_bamboos and special_bamboos[idx][0].exists():
+            emb_path, cbox, custom_title = special_bamboos[idx]
+            oval_w, oval_h = int(W * 0.76), int(H * 0.68)
+            ox0, oy0 = (W - oval_w) // 2, int(H * 0.17)
             ox1, oy1 = ox0 + oval_w, oy0 + oval_h
-            sp_im = Image.open(sparrow_path).convert("RGB")
+            sp_im = Image.open(emb_path).convert("RGB")
             sw, sh = sp_im.size
-            # Crop tightly inside the carved ivory bird artwork and resize to fill 100% of the oval from crest to tail
-            sp_im = sp_im.crop((int(sw * 0.235), int(sh * 0.215), int(sw * 0.785), int(sh * 0.765)))
-            sp_im = sp_im.resize((oval_w, oval_h), Image.Resampling.LANCZOS)
+            sp_crop = sp_im.crop((int(sw * cbox[0]), int(sh * cbox[1]), int(sw * cbox[2]), int(sh * cbox[3])))
+            sp_resized = sp_crop.resize((oval_w, oval_h), Image.Resampling.LANCZOS)
             mask = Image.new("L", (oval_w, oval_h), 0)
             ImageDraw.Draw(mask).ellipse([4, 4, oval_w - 5, oval_h - 5], fill=255)
             mask = mask.filter(ImageFilter.GaussianBlur(radius=1.5))
-            canvas.paste(sp_im, (ox0, oy0), mask)
+            canvas.paste(sp_resized, (ox0, oy0), mask)
             draw.ellipse([ox0 - 6, oy0 - 6, ox1 + 6, oy1 + 6], outline=GREEN, width=5)
             draw.ellipse([ox0, oy0, ox1, oy1], outline=GOLD, width=4)
             save_tile_and_normal(canvas, tid, is_oval=True, oval_box=(ox0, oy0, ox1, oy1))
+            build_onirica_tile(W, H, sp_crop, str(idx), "索", GREEN, tid, max_opacity=0.42)
             if ARTIFACT_DIR.exists():
                 shutil.copy2(TILES_DIR / f"{tid}.png", ARTIFACT_DIR / f"{tid}.png")
+            manifest.append({"id": tid, "suit": "bamboo", "matchGroup": tid, "cardinality": 2, "glyph": f"{idx}索", "title": custom_title, "coupled": False})
         else:
             for nx, ny, bh, col in bam_layouts.get(idx, bam_layouts[2]):
                 draw_bamboo_stalk(draw, W * nx, H * ny, bh, col)
             save_tile_and_normal(canvas, tid)
-        manifest.append({"id": tid, "suit": "bamboo", "matchGroup": tid, "cardinality": 2, "glyph": f"{idx}索", "title": f"{idx} Bamboo ({cn_nums[idx-1]}索)", "coupled": False})
+            shutil.copy2(TILES_DIR / f"{tid}.png", ONIRICA_DIR / f"{tid}.png")
+            manifest.append({"id": tid, "suit": "bamboo", "matchGroup": tid, "cardinality": 2, "glyph": f"{idx}索", "title": f"{idx} Bamboo ({cn_nums[idx-1]}索)", "coupled": False})
 
     # 4. Four Winds (東 南 西 北)
     winds = [
@@ -330,6 +421,7 @@ def generate_original_mahjong_suits() -> list[dict]:
         draw.text((W - 116, 44), "風", font=cjk_font(56), fill=INK)
         draw_centered_text(draw, (W / 2, H * 0.54), hanzi, font=cjk_font(420), fill=INK, stroke_fill=GOLD, stroke_width=6)
         save_tile_and_normal(canvas, tid)
+        shutil.copy2(TILES_DIR / f"{tid}.png", ONIRICA_DIR / f"{tid}.png")
         manifest.append({"id": tid, "suit": "winds", "matchGroup": tid, "cardinality": 2, "glyph": hanzi, "title": label, "coupled": False})
 
     # 5. Three Dragons (中 發 白)
@@ -349,6 +441,7 @@ def generate_original_mahjong_suits() -> list[dict]:
         else:
             draw_centered_text(draw, (W / 2, H * 0.54), hanzi, font=cjk_font(420), fill=col, stroke_fill=GOLD, stroke_width=6)
         save_tile_and_normal(canvas, tid)
+        shutil.copy2(TILES_DIR / f"{tid}.png", ONIRICA_DIR / f"{tid}.png")
         manifest.append({"id": tid, "suit": "dragons", "matchGroup": tid, "cardinality": 2, "glyph": hanzi, "title": label, "coupled": False})
 
     return manifest
@@ -373,12 +466,8 @@ def slice_diptyque_half(scene_path: Path, side: str | tuple[float, float, float,
 
 
 def generate_coupled_family_oval_tiles() -> list[dict]:
-    print("[OvalCameo] Building 16 Non-Identical Family Tiles (2 Quartets of Cardinality 4 + 4 Diptyque Split-Pairs of Cardinality 2)...")
+    print("[OvalCameo] Building 16 Non-Identical Family Tiles (Classic Oval + Modalità Onirica A/B Set)...")
 
-    # 16 Tile Specifications:
-    # - coupled_A1, A2, B1, B2 -> Quartet 1: Carlesso Family Seasons (Cardinality 4: S1 Papà, S2 Mamma, S3 Ale, S4 Sebi)
-    # - coupled_C1, C2, D1, D2 -> Quartet 2: Magical Companions Flowers (Cardinality 4: M1 Ale+Ghigna, M2 Sebi+Pupurabbu, M3 Solo Ghigna, M4 Solo Pupurabbu)
-    # - coupled_E1<->E2 .. H1<->H2 -> 4 Diptyque Split-Pairs (Cardinality 2: Solo Ale <-> Solo Sebi split from one shared scene)
     specs = [
         # QUARTET 1: CARLESSO FAMILY SEASONS (Cardinality 4 — ANY 2 MATCH!)
         (
@@ -389,8 +478,8 @@ def generate_coupled_family_oval_tiles() -> list[dict]:
             "春",
             "S1 • Solo Papà Riccardo (Family Quartet)",
             (188, 42, 92),
-            PORTRAITS_DIR / "diptyque_S1_S2_papa_mamma.png",
-            (0.24, 0.04, 0.52, 0.78),
+            PORTRAITS_DIR / "quartet_S1_papa_riccardo.png",
+            (0.08, 0.05, 0.92, 0.88),
         ),
         (
             "coupled_A2",
@@ -398,10 +487,10 @@ def generate_coupled_family_oval_tiles() -> list[dict]:
             4,
             "S2",
             "夏",
-            "S2 • Solo Mamma Kate (Family Quartet)",
+            "S2 • Solo Mamma Kate 2016 (Family Quartet)",
             (188, 42, 92),
-            PORTRAITS_DIR / "diptyque_S1_S2_papa_mamma.png",
-            (0.485, 0.16, 0.76, 0.90),
+            PORTRAITS_DIR / "quartet_S2_mamma_kate2016.png",
+            (0.08, 0.06, 0.92, 0.89),
         ),
         (
             "coupled_B1",
@@ -615,6 +704,7 @@ def generate_coupled_family_oval_tiles() -> list[dict]:
         draw_centered_text(draw, (W / 2, H - 82), subtitle, font=latin_font(23, bold=True), fill=(32, 28, 36))
 
         save_tile_and_normal(canvas, tid, is_oval=True, oval_box=(ox0, oy0, ox1, oy1))
+        build_onirica_tile(W, H, im_crop, glyph, hanzi, col_rgb, tid, max_opacity=0.50)
         if ARTIFACT_DIR.exists():
             shutil.copy2(TILES_DIR / f"{tid}.png", ARTIFACT_DIR / f"{tid}.png")
 
