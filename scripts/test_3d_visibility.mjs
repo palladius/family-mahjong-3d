@@ -241,6 +241,53 @@ for (const presetName of ["2d", "topdown", "hero"]) {
   );
 }
 
+// 6. Verify Surface Normal Parallelism (Tile Face Normal vs. Table Top Normal dot product == 1.0, never 0.0 orthogonal!)
+const tileFacePlane = new THREE.Mesh(new THREE.PlaneGeometry(1, 1));
+tileFacePlane.rotation.x = -Math.PI / 2; // matches createTileMesh faceMesh.rotation.x = -Math.PI / 2
+tileFacePlane.updateMatrixWorld(true);
+const tileNormal = new THREE.Vector3(0, 0, 1).applyQuaternion(tileFacePlane.quaternion).normalize();
+const tableNormal = new THREE.Vector3(0, 1, 0); // +Y up normal of XZ table in temple_environment.glb
+const normalDot = Math.abs(tileNormal.dot(tableNormal));
+assert(
+  Math.abs(normalDot - 1.0) < 1e-5,
+  `Tile face normal (${tileNormal.toArray().map((n) => n.toFixed(2))}) is 100% parallel to Table normal (dot=${normalDot.toFixed(4)}, never orthogonal!)`
+);
+
+// 7. Verify Stone Pavement Mode (when table is lowered to Y = -3.5 and tiles rest at Y = -0.45 + l * TILE_D)
+tableMesh.position.y += -3.5;
+tableMesh.updateMatrixWorld(true);
+let pavementOccluded = 0;
+for (const presetName of ["2d", "topdown", "hero", "pavement"]) {
+  const cfg = presets[presetName];
+  camera.position.set(...cfg.pos);
+  camera.fov = cfg.fov;
+  camera.lookAt(...cfg.target);
+  camera.updateMatrixWorld(true);
+  applyEnvVisibilityGuard(presetName, camera.position);
+  const visibleEnvMeshes = envMeshes.filter((m) => m.visible);
+
+  for (const slot of slots) {
+    const px = slot.c * (TILE_W * 1.03);
+    const py = -0.45 + slot.l * (TILE_D * 1.02) + TILE_D * 0.45;
+    const pz = slot.r * (TILE_H * 1.03);
+    const targetPt = new THREE.Vector3(px, py, pz);
+    const dir = new THREE.Vector3().subVectors(targetPt, camera.position);
+    const dist = dir.length();
+    dir.normalize();
+    raycaster.set(camera.position, dir);
+    raycaster.near = 0.05;
+    raycaster.far = dist - 0.02;
+    if (raycaster.intersectObjects(visibleEnvMeshes, false).length > 0) {
+      pavementOccluded++;
+    }
+  }
+}
+assert(
+  pavementOccluded === 0,
+  `Stone Pavement surface mode ('toggleSurface') has 0 occluded tiles across all camera presets`
+);
+
 if (failed) {
   process.exit(1);
 }
+
