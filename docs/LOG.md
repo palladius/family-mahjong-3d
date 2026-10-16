@@ -178,3 +178,30 @@
 4. **Lower Family Tile Cardinality (`~18%`) & Localhost Browser Launch**:
    - Capped coupled family pairs in `generateDeckPairs` (`src/main.js`) and `render_cycles_ground_truth_suite` (`scripts/blender/build_all_assets.py`) to `~18%` of the pyramid while prioritizing `bamboo_1..4` in the standard suit rotation.
    - Re-ran `uv run python scripts/blender/build_all_assets.py` (`allManifoldPass=True`) and launched `http://localhost:5173/` in the user's browser.
+---
+
+## [2026-10-16T13:47:00+02:00] Milestone 6 — UX & 3D Geometry Polish (`v1.3.0`): Coplanar XZ Table Fix, Automated 3D Line-of-Sight Unit Tests (`4,320` Raycasts), Yellow-Purple Selection Border + `550ms` Pair Pause, Visual SVG Icon Dock (`2D` Mode), & Rotating 3D Tile Inspector + `"Did you know?"` Lore
+
+### 1. Verbatim User Feedback
+> **User Request 1**: `Tipo, alcuni commenti: il gioco è bellissimo. Alcuni commenti: 1. Quando seleziona la prima cosa, deve esserci un bordino giallo-viola che seleziona il primo, e quando seleziona il secondo, un altro bordino giallo-viola e aspetti quel mezzo secondo per dare la visibilità del fatto che questa è una coppia prima poi di prenderli via. Questo vale per la demo e vale anche se gioco io. Numero uno. 2. C'è un problema 3D assurdo, non si riesce a vedere niente, lo schermo è tagliato a metà da uno schermo verticale che fa schifo. Questo va testato, nel senso, devi aggiungere uno unit test di qualche tipo che verifichi che da qualunque punto di vista io possa vedere sempre tutta la scacchiera, qualunque cosa succede. Cioè, se c'è una barriera, i miei occhi devono essere davanti a quella barriera, sennò game over. E poi ci deve essere anche un bottone per il 2D. Se vomito per troppo 3D, devo poter premere un bottone e andare in modalità più o meno 3D, cioè 2D vista dall'alto, va bene 3D, ma comunque vista dall'alto. Ok?`
+> **User Request 2**: `e crea icone carine per i bottoni in basso affinche siano piu "visive" , meno parole piu' immagini/simboli per capire. tipo "2D" e un immagine stilizzata.`
+> **User Request 3**: `credo il piano del gioco sia ortogonale al piano INTESO del gioco :) E magari un effetto wow - quando clicco su un TILE, metti in alto un GLB rotante del tile e in basso la sua descrizione "Did you know? <> symbolizes the number 4 in blah bah blah"`
+> **User Request 4**: `bellissimo! Ma il piano di gioco ha ancora quell'ostacolo orribile`
+
+### 2. Root-Cause Diagnosis & Engineering Resolution
+1. **Why the Table & Floor Were Orthogonal to the Mahjong Board (`src/main.js` line 379)**:
+   - Blender's glTF 2.0 exporter (`bpy.ops.export_scene.gltf`) **automatically converts** Blender's `+Z Up` into glTF/Three.js `+Y Up` (`XZ` horizontal plane).
+   - `src/main.js` previously had `this.templeEnv.rotation.x = -Math.PI / 2;`, which rotated the already-horizontal `XZ` table and stone floor by `-90°` into the vertical `XY` plane — literally slicing the horizontal `XZ` Mahjong board in half with an orthogonal vertical wall!
+   - Removing `this.templeEnv.rotation.x = -Math.PI / 2`, fixing `toggleSurface()` to animate `.position.y` instead of `.position.z`, moving the 4 temple pillars outward to `(±14.5, ±10.5)`, and adding `updateEnvironmentVisibility()` made the table, floor, and 144 tiles 100% coplanar in the horizontal `XZ` plane.
+2. **Automated 3D Line-of-Sight, Coplanar Plane & Frustum Unit Test (`scripts/test_3d_visibility.mjs`)**:
+   - Added `scripts/test_3d_visibility.mjs` (wired into `just test`) which parses `public/models/temple_environment.glb`, constructs the 3D scene and all 144 Master Imperial Turtle tiles in Node.js via `three`, and verifies:
+     - `Temple_Stone_Pavement` and `Low_Rosewood_Jade_Table` are horizontal in the `XZ` plane (`Y <= -0.05m`) below all 144 tiles (`Y >= 0.28m`).
+     - Across all 6 camera presets (`2d`, `hero`, `topdown`, `pavement`, `macro`, `orbit`) + 24 full-circle orbit viewpoints (`4,320` camera-to-tile raycasts), **0 rays** are occluded by any environment mesh.
+     - In `2d` (`Y=24.5, FOV=26°`), `topdown` (`Y=15.6, FOV=40°`), and `hero` (`Y=8.8, Z=11.6, FOV=38°`), **144/144 tiles (`100%`)** project inside the camera viewport.
+3. **Yellow-Purple Selection Border (`bordino giallo-viola`) + `550ms` Pair Visibility Pause (`src/main.js`)**:
+   - Added a 3D hollow double-frame mesh (`selOuterPurple` `#a832ff` + `selInnerYellow` `#ffe600`) on top of every tile (`selectionBorder`), plus matching yellow-purple styling on `#selection-card`.
+   - When the 1st tile is selected, its yellow-purple border lights up; when the 2nd matching tile is selected, the 2nd tile's yellow-purple border ALSO lights up, both tiles are shown side-by-side in `#selection-card`, and the game pauses for **`550ms` (`mezzo secondo`)** (in both manual play and Demo Auto-Play) before animating the pair away.
+4. **Dedicated `2D` Anti-Motion-Sickness Mode + Visual SVG Icon Camera Dock (`index.html`, `src/style.css`)**:
+   - Redesigned `#camera-bar` with custom stylized SVG icons and short visual labels: **`2D`** (flat overhead view with 3D rotation locked), **`3D`**, **`Zen`**, **`Basso`**, **`Macro`**, and **`360°`**, plus a top-bar **`📐 Passa a 2D / 2D Alto`** button (`?2d=1`).
+5. **WOW Effect: Top Rotating 3D Tile GLB Inspector (`#wow-3d-popup`) + Bottom `"💡 Did you know?"` Cultural & Family Lore (`#sel-did-you-know`)**:
+   - Clicking any tile (or matching a pair) opens `#wow-3d-popup` in the top-left corner with a live 60 FPS WebGL canvas (`#wow-3d-canvas`) spinning the 3D Mahjong tile(s) (showing the Imperial White Marble, Black Obsidian back, Gold Kintsugi seam, and portrait/suit face), while the bottom `#selection-card` displays `"💡 Did you know? ..."` lore for all 50 tiles.

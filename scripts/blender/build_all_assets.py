@@ -623,8 +623,8 @@ def build_temple_environment_objects():
         leg.data.materials.append(rosewood_mat)
         create_box_uv_unwrap(leg)
 
-    # 3. Four Crimson Temple Dragon Pillars + Stone Plinths + Glowing Silk Lanterns
-    pillar_coords = [(-10.2, -7.2), (10.2, -7.2), (-10.2, 7.2), (10.2, 7.2)]
+    # 3. Four Crimson Temple Dragon Pillars + Stone Plinths + Glowing Silk Lanterns (placed well outside camera sightlines)
+    pillar_coords = [(-14.5, -10.5), (14.5, -10.5), (-14.5, 10.5), (14.5, 10.5)]
     for idx, (px, py) in enumerate(pillar_coords):
         bpy.ops.mesh.primitive_cylinder_add(vertices=24, radius=0.62, depth=7.5, location=(px, py, 3.3))
         pil = bpy.context.active_object
@@ -638,8 +638,8 @@ def build_temple_environment_objects():
         create_box_uv_unwrap(pil)
 
         # Hanging Silk Lantern inward from each pillar
-        lx = px * 0.78
-        ly = py * 0.78
+        lx = px * 0.88
+        ly = py * 0.88
         bpy.ops.mesh.primitive_uv_sphere_add(segments=20, ring_count=12, radius=0.48, location=(lx, ly, 4.4))
         lant = bpy.context.active_object
         lant.name = f"Temple_Silk_Lantern_{idx+1}"

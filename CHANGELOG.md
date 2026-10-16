@@ -1,5 +1,21 @@
 # Changelog - Carlesso Family Mahjong 3D 🀄🐉
 
+## [1.3.0] - 2026-10-16
+### Added
+- **Yellow-Purple Selection Double Border (`bordino giallo-viola`) & `550ms` Pair Visibility Pause**:
+  - Selecting the 1st tile highlights it with a vivid 3D **Yellow-Purple (`#ffe600` + `#a832ff`) border**; selecting the 2nd matching tile highlights the 2nd tile with a Yellow-Purple border as well, displays both matched tiles side-by-side in the HUD, and waits **`550ms` (`mezzo secondo`)** so the player clearly sees the pair before removing them (in both manual play and Demo Auto-Play).
+- **Dedicated `2D` Anti-Motion-Sickness Top-Down Mode & Visual SVG Icon Dock**:
+  - Added a flat overhead **`2D`** camera preset (`Y=24.5, FOV=26°` with 3D orbit rotation locked) accessible via the bottom dock **`2D`** icon, the top HUD **`📐 Passa a 2D`** button, or `?2d=1`.
+  - Redesigned the bottom camera dock (`#camera-bar`) with custom stylized SVG icons and concise labels (`2D`, `3D`, `Zen`, `Basso`, `Macro`, `360°`).
+- **WOW Effect: Top Rotating 3D Tile GLB Inspector (`#wow-3d-popup`) & Bottom `"💡 Did you know?"` Cultural/Family Lore**:
+  - Clicking any tile renders a live 360°-spinning 3D clone of that tile (or matched pair) in `#wow-3d-popup` (top-left) and displays tailored `"💡 Did you know?"` Chinese numerology, suit history, and Carlesso family lore in `#selection-card` (bottom).
+- **Automated 3D Visibility, Coplanar Orientation & Frustum Unit Test Suite (`scripts/test_3d_visibility.mjs`)**:
+  - Added `scripts/test_3d_visibility.mjs` to `just test`, verifying coplanarity of the table/floor with the 144 tiles, `0 / 4,320` occluded camera-to-tile sightlines across 30 viewpoints, and `144 / 144` full-board viewport framing in `2d`, `topdown`, and `hero` presets.
+
+### Fixed
+- **Fixed Orthogonal Table/Floor Wall Bug (`src/main.js`)**:
+  - Removed the erroneous `this.templeEnv.rotation.x = -Math.PI / 2` transform on `temple_environment.glb` (which was rotating the already-`+Y Up` glTF horizontal table and floor by 90° into a vertical wall slicing through the middle of the Mahjong board).
+
 ## [1.2.0] - 2026-10-16
 ### Added
 - **NB21 (`gemini-3.1-flash-image-preview`) Remasters for `S1` (Papà Riccardo) & `S2` (Mamma Kate 2016)**:

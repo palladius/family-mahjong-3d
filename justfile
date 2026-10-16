@@ -10,9 +10,10 @@ setup:
     npm install
     node node_modules/esbuild/install.js || true
 
-# Run verification tests (3D topology, textures, build, QA rounds)
+# Run verification tests (3D topology, 3D line-of-sight visibility, textures, build, QA rounds)
 test:
     node scripts/verify_build.mjs
+    node scripts/test_3d_visibility.mjs
 
 # Start the local Vite development server
 dev:

@@ -231,8 +231,11 @@ class MahjongSolitaireApp {
     this.combo = 1;
     this.movesHistory = [];
     this.isDemoRunning = false;
+    this.isPairPauseActive = false;
     this.activeSurface = "table"; // "table" or "pavement"
-    this.oniricaMode = new URLSearchParams(window.location.search).get("onirica") === "1";
+    const urlParams = new URLSearchParams(window.location.search);
+    this.oniricaMode = urlParams.get("onirica") === "1";
+    this.activeCameraPreset = urlParams.get("2d") === "1" ? "2d" : "hero";
 
     // Look-Dev Settings with Defaults matching Blender Cycles Master Renders
     this.settings = {
@@ -267,7 +270,6 @@ class MahjongSolitaireApp {
     this.scene.background = new THREE.Color(0x120f14);
 
     this.camera = new THREE.PerspectiveCamera(this.settings.fov, window.innerWidth / window.innerHeight, 0.1, 100);
-    this.setCameraPreset("hero");
 
     this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
     this.renderer.setSize(window.innerWidth, window.innerHeight);
@@ -284,6 +286,8 @@ class MahjongSolitaireApp {
     this.controls.maxPolarAngle = Math.PI / 2 - 0.04;
     this.controls.minDistance = 3.0;
     this.controls.maxDistance = 28.0;
+
+    this.setCameraPreset(this.activeCameraPreset);
 
     this.raycaster = new THREE.Raycaster();
     this.mouse = new THREE.Vector2();
@@ -372,11 +376,11 @@ class MahjongSolitaireApp {
       t.wrapT = THREE.RepeatWrapping;
     });
 
-    // 2. Load 3D Temple Environment GLB
+    // 2. Load 3D Temple Environment GLB (Blender glTF exporter ALREADY outputs +Y Up!)
     loader.load("/models/temple_environment.glb", (gltf) => {
       this.templeEnv = gltf.scene;
-      // Convert Z-up Blender export to Y-up Three.js
-      this.templeEnv.rotation.x = -Math.PI / 2;
+      // IMPORTANT: Do NOT rotate templeEnv by -PI/2 around X! glTF is already +Y Up; rotating it turned the horizontal table & floor into a vertical wall cutting the board in half!
+      this.templeEnv.rotation.set(0, 0, 0);
       this.templeEnv.traverse((child) => {
         if (child.isMesh) {
           child.castShadow = true;
@@ -385,6 +389,7 @@ class MahjongSolitaireApp {
       });
       this.scene.add(this.templeEnv);
       this.cacheEnvironmentObjects();
+      this.updateEnvironmentVisibility();
     });
 
     // 3. Load Canonical Tile GLB
@@ -403,6 +408,36 @@ class MahjongSolitaireApp {
       const leg = this.templeEnv.getObjectByName(`Rosewood_Table_Leg_${i}`);
       if (leg) this.envLegs.push(leg);
     }
+    this.envOverheadObstacles = [];
+    this.templeEnv.traverse((child) => {
+      if (
+        child.isMesh &&
+        (child.name.startsWith("Temple_Crimson_Pillar") || child.name.startsWith("Temple_Silk_Lantern"))
+      ) {
+        this.envOverheadObstacles.push(child);
+      }
+    });
+  }
+
+  updateEnvironmentVisibility() {
+    if (!this.envOverheadObstacles || !this.camera) return;
+    const isTopView = this.activeCameraPreset === "2d" || this.activeCameraPreset === "topdown";
+    const camPos = this.camera.position;
+    const camDistToCenter = Math.hypot(camPos.x, camPos.z);
+
+    this.envOverheadObstacles.forEach((mesh) => {
+      if (isTopView) {
+        mesh.visible = false;
+        return;
+      }
+      // If a pillar/lantern is on the camera side of the board and could cross the camera frustum, hide it so it NEVER blocks the board
+      const box = new THREE.Box3().setFromObject(mesh);
+      const center = new THREE.Vector3();
+      box.getCenter(center);
+      const dotSide = center.x * camPos.x + center.z * camPos.z;
+      const objDist = Math.hypot(center.x, center.z);
+      mesh.visible = !(dotSide > 0 && camDistToCenter > objDist - 3.5);
+    });
   }
 
   setupBoard(trackKey = "master") {
@@ -410,6 +445,7 @@ class MahjongSolitaireApp {
     this.tiles.forEach((t) => this.scene.remove(t.root));
     this.tiles = [];
     this.selectedTile = null;
+    this.isPairPauseActive = false;
     this.movesHistory = [];
     this.combo = 1;
     this.hideSelectionCard();
@@ -458,6 +494,25 @@ class MahjongSolitaireApp {
     this.updateHUD();
   }
 
+  makeHollowRectGeometry(outerW, outerH, innerW, innerH) {
+    const shape = new THREE.Shape();
+    shape.moveTo(-outerW / 2, -outerH / 2);
+    shape.lineTo(outerW / 2, -outerH / 2);
+    shape.lineTo(outerW / 2, outerH / 2);
+    shape.lineTo(-outerW / 2, outerH / 2);
+    shape.closePath();
+
+    const hole = new THREE.Path();
+    hole.moveTo(-innerW / 2, -innerH / 2);
+    hole.lineTo(innerW / 2, -innerH / 2);
+    hole.lineTo(innerW / 2, innerH / 2);
+    hole.lineTo(-innerW / 2, innerH / 2);
+    hole.closePath();
+    shape.holes.push(hole);
+
+    return new THREE.ShapeGeometry(shape);
+  }
+
   initSharedTileResources() {
     if (this.sharedGeo) return;
     this.sharedGeo = {
@@ -466,6 +521,9 @@ class MahjongSolitaireApp {
       face: new THREE.PlaneGeometry(TILE_W * 0.90, TILE_H * 0.92),
       // Top-center golden crown inlay bar (never occludes top-left or top-right corner glyphs!)
       badge: new THREE.BoxGeometry(0.24, 0.016, 0.032),
+      // Yellow-Purple Selection Double Border ("bordino giallo-viola")
+      selOuterPurple: this.makeHollowRectGeometry(TILE_W * 1.12, TILE_H * 1.10, TILE_W * 1.01, TILE_H * 1.00),
+      selInnerYellow: this.makeHollowRectGeometry(TILE_W * 1.01, TILE_H * 1.00, TILE_W * 0.90, TILE_H * 0.91),
     };
     this.sharedMat = {
       obsidian: new THREE.MeshStandardMaterial({
@@ -490,6 +548,14 @@ class MahjongSolitaireApp {
         color: 0xd4af37,
         metalness: 0.88,
         roughness: 0.22,
+      }),
+      selPurple: new THREE.MeshBasicMaterial({
+        color: 0xa832ff,
+        side: THREE.DoubleSide,
+      }),
+      selYellow: new THREE.MeshBasicMaterial({
+        color: 0xffe600,
+        side: THREE.DoubleSide,
       }),
     };
   }
@@ -678,6 +744,19 @@ class MahjongSolitaireApp {
     badgeMesh.castShadow = true;
     root.add(badgeMesh);
 
+    // 4. Yellow-Purple Selection Double Border ("bordino giallo-viola" when tile 1 or tile 2 is selected!)
+    const selectionBorder = new THREE.Group();
+    const outerPurpleMesh = new THREE.Mesh(this.sharedGeo.selOuterPurple, this.sharedMat.selPurple);
+    const innerYellowMesh = new THREE.Mesh(this.sharedGeo.selInnerYellow, this.sharedMat.selYellow);
+    outerPurpleMesh.rotation.x = -Math.PI / 2;
+    innerYellowMesh.rotation.x = -Math.PI / 2;
+    innerYellowMesh.position.y = 0.002;
+    selectionBorder.add(outerPurpleMesh);
+    selectionBorder.add(innerYellowMesh);
+    selectionBorder.position.y = TILE_D * 0.5 + 0.011;
+    selectionBorder.visible = false;
+    root.add(selectionBorder);
+
     // Keep reference on root
     root.userData = {
       tileData: tileData,
@@ -685,6 +764,7 @@ class MahjongSolitaireApp {
       badgeMesh: badgeMesh,
       bodyMesh: bodyMesh,
       kintsugiMesh: kintsugiMesh,
+      selectionBorder: selectionBorder,
     };
 
     return root;
@@ -732,7 +812,7 @@ class MahjongSolitaireApp {
         freeTiles.push(t);
       }
       // Subtle visual state
-      if (!t.removed) {
+      if (!t.removed && !t.selected) {
         t.root.userData.bodyMesh.material[0].color.setHex(free ? 0xfcf8ee : 0xe2ded4);
       }
     });
@@ -761,7 +841,7 @@ class MahjongSolitaireApp {
   }
 
   onPointerDown(e) {
-    if (this.isDemoRunning) return;
+    if (this.isDemoRunning || this.isPairPauseActive) return;
     this.mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
     this.mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
 
@@ -782,6 +862,7 @@ class MahjongSolitaireApp {
   }
 
   handleTileClick(tile) {
+    if (this.isPairPauseActive) return;
     if (!this.isTileFree(tile)) {
       sfx.playError();
       this.wiggleTile(tile);
@@ -791,7 +872,7 @@ class MahjongSolitaireApp {
     sfx.playClick();
 
     if (!this.selectedTile) {
-      // First tile selection
+      // 1st Tile Selected -> Show Yellow-Purple Border ("bordino giallo-viola") on 1st tile!
       this.selectedTile = tile;
       tile.selected = true;
       this.liftTile(tile, true);
@@ -803,23 +884,34 @@ class MahjongSolitaireApp {
       this.selectedTile = null;
       this.hideSelectionCard();
     } else {
-      // Second tile clicked -> attempt match!
+      // 2nd Tile Clicked -> Attempt Match!
       const first = this.selectedTile;
       if (this.areTilesMatching(first.data, tile.data)) {
         // MATCH SUCCESS!
+        // Show 2nd Yellow-Purple Border ("altro bordino giallo-viola") on 2nd tile too & wait 550ms ("mezzo secondo") before removing!
         sfx.playMatch();
-        this.hideSelectionCard();
         this.selectedTile = null;
-        first.selected = false;
-        tile.selected = false;
+        tile.selected = true;
+        this.liftTile(tile, true);
+        this.showPairMatchCard(first, tile);
+        this.isPairPauseActive = true;
 
         this.score += 100 * this.combo;
         this.combo++;
         this.movesHistory.push([first, tile]);
+        this.updateHUD();
 
-        this.animatePairMatch(first, tile);
+        setTimeout(() => {
+          first.selected = false;
+          tile.selected = false;
+          if (first.root.userData.selectionBorder) first.root.userData.selectionBorder.visible = false;
+          if (tile.root.userData.selectionBorder) tile.root.userData.selectionBorder.visible = false;
+          this.hideSelectionCard();
+          this.isPairPauseActive = false;
+          this.animatePairMatch(first, tile);
+        }, 550);
       } else {
-        // Mismatch: drop first, select second
+        // Mismatch: drop first, select second with Yellow-Purple border
         sfx.playError();
         this.liftTile(first, false);
         first.selected = false;
@@ -836,11 +928,15 @@ class MahjongSolitaireApp {
   }
 
   liftTile(tile, liftUp) {
+    const is2D = this.activeCameraPreset === "2d";
     const targetY = tile.basePos.y + (liftUp ? 0.35 : 0.0);
-    const targetTilt = liftUp ? 0.18 : 0.0;
-    this.addTween(tile.root.position, "y", targetY, 0.16);
-    this.addTween(tile.root.rotation, "x", targetTilt, 0.16);
-    tile.root.userData.bodyMesh.material[0].emissive = new THREE.Color(liftUp ? 0x443311 : 0x000000);
+    const targetTilt = liftUp && !is2D ? 0.16 : 0.0;
+    this.addTween(tile.root.position, "y", targetY, 0.15);
+    this.addTween(tile.root.rotation, "x", targetTilt, 0.15);
+    tile.root.userData.bodyMesh.material[0].emissive = new THREE.Color(liftUp ? 0x3b155e : 0x000000);
+    if (tile.root.userData.selectionBorder) {
+      tile.root.userData.selectionBorder.visible = Boolean(liftUp);
+    }
   }
 
   wiggleTile(tile) {
@@ -869,7 +965,7 @@ class MahjongSolitaireApp {
       const t0 = performance.now();
       this.tweens.push({
         update(now) {
-          const dt = (now - t0) / 450;
+          const dt = (now - t0) / 420;
           if (dt < 1.0) {
             t.root.position.y = origPos.y + Math.sin(dt * Math.PI) * 0.85;
             t.root.rotation.y = dt * Math.PI * 2;
@@ -887,7 +983,7 @@ class MahjongSolitaireApp {
       const { matchablePairs } = this.updateFreeTiles();
       this.updateHUD();
       this.checkGameEnd(matchablePairs);
-    }, 480);
+    }, 450);
   }
 
   checkGameEnd(matchablePairs) {
@@ -904,12 +1000,130 @@ class MahjongSolitaireApp {
     }
   }
 
+  getDidYouKnowLore(d) {
+    const loreMap = {
+      bamboo_1: "1索 (Yī Suǒ) is the only suit tile that depicts a bird — the Imperial Sparrow (麻雀, Máquè), after which Mahjong ('Clattering Sparrows') is named!",
+      bamboo_2: "2索 (Èr Suǒ) fuses Sebi & Ale's passion for Hot Wheels flame supercars with carved green bamboo stalks, celadon jade, and 24k gold filigree!",
+      bamboo_3: "3索 (Sān Suǒ) honors Sirio il Dragone (Dragon Shiryu from Saint Seiya), forging his indestructible emerald Dragon Shield in Imperial Jade & 24k gold!",
+      bamboo_4: "4索 (Sì Suǒ) symbolizes the Four Cardinal Virtues, reimagined here with Ale's favorite faceted crimson rubies, diamonds, and emeralds in golden dragon claws!",
+      dragon_red: "中 (Hóng Zhōng, Red Center) symbolizes passing the Imperial Mandarin examination and hitting the bullseye of fortune!",
+      dragon_green: "發 (Fā Cái, Green Prosperity) comes from 'Gong Xi Fa Cai' — wishing overflowing wealth, growth, and springtime jade vitality!",
+      dragon_white: "白 (Bái Bǎn, White Jade Tablet) represents pure, uncarved flawlessness and limitless beginnings in Taoist philosophy.",
+      wind_E: "東 (Dōng, East Wind) is the seat of the prevailing dealer in traditional Chinese Mahjong and heralds the rising dawn.",
+      wind_S: "南 (Nán, South Wind) symbolizes summer warmth, vermilion fire, and the imperial throne's southward gaze.",
+      wind_W: "西 (Xī, West Wind) represents autumn harvest, golden metal, and the serene sunset over mountain temples.",
+      wind_N: "北 (Běi, North Wind) embodies winter stillness, deep tortoise water wisdom, and starry polar skies.",
+      coupled_A1: "S1 春 (Spring) features Papà Riccardo (NB21) — as a Cardinality-4 Season tile, he matches with ANY of Mamma Kate (S2), Ale (S3), or Sebi (S4)!",
+      coupled_A2: "S2 夏 (Summer) features Mamma Kate 2016 (NB21, acqua e sapone) — as a Cardinality-4 Season tile, she pairs with ANY Carlesso family member!",
+      coupled_B1: "S3 秋 (Autumn) features Solo Alessandro in Tang crimson & gold silk — matches with Papà, Mamma, or Sebi in the Family Quartet!",
+      coupled_B2: "S4 冬 (Winter) features Solo Sebastian in Tang crimson & gold silk — matches with Papà, Mamma, or Ale in the Family Quartet!",
+      coupled_C1: "M1 梅 (Plum Blossom) pairs Ale with nerdy calico guinea pig Ghigna 🐹 — matches ANY of the 4 Magical Companion tiles (M1..M4)!",
+      coupled_C2: "M2 蘭 (Orchid) pairs Sebi with friendly purple monster Pupurabbu 👾 — matches ANY of the 4 Magical Companion tiles (M1..M4)!",
+      coupled_D1: "M3 菊 (Chrysanthemum) showcases Mandarin Scholar Ghigna 🐹 with his jade abacus — matches ANY Magical Companion tile!",
+      coupled_D2: "M4 竹 (Bamboo Flower) showcases Solo Pupurabbu 👾 holding a glowing silk lantern — matches ANY Magical Companion tile!",
+    };
+    if (loreMap[d.id]) return loreMap[d.id];
+    if (d.coupled) {
+      return `Diptyque Split-Pair (${d.code}): generated as ONE shared 2D scene of Ale & Sebi together and sliced in half so Solo Ale (Left) reunites with Solo Sebi (Right)!`;
+    }
+    const numMatch = d.id.match(/_(\d+)$/);
+    const n = numMatch ? parseInt(numMatch[1], 10) : 1;
+    const numLore = {
+      1: "the number 1 (一, Yī) symbolizes primordial unity, the origin of all things (Tao), and auspicious new beginnings.",
+      2: "the number 2 (二, Èr) embodies the Chinese proverb 'Hǎoshì Chéng Shuāng' (好事成雙) — good things always come in pairs!",
+      3: "the number 3 (三, Sān) sounds like 'Shēng' (生, life/growth) and represents the Triad of Heaven, Earth, and Humanity.",
+      4: "the number 4 (四, Sì) mirrors the Four Directions, Four Seasons, and Four Treasures of the Scholar's Studio (brush, ink, paper, inkstone).",
+      5: "the number 5 (五, Wǔ) symbolizes the Five Elements (Wu Xing: Wood, Fire, Earth, Metal, Water) and the Five Imperial Blessings.",
+      6: "the number 6 (六, Liù) sounds like 'Liú' (流, smooth flow) — 'Liùliù Dàshùn' wishes that everything in life flows effortlessly!",
+      7: "the number 7 (七, Qī) represents togetherness and the cosmic harmony of Yin, Yang, and the Five Elements.",
+      8: "the number 8 (八, Bā) is the luckiest number in Chinese culture because it rhymes with 'Fā' (發, boundless prosperity)!",
+      9: "the number 9 (九, Jiǔ) sounds identical to 'Jiǔ' (久, eternity/longevity) and was reserved for the Emperor's Nine Dragons!",
+    };
+    if (d.suit === "characters") {
+      return `In the Characters suit (萬子, Wànzi), ${d.glyph} represents ${n * 10000} strung copper coins — and in Chinese tradition, ${numLore[n]}`;
+    }
+    if (d.suit === "dots") {
+      return `In the Circles suit (筒子, Tǒngzi), ${d.glyph} depicts copper coins with a square center (round heaven, square earth) — where ${numLore[n]}`;
+    }
+    return `In the Bamboos suit (索子, Suǒzi), ${d.glyph} represents strings of 100 copper coins — where ${numLore[n]}`;
+  }
+
+  initWow3DPreview() {
+    if (this.wowRenderer) return;
+    const canvas = document.getElementById("wow-3d-canvas");
+    if (!canvas) return;
+    this.wowScene = new THREE.Scene();
+    this.wowCamera = new THREE.PerspectiveCamera(34, 1, 0.1, 20);
+    this.wowCamera.position.set(0, 1.65, 2.75);
+    this.wowCamera.lookAt(0, 0, 0);
+
+    this.wowRenderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+    this.wowRenderer.setSize(210, 210);
+    this.wowRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    this.wowRenderer.toneMapping = THREE.ACESFilmicToneMapping;
+    this.wowRenderer.toneMappingExposure = 1.18;
+
+    const amb = new THREE.AmbientLight(0xfff4e0, 1.35);
+    const dir1 = new THREE.DirectionalLight(0xffe6aa, 3.2);
+    dir1.position.set(3, 5, 4);
+    const dir2 = new THREE.PointLight(0xa832ff, 2.2, 10);
+    dir2.position.set(-3, -2, 3);
+    this.wowScene.add(amb, dir1, dir2);
+
+    this.wowGroup = new THREE.Group();
+    this.wowScene.add(this.wowGroup);
+  }
+
+  updateWow3DPreview(tileA, tileB = null) {
+    this.initWow3DPreview();
+    const popup = document.getElementById("wow-3d-popup");
+    if (!popup || !this.wowGroup) return;
+
+    while (this.wowGroup.children.length > 0) {
+      this.wowGroup.remove(this.wowGroup.children[0]);
+    }
+
+    const texLoader = new THREE.TextureLoader();
+    const cloneA = this.createTileMesh(tileA.data, texLoader);
+    cloneA.rotation.x = Math.PI * 0.34;
+    if (tileB) {
+      const cloneB = this.createTileMesh(tileB.data, texLoader);
+      cloneB.rotation.x = Math.PI * 0.34;
+      cloneA.position.set(-0.62, 0, 0);
+      cloneB.position.set(0.62, 0, 0);
+      if (cloneA.userData.selectionBorder) cloneA.userData.selectionBorder.visible = true;
+      if (cloneB.userData.selectionBorder) cloneB.userData.selectionBorder.visible = true;
+      this.wowGroup.add(cloneA, cloneB);
+      this.wowCamera.position.set(0, 1.85, 3.55);
+    } else {
+      cloneA.position.set(0, 0, 0);
+      if (cloneA.userData.selectionBorder) cloneA.userData.selectionBorder.visible = true;
+      this.wowGroup.add(cloneA);
+      this.wowCamera.position.set(0, 1.55, 2.55);
+    }
+    this.wowCamera.lookAt(0, 0, 0);
+
+    const badgeEl = document.getElementById("wow-3d-badge");
+    const subEl = document.getElementById("wow-3d-subtitle");
+    if (badgeEl) badgeEl.textContent = tileB ? "✨ PAIR" : tileA.data.code || tileA.data.glyph;
+    if (subEl) subEl.textContent = tileB ? `${tileA.data.code || tileA.data.glyph} ⚡ ${tileB.data.code || tileB.data.glyph}` : tileA.data.title;
+
+    popup.classList.remove("hidden");
+  }
+
   showSelectionCard(tile) {
     const card = document.getElementById("selection-card");
     const badge = document.getElementById("sel-badge");
     const title = document.getElementById("sel-title");
     const status = document.getElementById("sel-status");
+    const dyk = document.getElementById("sel-did-you-know");
     const thumb = document.getElementById("sel-thumb");
+    const thumb2 = document.getElementById("sel-thumb-2");
+    const plusEl = document.getElementById("sel-pair-plus");
+
+    card.classList.remove("pair-matched");
+    if (thumb2) thumb2.classList.add("hidden");
+    if (plusEl) plusEl.classList.add("hidden");
 
     if (thumb) {
       const folder = this.oniricaMode ? "tiles_onirica" : "tiles";
@@ -930,11 +1144,50 @@ class MahjongSolitaireApp {
     } else {
       status.textContent = "Traditional Mahjong Card • Match with identical suit tile";
     }
+    if (dyk) {
+      dyk.innerHTML = `💡 <strong>Did you know?</strong> ${this.getDidYouKnowLore(tile.data)}`;
+    }
     card.classList.remove("hidden");
+    this.updateWow3DPreview(tile, null);
+  }
+
+  showPairMatchCard(tileA, tileB) {
+    const card = document.getElementById("selection-card");
+    const badge = document.getElementById("sel-badge");
+    const title = document.getElementById("sel-title");
+    const status = document.getElementById("sel-status");
+    const dyk = document.getElementById("sel-did-you-know");
+    const thumb = document.getElementById("sel-thumb");
+    const thumb2 = document.getElementById("sel-thumb-2");
+    const plusEl = document.getElementById("sel-pair-plus");
+
+    const folder = this.oniricaMode ? "tiles_onirica" : "tiles";
+    if (thumb) thumb.src = `/textures/${folder}/${tileA.data.id}.png`;
+    if (thumb2) {
+      thumb2.src = `/textures/${folder}/${tileB.data.id}.png`;
+      thumb2.classList.remove("hidden");
+    }
+    if (plusEl) plusEl.classList.remove("hidden");
+
+    card.classList.add("pair-matched");
+    badge.textContent = "✨ COPPIA!";
+    title.textContent = `${tileA.data.title} ⚡ ${tileB.data.title}`;
+    status.textContent = "Entrambe le tessere selezionate (Giallo-Viola) • Rimozione tra 0.5s...";
+    if (dyk) {
+      dyk.innerHTML = `💡 <strong>Did you know?</strong> ${this.getDidYouKnowLore(tileB.data)}`;
+    }
+    card.classList.remove("hidden");
+    this.updateWow3DPreview(tileA, tileB);
   }
 
   hideSelectionCard() {
-    document.getElementById("selection-card").classList.add("hidden");
+    const card = document.getElementById("selection-card");
+    if (card) {
+      card.classList.add("hidden");
+      card.classList.remove("pair-matched");
+    }
+    const popup = document.getElementById("wow-3d-popup");
+    if (popup) popup.classList.add("hidden");
   }
 
   updateHUD() {
@@ -945,14 +1198,16 @@ class MahjongSolitaireApp {
   }
 
   undoLastMove() {
-    if (this.movesHistory.length === 0) return;
+    if (this.movesHistory.length === 0 || this.isPairPauseActive) return;
     const [tileA, tileB] = this.movesHistory.pop();
     [tileA, tileB].forEach((t) => {
       t.removed = false;
+      t.selected = false;
       t.root.visible = true;
       t.root.scale.set(1, 1, 1);
       t.root.position.copy(t.basePos);
       t.root.rotation.set(0, 0, 0);
+      if (t.root.userData.selectionBorder) t.root.userData.selectionBorder.visible = false;
     });
     this.score = Math.max(0, this.score - 100);
     this.combo = 1;
@@ -1055,6 +1310,10 @@ class MahjongSolitaireApp {
 
   stepDemoSolver() {
     if (!this.isDemoRunning) return;
+    if (this.isPairPauseActive) {
+      setTimeout(() => this.stepDemoSolver(), 250);
+      return;
+    }
     const remaining = this.tiles.filter((t) => !t.removed).length;
     if (remaining === 0) {
       this.isDemoRunning = false;
@@ -1075,18 +1334,20 @@ class MahjongSolitaireApp {
     if (pairs.length > 0) {
       pairs.sort((a, b) => (b[0].data.coupled ? 1 : 0) - (a[0].data.coupled ? 1 : 0));
       const [tA, tB] = pairs[0];
+      // Step 1: Select 1st tile -> shows 1st Yellow-Purple border ("bordino giallo-viola")
       this.handleTileClick(tA);
       setTimeout(() => {
         if (this.isDemoRunning) {
+          // Step 2: Select 2nd tile -> shows 2nd Yellow-Purple border & waits 550ms ("mezzo secondo") before flying away!
           this.handleTileClick(tB);
-          setTimeout(() => this.stepDemoSolver(), 620);
+          setTimeout(() => this.stepDemoSolver(), 1150);
         }
-      }, 320);
+      }, 450);
       return;
     }
     // If no moves, auto-shuffle
     this.solvableShuffle();
-    setTimeout(() => this.stepDemoSolver(), 650);
+    setTimeout(() => this.stepDemoSolver(), 750);
   }
 
   toggleSurface(forceSurface = null) {
@@ -1095,14 +1356,14 @@ class MahjongSolitaireApp {
     const isTable = this.activeSurface === "table";
     nameEl.textContent = isTable ? "Rosewood Table" : "Stone Pavement";
 
-    // Smoothly lower or raise table model and legs
+    // Smoothly lower or raise table model and legs along the Three.js vertical Y axis!
     if (this.envTable) {
-      const targetTableZ = isTable ? -0.14 : -3.5;
-      this.addTween(this.envTable.position, "z", targetTableZ, 0.4);
+      const targetTableY = isTable ? 0.0 : -3.5;
+      this.addTween(this.envTable.position, "y", targetTableY, 0.4);
     }
     if (this.envLegs) {
-      const targetLegZ = isTable ? -0.36 : -3.7;
-      this.envLegs.forEach((leg) => this.addTween(leg.position, "z", targetLegZ, 0.4));
+      const targetLegY = isTable ? 0.0 : -3.5;
+      this.envLegs.forEach((leg) => this.addTween(leg.position, "y", targetLegY, 0.4));
     }
 
     // Move tiles to match new surface level
@@ -1145,22 +1406,33 @@ class MahjongSolitaireApp {
     sfx.playClick();
   }
 
+  toggle2DMode() {
+    const nextPreset = this.activeCameraPreset === "2d" ? "hero" : "2d";
+    this.setCameraPreset(nextPreset);
+    sfx.playClick();
+  }
+
   setCameraPreset(presetKey) {
     const presets = {
-      hero: { pos: [0.0, 6.4, 9.6], target: [0.0, 0.8, -0.3], fov: 38 },
-      topdown: { pos: [0.0, 10.2, 0.8], target: [0.0, 0.6, -0.2], fov: 40 },
-      pavement: { pos: [5.4, 2.2, 7.8], target: [0.0, 0.4, -1.2], fov: 36 },
-      macro: { pos: [0.0, 1.95, 5.8], target: [0.0, 0.35, 3.65], fov: 48 },
-      orbit: { pos: [0.0, 7.0, 11.0], target: [0.0, 0.5, 0.0], fov: 42 },
+      // 2D Anti-Motion-Sickness Flat Overhead View (telephoto FOV 26° from Y=24.5 so all 144 tiles + HUD margins fit 100% inside the screen!)
+      "2d": { pos: [0.0, 24.5, 0.001], target: [0.0, 0.2, 0.0], fov: 26 },
+      hero: { pos: [0.0, 8.8, 11.6], target: [0.0, 0.3, 0.0], fov: 38 },
+      topdown: { pos: [0.0, 15.6, 1.6], target: [0.0, 0.3, 0.0], fov: 40 },
+      pavement: { pos: [5.4, 2.6, 8.4], target: [0.0, 0.4, -0.5], fov: 36 },
+      macro: { pos: [0.0, 2.1, 6.2], target: [0.0, 0.35, 3.2], fov: 44 },
+      orbit: { pos: [0.0, 8.6, 12.0], target: [0.0, 0.4, 0.0], fov: 40 },
     };
 
-    const cfg = presets[presetKey] || presets.hero;
-    this.addTween(this.camera.position, "x", cfg.pos[0], 0.4);
-    this.addTween(this.camera.position, "y", cfg.pos[1], 0.4);
-    this.addTween(this.camera.position, "z", cfg.pos[2], 0.4);
+    this.activeCameraPreset = presets[presetKey] ? presetKey : "hero";
+    const cfg = presets[this.activeCameraPreset];
+    this.addTween(this.camera.position, "x", cfg.pos[0], 0.38);
+    this.addTween(this.camera.position, "y", cfg.pos[1], 0.38);
+    this.addTween(this.camera.position, "z", cfg.pos[2], 0.38);
 
     if (this.controls) {
       this.controls.target.set(cfg.target[0], cfg.target[1], cfg.target[2]);
+      // Lock 3D rotation in 2D mode so the user never experiences 3D motion sickness!
+      this.controls.enableRotate = this.activeCameraPreset !== "2d";
     }
 
     this.settings.fov = cfg.fov;
@@ -1168,8 +1440,15 @@ class MahjongSolitaireApp {
     this.camera.updateProjectionMatrix();
 
     document.querySelectorAll(".cam-btn").forEach((b) => {
-      b.classList.toggle("active", b.dataset.cam === presetKey);
+      b.classList.toggle("active", b.dataset.cam === this.activeCameraPreset);
     });
+
+    const btn2d = document.getElementById("btn-2d-toggle");
+    const name2d = document.getElementById("view-mode-name");
+    if (btn2d) btn2d.classList.toggle("active", this.activeCameraPreset === "2d");
+    if (name2d) name2d.textContent = this.activeCameraPreset === "2d" ? "2D Alto (Attivo)" : "Passa a 2D";
+
+    this.updateEnvironmentVisibility();
   }
 
   applyRigPoseAtFrame(animName, frame) {
@@ -1237,6 +1516,10 @@ class MahjongSolitaireApp {
     });
     document.getElementById("btn-demo").addEventListener("click", () => this.toggleDemoSolver());
     document.getElementById("btn-surface-toggle").addEventListener("click", () => this.toggleSurface());
+    const btn2d = document.getElementById("btn-2d-toggle");
+    if (btn2d) {
+      btn2d.addEventListener("click", () => this.toggle2DMode());
+    }
     const btnOnirica = document.getElementById("btn-onirica-toggle");
     if (btnOnirica) {
       btnOnirica.addEventListener("click", () => this.toggleOniricaMode());
@@ -1491,11 +1774,19 @@ class MahjongSolitaireApp {
     }
 
     if (this.controls) {
-      this.controls.autoRotate = this.settings.autoRotate;
+      this.controls.autoRotate = this.settings.autoRotate && this.activeCameraPreset !== "2d";
       this.controls.update();
     }
 
+    this.updateEnvironmentVisibility();
     this.renderer.render(this.scene, this.camera);
+
+    // Render Top Rotating 3D Tile GLB Showcase (#wow-3d-popup) when visible
+    const wowPopup = document.getElementById("wow-3d-popup");
+    if (this.wowRenderer && this.wowGroup && wowPopup && !wowPopup.classList.contains("hidden")) {
+      this.wowGroup.rotation.y = now * 0.0018;
+      this.wowRenderer.render(this.wowScene, this.wowCamera);
+    }
   }
 }
 
