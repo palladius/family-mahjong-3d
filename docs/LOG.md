@@ -224,3 +224,23 @@
    - Built `apply_incandescent_pen_carving()` in `scripts/build_all_tile_textures.py` outputting 50 smooth chamfered 8-bit 3D vertex displacement maps (`public/textures/tiles_depth/{id}_depth.png`), high-slope normal maps (`strength=18.0`), and pyro-carved diffuse maps with scorched-umber inner groove wall shadows and molten-gold raised rims.
    - Upgraded `src/main.js` (`initSharedTileResources` & `createTileMesh`) with a subdivided `72×96` `PlaneGeometry` face mesh (`displacementMap` + `displacementScale` + `normalScale`), recessed cavity body, and outer marble collar so rotating any tile in `#wow-3d-popup` or tilting the 3D board camera reveals a physical 3D excavated cavity.
    - Created `scripts/blender/build_carved_intaglio_showcase.py` in Headless Blender 5.0.1 to export `public/models/tile_carved_intaglio_showcase.glb` (`120×160` displaced BMesh for `dots_2`, `dots_4`, `char_8`) and render the oblique raking-light Cycles ground truth `public/renders/cycles/cycles_cam5_carved_intaglio.png`.
+
+---
+
+## 2026-10-16T15:35:22+02:00 — Milestone 7b (`v1.4.1`): Visual Tile Matching Guide Modal (`Tasto H`) + Live `"🔗 VA CON:"` Partner Thumbnail Strip
+
+### 1. Verbatim User Request
+> "perfetto, metti anche istruzioni che spieghino quale tile va con quale tile, che mi confondo sempre con tasto "H""
+
+### 2. Agentic Loop & Engineering Execution
+1. **Visual Tile Matching Cheat-Sheet Modal (`#help-modal`, Key `H`)**:
+   - Added `#help-modal` in `index.html`, styled in `src/style.css`, and wired in `src/main.js` (`toggleHelpModal`) to open/close when pressing **`H`** (or **`?`**) on the keyboard or clicking **`📖 Guida (H)`** in the top HUD or bottom dock.
+   - Visually illustrates all 4 matching rules with actual tile thumbnails:
+     1. **Quartetto Famiglia Carlesso (`S1..S4`)**: *Qualsiasi 2 su 4 fanno coppia* (`Papà Riccardo`, `Mamma Kate`, `Ale`, `Sebi`).
+     2. **Quartetto Compagni Magici (`M1..M4`)**: *Qualsiasi 2 su 4 fanno coppia* (`Ale+Ghigna`, `Sebi+Pupurabbu`, `Solo Ghigna`, `Solo Pupurabbu`).
+     3. **4 Dittici Divisi a Metà (`E1↔E2` Muraglia, `F1↔F2` Riso, `G1↔G2` Shaolin, `H1↔H2` Panda)**: *Metà Sinistra Ale (`X1`) ↔ Metà Destra Sebi (`X2`)*.
+     4. **34 Semi Classici & Bambù Comici (`1索..4索` Pavone/Hot Wheels/Sirio/Gemme, `1..9`, Venti, Draghi)**: *Coppie Identiche*.
+2. **Live `"🔗 VA CON:"` Partner Preview Strip (`#sel-partners-box`)**:
+   - Whenever any tile is clicked on the board, `showSelectionCard()` in `src/main.js` immediately populates `#sel-partners-list` with the exact thumbnail image(s) and code(s) of the partner tile(s) that match with the selected tile.
+3. **Unit Test & GitHub Pages Update**:
+   - Added automated verification for `#help-modal`, `#btn-help-toggle`, `#sel-partners-box`, and `key === "h"` in `scripts/test_3d_visibility.mjs`, verified `just test`, and pushed `v1.4.1` to `main` and `gh-pages`.

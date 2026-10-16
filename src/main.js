@@ -1156,13 +1156,16 @@ class MahjongSolitaireApp {
     const thumb = document.getElementById("sel-thumb");
     const thumb2 = document.getElementById("sel-thumb-2");
     const plusEl = document.getElementById("sel-pair-plus");
+    const partnersBox = document.getElementById("sel-partners-box");
+    const partnersList = document.getElementById("sel-partners-list");
+    const partnersLabel = document.getElementById("sel-partners-label");
 
     card.classList.remove("pair-matched");
     if (thumb2) thumb2.classList.add("hidden");
     if (plusEl) plusEl.classList.add("hidden");
 
+    const folder = this.oniricaMode ? "tiles_onirica" : "tiles";
     if (thumb) {
-      const folder = this.oniricaMode ? "tiles_onirica" : "tiles";
       thumb.src = `./textures/${folder}/${tile.data.id}.png`;
     }
     badge.textContent = tile.data.code || tile.data.glyph;
@@ -1171,18 +1174,52 @@ class MahjongSolitaireApp {
       if (tile.data.cardinality === 4) {
         const groupDesc =
           tile.data.matchGroup === "quartet_family_seasons"
-            ? "Carlesso Family Quartet (S1 Papà, S2 Mamma, S3 Ale, S4 Sebi)"
-            : "Magical Companions Quartet (M1 Ale+Ghigna, M2 Sebi+Pupurabbu, M3 Ghigna, M4 Pupurabbu)";
-        status.textContent = `Cardinality 4 • ${groupDesc} — Match ANY 2 of the 4!`;
+            ? "Quartetto Famiglia (S1 Papà, S2 Mamma, S3 Ale, S4 Sebi)"
+            : "Quartetto Compagni Magici (M1 Ale+Ghigna, M2 Sebi+Pupurabbu, M3 Ghigna, M4 Pupurabbu)";
+        status.textContent = `✨ JOLLY (Cardinalità 4) • ${groupDesc} — Va con QUALSIASI dei 4! (Premi H per Guida)`;
       } else {
-        status.textContent = `Cardinality 2 Diptyque Split-Pair (${tile.data.code}) • Match Solo Ale (Left) ↔ Solo Sebi (Right)!`;
+        status.textContent = `🖼️ Dittico Diviso a Metà (${tile.data.code}) • Accoppia Ale (Sinistra 1) ↔ Sebi (Destra 2) dello stesso tema! (Premi H per Guida)`;
       }
     } else {
-      status.textContent = "Traditional Mahjong Card • Match with identical suit tile";
+      status.textContent = `🀄 Seme Tradizionale (${tile.data.glyph}) • Va con una tessera IDENTICA! (Premi H per Guida)`;
     }
     if (dyk) {
       dyk.innerHTML = `💡 <strong>Did you know?</strong> ${this.getDidYouKnowLore(tile.data)}`;
     }
+
+    // Populate live "VA CON:" partner thumbnails
+    if (partnersBox && partnersList && this.manifest && this.manifest.tiles) {
+      partnersBox.classList.remove("hidden");
+      partnersList.innerHTML = "";
+      const groupMembers = this.manifest.tiles.filter((m) => m.matchGroup === tile.data.matchGroup);
+      // For Diptyques (cardinality 2), highlight the complementary partner first
+      const sortedPartners =
+        groupMembers.length === 2
+          ? groupMembers.filter((m) => m.id !== tile.data.id).concat(groupMembers.filter((m) => m.id === tile.data.id))
+          : groupMembers;
+
+      if (partnersLabel) {
+        partnersLabel.textContent =
+          groupMembers.length === 4
+            ? "🔗 VA CON QUALSIASI DI (Tasto H):"
+            : groupMembers.length === 2
+            ? "🔗 VA CON METÀ GEMELLA (Tasto H):"
+            : "🔗 VA CON IDENTICO (Tasto H):";
+      }
+
+      sortedPartners.forEach((p) => {
+        const chip = document.createElement("div");
+        chip.className = "sel-partner-chip";
+        const img = document.createElement("img");
+        img.src = `./textures/${folder}/${p.id}.png`;
+        img.alt = p.code || p.glyph;
+        const lbl = document.createElement("span");
+        lbl.textContent = p.code || p.glyph;
+        chip.append(img, lbl);
+        partnersList.appendChild(chip);
+      });
+    }
+
     card.classList.remove("hidden");
     this.updateWow3DPreview(tile, null);
   }
@@ -1196,6 +1233,7 @@ class MahjongSolitaireApp {
     const thumb = document.getElementById("sel-thumb");
     const thumb2 = document.getElementById("sel-thumb-2");
     const plusEl = document.getElementById("sel-pair-plus");
+    const partnersBox = document.getElementById("sel-partners-box");
 
     const folder = this.oniricaMode ? "tiles_onirica" : "tiles";
     if (thumb) thumb.src = `./textures/${folder}/${tileA.data.id}.png`;
@@ -1204,6 +1242,7 @@ class MahjongSolitaireApp {
       thumb2.classList.remove("hidden");
     }
     if (plusEl) plusEl.classList.remove("hidden");
+    if (partnersBox) partnersBox.classList.add("hidden");
 
     card.classList.add("pair-matched");
     badge.textContent = "✨ COPPIA!";
@@ -1542,6 +1581,15 @@ class MahjongSolitaireApp {
     });
   }
 
+  toggleHelpModal(forceOpen = null) {
+    const modal = document.getElementById("help-modal");
+    if (!modal) return;
+    const isHidden = modal.classList.contains("hidden");
+    const shouldOpen = forceOpen !== null ? forceOpen : isHidden;
+    modal.classList.toggle("hidden", !shouldOpen);
+    sfx.playClick();
+  }
+
   bindUI() {
     // Track picker
     document.getElementById("track-select").addEventListener("change", (e) => {
@@ -1549,6 +1597,21 @@ class MahjongSolitaireApp {
     });
 
     // Action buttons
+    const btnHelpToggle = document.getElementById("btn-help-toggle");
+    if (btnHelpToggle) btnHelpToggle.addEventListener("click", () => this.toggleHelpModal());
+    const btnDockHelp = document.getElementById("btn-dock-help");
+    if (btnDockHelp) btnDockHelp.addEventListener("click", () => this.toggleHelpModal());
+    const btnCloseHelp = document.getElementById("btn-close-help");
+    if (btnCloseHelp) btnCloseHelp.addEventListener("click", () => this.toggleHelpModal(false));
+    const btnCloseHelpBottom = document.getElementById("btn-close-help-bottom");
+    if (btnCloseHelpBottom) btnCloseHelpBottom.addEventListener("click", () => this.toggleHelpModal(false));
+    const helpModal = document.getElementById("help-modal");
+    if (helpModal) {
+      helpModal.addEventListener("click", (e) => {
+        if (e.target === helpModal) this.toggleHelpModal(false);
+      });
+    }
+
     document.getElementById("btn-hint").addEventListener("click", () => this.provideHint());
     document.getElementById("btn-undo").addEventListener("click", () => this.undoLastMove());
     document.getElementById("btn-shuffle").addEventListener("click", () => this.solvableShuffle());
@@ -1571,9 +1634,33 @@ class MahjongSolitaireApp {
       }
     }
 
-    // Camera buttons
-    document.querySelectorAll(".cam-btn").forEach((btn) => {
+    // Camera buttons (only those with data-cam)
+    document.querySelectorAll(".cam-btn[data-cam]").forEach((btn) => {
       btn.addEventListener("click", () => this.setCameraPreset(btn.dataset.cam));
+    });
+
+    // Keyboard Shortcuts: 'H' or '?' toggles Tile Matching Instructions ("Quale Tile va con Quale Tile")
+    window.addEventListener("keydown", (e) => {
+      const tag = (e.target && e.target.tagName) || "";
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+      const key = e.key.toLowerCase();
+      if (key === "h" || e.key === "?") {
+        e.preventDefault();
+        this.toggleHelpModal();
+      } else if (e.key === "Escape") {
+        this.toggleHelpModal(false);
+        const jsonModal = document.getElementById("json-modal");
+        if (jsonModal) jsonModal.classList.add("hidden");
+      } else if (key === "i" || e.key === " ") {
+        e.preventDefault();
+        this.provideHint();
+      } else if (key === "2") {
+        this.toggle2DMode();
+      } else if (key === "o") {
+        this.toggleOniricaMode();
+      } else if (key === "z" || key === "u") {
+        this.undoLastMove();
+      }
     });
 
     // Panel toggles

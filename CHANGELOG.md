@@ -1,5 +1,15 @@
 # Changelog - Carlesso Family Mahjong 3D 🀄🐉
 
+## [1.4.1] - 2026-10-16
+### Added
+- **📖 Visual Tile Matching Guide Modal (`#help-modal`, Tasto `H`) & Live `"🔗 VA CON:"` Partner Strip**:
+  - Pressing **`H`** (or **`?`**) on the keyboard or clicking **`📖 Guida (H)`** in the top HUD / bottom dock opens a visual **"Quale Tile va con Quale Tile?"** cheat-sheet modal showing all 4 matching rules with actual tile images:
+    1. **Quartetto Famiglia Carlesso (`S1..S4`)**: *Qualsiasi 2 su 4 fanno coppia* (`Papà Riccardo`, `Mamma Kate`, `Ale`, `Sebi`).
+    2. **Quartetto Compagni Magici (`M1..M4`)**: *Qualsiasi 2 su 4 fanno coppia* (`Ale+Ghigna`, `Sebi+Pupurabbu`, `Solo Ghigna`, `Solo Pupurabbu`).
+    3. **4 Dittici Divisi a Metà (`E1↔E2` Muraglia, `F1↔F2` Riso, `G1↔G2` Shaolin, `H1↔H2` Panda)**: *Metà Sinistra Ale (`X1`) ↔ Metà Destra Sebi (`X2`)*.
+    4. **34 Semi Classici & Bambù Comici (`1索..4索` Pavone/Hot Wheels/Sirio/Gemme, `1..9`, Venti, Draghi)**: *Coppie Identiche*.
+  - Selecting any tile on the board now immediately renders a live **`"🔗 VA CON:"`** partner thumbnail strip (`#sel-partners-box`) inside `#selection-card` showing the exact partner tile(s) that match with the selected tile.
+
 ## [1.4.0] - 2026-10-16
 ### Added
 - **🔥 3D "Incandescent Pen" Carved Intaglio (`buco bassorilievo scavato`)**:

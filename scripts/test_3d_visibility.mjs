@@ -41,6 +41,15 @@ assert(mainJs.includes("this.sharedGeo.selOuterPurple") && mainJs.includes("this
 assert(mainJs.includes("550") && mainJs.includes("showPairMatchCard"), "550ms ('mezzo secondo') matched-pair visibility pause is wired for manual & demo play");
 assert(mainJs.includes('"2d":') && mainJs.includes("toggle2DMode"), "Dedicated 2D flat top-down camera preset & toggle are wired in src/main.js");
 assert(mainJs.includes("getDidYouKnowLore") && mainJs.includes("updateWow3DPreview"), "WOW rotating 3D tile inspector & 'Did you know?' cultural lore are wired in src/main.js");
+const indexHtml = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+assert(
+  indexHtml.includes('id="help-modal"') &&
+    indexHtml.includes('id="btn-help-toggle"') &&
+    indexHtml.includes('id="sel-partners-box"') &&
+    mainJs.includes("toggleHelpModal") &&
+    mainJs.includes('key === "h"'),
+  "Tile Matching Guide modal ('Quale Tile va con Quale Tile', Key 'H') & live 'VA CON' partner strip are wired"
+);
 
 // 2. Parse actual binary public/models/temple_environment.glb & build Three.js bounding meshes
 const glbPath = path.join(ROOT, "public/models/temple_environment.glb");
