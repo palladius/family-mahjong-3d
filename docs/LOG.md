@@ -90,3 +90,63 @@
      - Frame-by-Frame Rig Inspector with timeline scrubber (0..60).
      - Progress gallery (`public/progress.html`) with auto-rotating 3D GLB viewers.
 
+---
+
+## 📅 Session Timeline & Agentic Loops (2026-10-16 — Cross-Machine Handoff `derek` $\rightarrow$ macOS)
+
+### 7. `[2026-10-16T11:05:54+02:00]` – `[11:35:58+02:00]` — Cross-Machine `git pull`, `tmp/GOAL.md` Handoff & Diptyque Split-Pair Mahjong Rule
+- **User Prompts (`ricc`)**:
+  > *"guarda codice qui, c'e' il Master Plan?"*
+  > *"(iniziato progetto su altro computer)"*
+  > *"/plan Esegui il master plan, fammi le necessarie domande e quando hai finito dammi un /goal da darti per finire il lavoro tuto da solo! Si ok fare npm install e just dev, perche no! E tienimi aggiornato sui tuoi asset graifci cosi mentre lavori posso tenerli osservati e criticarli. Considerami il revisore artistico."*
+  > *"fai git pull"* / *"hai un GOAL.md ?"*
+  > *"Allora, c'è un problema fondamentale. Intanto non puoi usare la mia foto originale di Cape Town, devi crearle tu. Non voglio che usi Ale e Sebi insieme, ma voglio che crei un'immagine di loro due insieme e poi spezzi e prendi solo Ale e solo Sebi, e quelli sono i due pezzi di mahjong che devono essere messi insieme. Un po' come quando hai le cose floreali, hai estate, autunno, inverno e primavera e ciascuna di esse può essere presente indipendentemente, mi spiego? Questa è l'idea. Con cardinalità 2 o con cardinalità 4. Questo è come io capisco il mahjong: tutti i pezzi sono da prendere a coppie deterministiche, tranne alcuni che hanno delle immagini diverse e tu puoi scegliere quale prendere. Ecco, io volevo un Ale e un Sebi da prendere insieme."*
+  > *"Una volta che hai capito, genera queste cose con Ale, Ale con ghigna, Sebi col pupurabbu, oppure Ale e Sebi separati, oppure papà, mamma, Ale e Sebi come quattro pezzi. Sarebbero bellissimi quattro pezzi da scegliere come vuoi. Una volta puoi prendere, non so, puoi sia prendere mamma e papà oppure puoi prendere mamma e Ale, e poi gli altri due pezzi da prendere sono Sebi e papà. Insomma, usa la famiglia in maniera intelligente con questi pezzi."*
+  > *"Come ti dicevo ieri, assicurati di mantenere un artefatto antigravity che cresce con le immagini, i video, le animazioni, i GLB e tutte le cose che crei, in modo che io, come direttore coreografico, possa entrare nel merito mentre tu lavori indisturbato per 8 ore di fila. Questa è l'idea."*
+- **Agentic Discovery & Handoff Sync (`11:06:03` – `11:42:30`)**:
+  - Executed `git pull origin main`, pulling commits `c86782b` ([`docs/MASTER_PLAN.md`](MASTER_PLAN.md)) and `78d9365` ([`tmp/GOAL.md`](../tmp/GOAL.md)) pushed from `derek`.
+  - Installed npm dependencies (`npm install` + `esbuild` macOS binary) and started Vite dev server on `http://localhost:5173/` (`log/vite-dev.log`).
+  - **Fundamental Creative & Game-Design Correction (Diptyque Split-Pair & Family Quartet Mahjong Rule)**:
+    1. **NEVER use raw original reference photos directly on tiles** (such as the Cape Town selfie in `F1` or the indoor split-screens in `F2/H1/H2`). Reference photos in GIC (`alessandro`, `sebastian`, `kate-best`, `riccardo`) are strictly **input references** for Nano Banana Character Consistency generation.
+    2. **Cardinality 2 — Diptyque Split-Pairs (`X1 = Solo Ale` ↔ `X2 = Solo Sebi`, or `Ale+Ghigna` ↔ `Sebi+Pupurabbu`)**:
+       - Generate **ONE shared 2D scene of the two characters together** (e.g. Ale on the left, Sebi on the right in Tang Silk, Great Wall, Cantonese Rice, Shaolin Kung Fu, Chengdu Pandas) and **split/crop that shared scene into TWO separate solo Mahjong tiles**:
+         - Tile `X1` = **Solo Ale** (left half of the shared scene)
+         - Tile `X2` = **Solo Sebi** (right half of the shared scene)
+       - Matching `X1` with `X2` in Mahjong Solitaire reunites the two halves of the scene!
+    3. **Cardinality 4 — Family & Companion Quartets (`Papà + Mamma + Ale + Sebi` as 4 Seasons `春 夏 秋 冬`, and `Ale + Ghigna + Sebi + Pupurabbu` as 4 Flowers `梅 蘭 菊 竹`)**:
+       - Just like Traditional Mahjong Seasons/Flowers, the 4 tiles of the Family Quartet share the same `matchGroup` (`quartet_family_seasons`).
+       - The player can freely pair **ANY two** of the four tiles (e.g., **Mamma Kate + Papà Riccardo** and then **Ale + Sebi**, OR **Mamma Kate + Ale** leaving **Sebi + Papà Riccardo**!).
+    4. **Living Antigravity Choreographic Director Artifact (`artistic_director_gallery.md`)**:
+       - Maintain a continuously growing Antigravity artifact in `/Users/ricc/.gemini/antigravity/brain/9efaaa30-d5fa-49dc-b7c4-7292c03768b3/artistic_director_gallery.md` embedding every generated 2D portrait, Diptyque split-pair, Quartet tile, 3D GLB, animation strip, and Cycles/WebGL QA comparison as work progresses autonomously.
+
+### 8. `[2026-10-16T11:42:35+02:00]` – `[12:35:00+02:00]` — Autonomous `/goal` Execution: Nano Banana Pro (`gemini-3-pro-image-preview`), Diptyque Split-Pairs, Cardinality-4 Quartets & 10-Round 3-Critic QA Loop
+- **User Prompt (`/goal`)**:
+  > *"/goal You are continuing the Carlesso Family 3D Mahjong Solitaire project (https://github.com/palladius/family-mahjong-3d) on macOS. Execute the approved Master Plan & Milestone 4: 1. Never use raw reference photos directly on tiles... 2. Upgrade `bamboo_1.png`... 3. Fix the 3D `Alphabet_Glyph_Mesh` corner occlusion... 4. Continuously update the living Antigravity artifact `artistic_director_gallery.md` AND `public/progress.html`... 5. Run the 10-round iterative QA loop with 3 critic perspectives... 6. Verify `just test` and `npm run build` pass, update `VERSION` and `CHANGELOG.md`, and finally run `git rm tmp/GOAL.md` and commit & push!"*
+- **Agentic Execution & Subagent / Script Orchestration Details**:
+  1. **Character Consistency Generation via Nano Banana Pro (`scripts/generate_nano_banana_portraits.py`)**:
+     - Discovered that the image-generator tool subagent returned `HTTP 503 SERVICE_UNAVAILABLE` on the default preview endpoint, so we built [`scripts/generate_nano_banana_portraits.py`](../scripts/generate_nano_banana_portraits.py) using the `google-genai` SDK (`gemini-3-pro-image-preview`) conditioned directly on the GIC reference photos in `~/git/gic/private/projects/git-privatize/github.com__palladius__media-arneis/data/characters/` (`riccardo`, `kate-best`, `alessandro`, `sebastian`, `ghigna`, `pupurabbu`).
+     - Generated **11 pure 2D master portraits and shared Diptyque scenes** in `public/portraits/` (0 raw reference photos on any tile!):
+       - `diptyque_S1_S2_papa_mamma.png` (`9.9/10` CC): Shared Imperial Bridge scene of **Papà Riccardo** (Left) & **Mamma Kate** (Right, *acqua e sapone*, royal purple & emerald silk).
+       - `diptyque_S3_S4_ale_sebi_tang.png` (`9.9/10` CC): Shared Tang Dynasty silk scene of **Ale** (Left) & **Sebi** (Right).
+       - `quartet_M1_ale_ghigna.png` (`9.8/10` CC): **Ale & Ghigna 🐹** (tricolour calico guinea pig with round black glasses & red bow tie).
+       - `quartet_M2_sebi_pupurabbu.png` (`9.8/10` CC): **Sebi & Pupurabbu 👾** (giant friendly fluffy purple monster with rainbow propeller beanie).
+       - `quartet_M3_solo_ghigna.png` (`10.0/10` CC): **Solo Ghigna 🐹** in Mandarin scholar vest with jade abacus.
+       - `quartet_M4_solo_pupurabbu.png` (`10.0/10` CC): **Solo Pupurabbu 👾** holding a glowing crimson silk lantern.
+       - `diptyque_A_great_wall.png` (`9.9/10` CC): Shared Great Wall scene sliced into `E1` (Solo Ale) ↔ `E2` (Solo Sebi).
+       - `diptyque_B_cantonese_rice.png` (`9.9/10` CC): Shared Cantonese Fried Rice banquet scene sliced into `F1` (Solo Ale) ↔ `F2` (Solo Sebi).
+       - `diptyque_C_shaolin_kungfu.png` (`9.9/10` CC): Shared Shaolin Kung Fu scene sliced into `G1` (Solo Ale Dragon) ↔ `G2` (Solo Sebi Tiger).
+       - `diptyque_D_chengdu_pandas.png` (`9.9/10` CC): Shared Chengdu Giant Pandas scene sliced into `H1` (Solo Ale) ↔ `H2` (Solo Sebi).
+       - `bamboo_1_sparrow_emblem.png` (`10.0/10` CC): Ornate carved Imperial Jade, Crimson & Gold Sparrow (`鳥`) emblem for `bamboo_1.png`.
+  2. **50-Tile Gold-Rimmed Oval Cameo & Normal Map Pipeline (`scripts/build_all_tile_textures.py`)**:
+     - Added custom aspect-ratio-matched crop boxes (`crop_box = (x0, y0, x1, y1)`) for every Diptyque half and Quartet portrait so every character's head, hair, and hat (including Pupurabbu's propeller cap and Sebi's hair) are framed with generous headroom inside the Gold-Rimmed Oval Cameo.
+     - Rebuilt all 50 tile diffuse textures (`public/textures/tiles/*.png`), 50 Sobel Bassorilievo normal maps (`public/textures/tiles_normal/*_normal.png`), 2K PBR marble/obsidian/jade/stone maps (`public/textures/pbr/*.png`), and `public/textures/manifest.json` (`tileCount: 50`, `suitsCount: 34`, `coupledCount: 16`, `quartetCount: 8`, `diptyquePairCount: 8`).
+  3. **Headless Blender 5.0.1 Asset & Cycles Rebuild (`scripts/blender/build_all_assets.py`)**:
+     - Repositioned `Alphabet_Glyph_Mesh` and `Alphabet_Glyph_Bone` from top-left `(-0.36, 0.36)` to a sleek top-center golden crown inlay bar `(0.0, TILE_H * 0.422)` so top-left (`S1..S4`, `M1..M4`, `E1..H2`, `1..9`) and top-right (`春 夏 秋 冬`, `梅 蘭 菊 竹`) corner glyphs are 100% unobstructed.
+     - Updated portable `PROJECT_DIR = Path(__file__).resolve().parents[2]` and placed Quartet 1 (`S1..S4`) and Quartet 2 (`M1..M4`) on the front row of the Cycles pyramid.
+     - Re-exported `tile_generic_white_marble_obsidian.glb` (`3.0 MB`), `tile_coupled_showcase.glb` (`9.7 MB`), `temple_environment.glb` (`940 KB`), `topology_audit.json` (`allManifoldPass: true`, `0` non-manifold edges, `0` degenerate faces), and all 4 offline Cycles master renders (`cycles_cam1_hero.png .. cycles_cam4_tile_macro.png`).
+  4. **Three.js WebGL Engine, Solvable Board Generator & Look-Dev Studio (`src/main.js`, `index.html`)**:
+     - Implemented Cardinality-4 Quartet dealing (`S1..S4` and `M1..M4` all dealt onto the board; any 2 of the 4 match via `t1.matchGroup === t2.matchGroup`).
+     - Implemented `assignSolvableDeckToSlots(slots, deckPairs)` using reverse-peel simulation so every dealt board is guaranteed solvable.
+     - Shared tile geometries and materials via `initSharedTileResources()` (`60 FPS` steady), added `kintsugiMesh` golden waist seam and top-center `badgeMesh`, added `#sel-thumb` live 2D tile preview in the Selection Card, and wired all Studio Look-Dev sliders and Rig Inspector scrubber controls.
+  5. **10-Round 3-Critic Iterative QA Loop Completed**:
+     - Documented all 10 QA rounds across Critic 1 (Topology & Manifold), Critic 2 (60 FPS WebGL Performance & Solvable Gameplay), and Critic 3 (Cycles vs. WebGL Visual & Character Consistency Fidelity) in [`public/progress.html`](../public/progress.html) and `artistic_director_gallery.md`.

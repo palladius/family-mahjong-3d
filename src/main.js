@@ -409,21 +409,25 @@ class MahjongSolitaireApp {
     this.tiles.forEach((t) => this.scene.remove(t.root));
     this.tiles = [];
     this.selectedTile = null;
+    this.movesHistory = [];
+    this.combo = 1;
+    this.hideSelectionCard();
     this.updateHUD();
 
     const track = TRACK_LAYOUTS[trackKey] || TRACK_LAYOUTS.master;
     const slots = track.generateSlots();
 
     // Mathematically Solvable Deck Pair Allocator (Reverse-Peel Solvable Guarantee)
-    const pairsNeeded = slots.length / 2;
-    const deck = this.generateDeckPairs(pairsNeeded);
+    const pairsNeeded = Math.floor(slots.length / 2);
+    const deckPairs = this.generateDeckPairs(pairsNeeded);
+    const deck = this.assignSolvableDeckToSlots(slots, deckPairs);
 
     // Build Tile Meshes and place onto board
     const texLoader = new THREE.TextureLoader();
     const surfaceYOffset = this.activeSurface === "table" ? 0.28 : -0.45;
 
-    // Cache textures so we don't duplicate texture memory
     if (!this.faceTextureCache) this.faceTextureCache = {};
+    this.initSharedTileResources();
 
     slots.forEach((slot, idx) => {
       const tileData = deck[idx];
@@ -453,30 +457,77 @@ class MahjongSolitaireApp {
     this.updateHUD();
   }
 
+  initSharedTileResources() {
+    if (this.sharedGeo) return;
+    this.sharedGeo = {
+      body: new THREE.BoxGeometry(TILE_W, TILE_D, TILE_H),
+      kintsugi: new THREE.BoxGeometry(TILE_W * 1.004, TILE_D * 0.06, TILE_H * 1.004),
+      face: new THREE.PlaneGeometry(TILE_W * 0.90, TILE_H * 0.92),
+      // Top-center golden crown inlay bar (never occludes top-left or top-right corner glyphs!)
+      badge: new THREE.BoxGeometry(0.24, 0.016, 0.032),
+    };
+    this.sharedMat = {
+      obsidian: new THREE.MeshStandardMaterial({
+        color: 0x111116,
+        map: this.pbrTextures.obsidianBase,
+        normalMap: this.pbrTextures.obsidianNorm,
+        normalScale: new THREE.Vector2(0.22 * this.settings.normalScale, 0.22 * this.settings.normalScale),
+        roughness: 0.10,
+        metalness: this.settings.obsidianMetallic,
+      }),
+      kintsugiGold: new THREE.MeshStandardMaterial({
+        color: 0xf0c850,
+        metalness: 0.92,
+        roughness: 0.18,
+      }),
+      badgeCoupled: new THREE.MeshStandardMaterial({
+        color: 0xf5d470,
+        metalness: 0.90,
+        roughness: 0.20,
+      }),
+      badgeStandard: new THREE.MeshStandardMaterial({
+        color: 0xd4af37,
+        metalness: 0.88,
+        roughness: 0.22,
+      }),
+    };
+  }
+
   generateDeckPairs(numPairs) {
     const allDeckTiles = this.manifest.tiles;
-    // Categorize into Coupled Family Pairs vs Original Traditional Suits
+    // Categorize into Coupled Family Quartets/Pairs vs Original Traditional Suits
     const coupled = allDeckTiles.filter((t) => t.coupled);
     const standard = allDeckTiles.filter((t) => !t.coupled);
 
     const deckPairs = [];
     let pairCount = 0;
 
-    // First: Include all 8 Coupled Family Pairs (A1↔A2 .. H1↔H2)
+    // First: Include all 16 Coupled Family & Companion tiles:
+    // - Quartet 1 (Cardinality 4: S1, S2, S3, S4 -> 2 pairs where ANY 2 match!)
+    // - Quartet 2 (Cardinality 4: M1, M2, M3, M4 -> 2 pairs where ANY 2 match!)
+    // - 4 Diptyque Split-Pairs (Cardinality 2: E1↔E2, F1↔F2, G1↔G2, H1↔H2)
     const coupledThemes = {};
     coupled.forEach((t) => {
       coupledThemes[t.matchGroup] = coupledThemes[t.matchGroup] || [];
       coupledThemes[t.matchGroup].push(t);
     });
 
-    Object.values(coupledThemes).forEach((pairList) => {
-      if (pairCount < numPairs && pairList.length >= 2) {
-        deckPairs.push([pairList[0], pairList[1]]);
+    Object.values(coupledThemes).forEach((groupList) => {
+      // Shuffle within a 4-tile Quartet so initial pairing order varies organically
+      const list = [...groupList];
+      if (list.length > 2) {
+        for (let i = list.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [list[i], list[j]] = [list[j], list[i]];
+        }
+      }
+      for (let k = 0; k + 1 < list.length && pairCount < numPairs; k += 2) {
+        deckPairs.push([list[k], list[k + 1]]);
         pairCount++;
       }
     });
 
-    // Fill remaining pairs from authentic Traditional Mahjong suits
+    // Fill remaining pairs from authentic Traditional Mahjong suits (including bamboo_1 Sparrow!)
     let stdIdx = 0;
     while (pairCount < numPairs) {
       const st = standard[stdIdx % standard.length];
@@ -485,66 +536,114 @@ class MahjongSolitaireApp {
       stdIdx++;
     }
 
-    // Flatten and shuffle pairs
-    const flatDeck = [];
-    deckPairs.forEach(([a, b]) => {
-      flatDeck.push(a, b);
-    });
-
-    // Fisher-Yates Shuffle
-    for (let i = flatDeck.length - 1; i > 0; i--) {
+    // Shuffle the order of pairs
+    for (let i = deckPairs.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
-      [flatDeck[i], flatDeck[j]] = [flatDeck[j], flatDeck[i]];
+      [deckPairs[i], deckPairs[j]] = [deckPairs[j], deckPairs[i]];
     }
 
-    return flatDeck;
+    return deckPairs;
+  }
+
+  assignSolvableDeckToSlots(slots, deckPairs) {
+    // True Reverse-Peel Solvable Generator:
+    // Simulates peeling pairs of free slots until the board is empty, assigning a matching pair to each peeled slot pair.
+    const n = slots.length;
+    const assigned = new Array(n).fill(null);
+    const remainingIndices = new Set(slots.map((_, idx) => idx));
+
+    const isSlotFreeSim = (idx) => {
+      const s = slots[idx];
+      for (const otherIdx of remainingIndices) {
+        if (otherIdx === idx) continue;
+        const o = slots[otherIdx];
+        if (o.l === s.l + 1 && Math.abs(o.c - s.c) < 0.95 && Math.abs(o.r - s.r) < 0.95) {
+          return false;
+        }
+      }
+      let leftBlocked = false;
+      let rightBlocked = false;
+      for (const otherIdx of remainingIndices) {
+        if (otherIdx === idx) continue;
+        const o = slots[otherIdx];
+        if (o.l === s.l && Math.abs(o.r - s.r) < 0.8) {
+          const dc = o.c - s.c;
+          if (dc > 0.8 && dc < 1.3) rightBlocked = true;
+          if (dc < -0.8 && dc > -1.3) leftBlocked = true;
+        }
+      }
+      return !leftBlocked || !rightBlocked;
+    };
+
+    let pairIdx = 0;
+    while (remainingIndices.size >= 2 && pairIdx < deckPairs.length) {
+      const freeList = [];
+      for (const idx of remainingIndices) {
+        if (isSlotFreeSim(idx)) freeList.push(idx);
+      }
+      let idxA, idxB;
+      if (freeList.length >= 2) {
+        // Pick two random currently-free slots (preferring higher layers first to keep pyramid peeling natural)
+        freeList.sort((a, b) => slots[b].l - slots[a].l + (Math.random() - 0.5) * 0.8);
+        idxA = freeList[0];
+        idxB = freeList[1];
+      } else {
+        const remArr = Array.from(remainingIndices);
+        idxA = remArr[0];
+        idxB = remArr[1];
+      }
+      const [tileA, tileB] = deckPairs[pairIdx++];
+      assigned[idxA] = tileA;
+      assigned[idxB] = tileB;
+      remainingIndices.delete(idxA);
+      remainingIndices.delete(idxB);
+    }
+
+    return assigned;
   }
 
   createTileMesh(tileData, texLoader) {
     const root = new THREE.Group();
 
     // 1. Tile Body: Imperial White Marble + Black Obsidian Backing
-    const bodyGeo = new THREE.BoxGeometry(TILE_W, TILE_D, TILE_H);
     const marbleMat = new THREE.MeshPhysicalMaterial({
       color: 0xfcf8ee,
       map: this.pbrTextures.marbleBase,
       normalMap: this.pbrTextures.marbleNorm,
-      normalScale: new THREE.Vector2(0.18, 0.18),
+      normalScale: new THREE.Vector2(0.18 * this.settings.normalScale, 0.18 * this.settings.normalScale),
       roughness: this.settings.marbleRoughness,
       clearcoat: this.settings.marbleClearcoat,
       clearcoatRoughness: 0.1,
     });
-    const obsidianMat = new THREE.MeshStandardMaterial({
-      color: 0x111116,
-      map: this.pbrTextures.obsidianBase,
-      normalMap: this.pbrTextures.obsidianNorm,
-      roughness: 0.10,
-      metalness: this.settings.obsidianMetallic,
-    });
 
-    // Multi-material box: front & sides marble, bottom (-Y) obsidian
+    // Multi-material box: front & sides marble, bottom (-Y) shared obsidian
     const bodyMaterials = [
       marbleMat, // +X
       marbleMat, // -X
       marbleMat, // +Y top face
-      obsidianMat, // -Y bottom back
+      this.sharedMat.obsidian, // -Y bottom back
       marbleMat, // +Z
       marbleMat, // -Z
     ];
-    const bodyMesh = new THREE.Mesh(bodyGeo, bodyMaterials);
+    const bodyMesh = new THREE.Mesh(this.sharedGeo.body, bodyMaterials);
     bodyMesh.castShadow = true;
     bodyMesh.receiveShadow = true;
     root.add(bodyMesh);
 
+    // 1b. Gold Kintsugi Waist Seam (between White Marble upper body and Black Obsidian base)
+    const kintsugiMesh = new THREE.Mesh(this.sharedGeo.kintsugi, this.sharedMat.kintsugiGold);
+    kintsugiMesh.position.y = -TILE_D * 0.12;
+    root.add(kintsugiMesh);
+
     // 2. Face Overlay: 2D Oval Cameo / Card Texture with Bassorilievo Normal Relief
     if (!this.faceTextureCache[tileData.id]) {
       const faceTex = texLoader.load(`/textures/tiles/${tileData.id}.png`);
+      faceTex.colorSpace = THREE.SRGBColorSpace;
       const normTex = texLoader.load(`/textures/tiles_normal/${tileData.id}_normal.png`);
       this.faceTextureCache[tileData.id] = { faceTex, normTex };
     }
     const { faceTex, normTex } = this.faceTextureCache[tileData.id];
 
-    const faceGeo = new THREE.PlaneGeometry(TILE_W * 0.90, TILE_H * 0.92);
     const faceMat = new THREE.MeshStandardMaterial({
       map: faceTex,
       normalMap: normTex,
@@ -552,21 +651,18 @@ class MahjongSolitaireApp {
       roughness: 0.16,
       metalness: 0.05,
     });
-    const faceMesh = new THREE.Mesh(faceGeo, faceMat);
+    const faceMesh = new THREE.Mesh(this.sharedGeo.face, faceMat);
     faceMesh.rotation.x = -Math.PI / 2;
     faceMesh.position.y = TILE_D * 0.5 + 0.006;
     faceMesh.receiveShadow = true;
     root.add(faceMesh);
 
-    // 3. Alphabet Glyph Corner Badge (Raised 3D metallic overlay)
-    const badgeGeo = new THREE.BoxGeometry(0.20, 0.02, 0.16);
-    const badgeMat = new THREE.MeshStandardMaterial({
-      color: tileData.coupled ? 0xf5d470 : 0xd4af37,
-      metalness: 0.88,
-      roughness: 0.22,
-    });
-    const badgeMesh = new THREE.Mesh(badgeGeo, badgeMat);
-    badgeMesh.position.set(-TILE_W * 0.32, TILE_D * 0.5 + 0.016, -TILE_H * 0.36);
+    // 3. Alphabet_Glyph_Mesh (Top-Center Golden Crown Inlay Bar — never occludes top-left or top-right corner glyphs!)
+    const badgeMesh = new THREE.Mesh(
+      this.sharedGeo.badge,
+      tileData.coupled ? this.sharedMat.badgeCoupled : this.sharedMat.badgeStandard
+    );
+    badgeMesh.position.set(0.0, TILE_D * 0.5 + 0.014, -TILE_H * 0.422);
     badgeMesh.castShadow = true;
     root.add(badgeMesh);
 
@@ -576,6 +672,7 @@ class MahjongSolitaireApp {
       faceMesh: faceMesh,
       badgeMesh: badgeMesh,
       bodyMesh: bodyMesh,
+      kintsugiMesh: kintsugiMesh,
     };
 
     return root;
@@ -644,7 +741,9 @@ class MahjongSolitaireApp {
 
   areTilesMatching(t1, t2) {
     if (t1.coupled && t2.coupled) {
-      return t1.matchGroup === t2.matchGroup; // Coupled pair match (A1↔A2 etc.)
+      // Supports both Cardinality 4 Quartets (any 2 in quartet_family_seasons / quartet_magic_flowers match!)
+      // and Cardinality 2 Diptyque Split-Pairs (pair_E_great_wall .. pair_H_chengdu_pandas)!
+      return t1.matchGroup === t2.matchGroup;
     }
     return t1.id === t2.id; // Exact traditional suit match
   }
@@ -798,12 +897,26 @@ class MahjongSolitaireApp {
     const badge = document.getElementById("sel-badge");
     const title = document.getElementById("sel-title");
     const status = document.getElementById("sel-status");
+    const thumb = document.getElementById("sel-thumb");
 
+    if (thumb) {
+      thumb.src = `/textures/tiles/${tile.data.id}.png`;
+    }
     badge.textContent = tile.data.code || tile.data.glyph;
     title.textContent = tile.data.title;
-    status.textContent = tile.data.coupled
-      ? `Coupled Family Tile (${tile.data.code}) • Match with its partner pose!`
-      : "Traditional Mahjong Card • Match with identical tile";
+    if (tile.data.coupled) {
+      if (tile.data.cardinality === 4) {
+        const groupDesc =
+          tile.data.matchGroup === "quartet_family_seasons"
+            ? "Carlesso Family Quartet (S1 Papà, S2 Mamma, S3 Ale, S4 Sebi)"
+            : "Magical Companions Quartet (M1 Ale+Ghigna, M2 Sebi+Pupurabbu, M3 Ghigna, M4 Pupurabbu)";
+        status.textContent = `Cardinality 4 • ${groupDesc} — Match ANY 2 of the 4!`;
+      } else {
+        status.textContent = `Cardinality 2 Diptyque Split-Pair (${tile.data.code}) • Match Solo Ale (Left) ↔ Solo Sebi (Right)!`;
+      }
+    } else {
+      status.textContent = "Traditional Mahjong Card • Match with identical suit tile";
+    }
     card.classList.remove("hidden");
   }
 
@@ -872,18 +985,33 @@ class MahjongSolitaireApp {
     const remainingTiles = this.tiles.filter((t) => !t.removed);
     if (remainingTiles.length === 0) return;
 
-    // Reshuffle data payload amongst remaining slots
-    const datas = remainingTiles.map((t) => t.data);
-    for (let i = datas.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [datas[i], datas[j]] = [datas[j], datas[i]];
+    // Group remaining tile data into valid matching pairs and re-assign via Reverse-Peel
+    const pool = remainingTiles.map((t) => t.data);
+    const used = new Array(pool.length).fill(false);
+    const pairs = [];
+    for (let i = 0; i < pool.length; i++) {
+      if (used[i]) continue;
+      for (let j = i + 1; j < pool.length; j++) {
+        if (!used[j] && this.areTilesMatching(pool[i], pool[j])) {
+          used[i] = true;
+          used[j] = true;
+          pairs.push([pool[i], pool[j]]);
+          break;
+        }
+      }
     }
+    const remSlots = remainingTiles.map((t) => t.slot);
+    const datas =
+      pairs.length * 2 === remainingTiles.length
+        ? this.assignSolvableDeckToSlots(remSlots, pairs)
+        : pool.sort(() => Math.random() - 0.5);
 
     const texLoader = new THREE.TextureLoader();
     remainingTiles.forEach((tile, i) => {
-      tile.data = datas[i];
+      tile.data = datas[i] || pool[i];
       if (!this.faceTextureCache[tile.data.id]) {
         const faceTex = texLoader.load(`/textures/tiles/${tile.data.id}.png`);
+        faceTex.colorSpace = THREE.SRGBColorSpace;
         const normTex = texLoader.load(`/textures/tiles_normal/${tile.data.id}_normal.png`);
         this.faceTextureCache[tile.data.id] = { faceTex, normTex };
       }
@@ -891,6 +1019,9 @@ class MahjongSolitaireApp {
       tile.root.userData.faceMesh.material.map = faceTex;
       tile.root.userData.faceMesh.material.normalMap = normTex;
       tile.root.userData.faceMesh.material.needsUpdate = true;
+      tile.root.userData.badgeMesh.material = tile.data.coupled
+        ? this.sharedMat.badgeCoupled
+        : this.sharedMat.badgeStandard;
       tile.root.userData.tileData = tile.data;
       this.pulseTile(tile);
     });
@@ -909,20 +1040,34 @@ class MahjongSolitaireApp {
 
   stepDemoSolver() {
     if (!this.isDemoRunning) return;
+    const remaining = this.tiles.filter((t) => !t.removed).length;
+    if (remaining === 0) {
+      this.isDemoRunning = false;
+      const btn = document.getElementById("btn-demo");
+      if (btn) btn.textContent = "▶ Demo Auto-Play";
+      return;
+    }
     const { freeTiles } = this.updateFreeTiles();
+    // Prefer matching Coupled Family Quartet / Diptyque tiles first during Demo Auto-Play!
+    const pairs = [];
     for (let i = 0; i < freeTiles.length; i++) {
       for (let j = i + 1; j < freeTiles.length; j++) {
         if (this.areTilesMatching(freeTiles[i].data, freeTiles[j].data)) {
-          this.handleTileClick(freeTiles[i]);
-          setTimeout(() => {
-            if (this.isDemoRunning) {
-              this.handleTileClick(freeTiles[j]);
-              setTimeout(() => this.stepDemoSolver(), 650);
-            }
-          }, 350);
-          return;
+          pairs.push([freeTiles[i], freeTiles[j]]);
         }
       }
+    }
+    if (pairs.length > 0) {
+      pairs.sort((a, b) => (b[0].data.coupled ? 1 : 0) - (a[0].data.coupled ? 1 : 0));
+      const [tA, tB] = pairs[0];
+      this.handleTileClick(tA);
+      setTimeout(() => {
+        if (this.isDemoRunning) {
+          this.handleTileClick(tB);
+          setTimeout(() => this.stepDemoSolver(), 620);
+        }
+      }, 320);
+      return;
     }
     // If no moves, auto-shuffle
     this.solvableShuffle();
@@ -935,10 +1080,14 @@ class MahjongSolitaireApp {
     const isTable = this.activeSurface === "table";
     nameEl.textContent = isTable ? "Rosewood Table" : "Stone Pavement";
 
-    // Smoothly lower or raise table model
+    // Smoothly lower or raise table model and legs
     if (this.envTable) {
-      const targetTableY = isTable ? -0.14 : -3.5;
-      this.addTween(this.envTable.position, "z", targetTableY, 0.4); // Blender Z = Three Z in our rotated setup
+      const targetTableZ = isTable ? -0.14 : -3.5;
+      this.addTween(this.envTable.position, "z", targetTableZ, 0.4);
+    }
+    if (this.envLegs) {
+      const targetLegZ = isTable ? -0.36 : -3.7;
+      this.envLegs.forEach((leg) => this.addTween(leg.position, "z", targetLegZ, 0.4));
     }
 
     // Move tiles to match new surface level
@@ -955,7 +1104,7 @@ class MahjongSolitaireApp {
       hero: { pos: [0.0, 6.4, 9.6], target: [0.0, 0.8, -0.3], fov: 38 },
       topdown: { pos: [0.0, 10.2, 0.8], target: [0.0, 0.6, -0.2], fov: 40 },
       pavement: { pos: [5.4, 2.2, 7.8], target: [0.0, 0.4, -1.2], fov: 36 },
-      macro: { pos: [-0.8, 1.85, 5.5], target: [-0.8, 0.35, 3.65], fov: 55 },
+      macro: { pos: [0.0, 1.95, 5.8], target: [0.0, 0.35, 3.65], fov: 48 },
       orbit: { pos: [0.0, 7.0, 11.0], target: [0.0, 0.5, 0.0], fov: 42 },
     };
 
@@ -975,6 +1124,39 @@ class MahjongSolitaireApp {
     document.querySelectorAll(".cam-btn").forEach((b) => {
       b.classList.toggle("active", b.dataset.cam === presetKey);
     });
+  }
+
+  applyRigPoseAtFrame(animName, frame) {
+    // Applies procedural pose matching the 4 Blender NLA actions (Idle, Select, Pair, Disappear) onto the active/front tile
+    const targetTile = this.selectedTile || this.tiles.find((t) => !t.removed && t.isFree) || this.tiles[0];
+    if (!targetTile) return;
+    const u = Math.max(0, Math.min(1, frame / 60));
+    const root = targetTile.root;
+    const base = targetTile.basePos;
+
+    root.position.copy(base);
+    root.rotation.set(0, 0, 0);
+    root.scale.set(1, 1, 1);
+
+    if (animName === "Idle") {
+      const s = Math.sin(u * Math.PI);
+      root.position.y = base.y + s * 0.04;
+      root.rotation.x = s * 0.02;
+    } else if (animName === "Select") {
+      const s = Math.sin(u * Math.PI);
+      root.position.y = base.y + s * 0.35;
+      root.rotation.x = s * 0.21;
+    } else if (animName === "Pair") {
+      const s = Math.sin(u * Math.PI);
+      root.position.y = base.y + s * 0.65;
+      root.rotation.y = u * Math.PI * 2;
+      root.rotation.x = s * 0.30;
+    } else if (animName === "Disappear") {
+      root.position.y = base.y + Math.sin(u * Math.PI * 0.8) * 0.9;
+      root.rotation.y = u * Math.PI * 3;
+      const sc = Math.max(0.05, 1.0 - Math.pow(u, 2.2));
+      root.scale.set(sc, sc, sc);
+    }
   }
 
   addTween(obj, prop, targetVal, durationSec = 0.2) {
@@ -1060,28 +1242,121 @@ class MahjongSolitaireApp {
       this.tiles.forEach((t) => (t.root.userData.bodyMesh.material[0].clearcoat = val));
     });
     bindSlider("sl-obsidian-metallic", "obsidianMetallic", (val) => {
-      this.tiles.forEach((t) => (t.root.userData.bodyMesh.material[3].metalness = val));
+      if (this.sharedMat) this.sharedMat.obsidian.metalness = val;
     });
     bindSlider("sl-bassorilievo", "bassorilievo", (val) => {
       this.tiles.forEach((t) => {
         t.root.userData.faceMesh.material.normalScale.set(val, val);
       });
     });
+    bindSlider("sl-normal-scale", "normalScale", (val) => {
+      this.tiles.forEach((t) => {
+        t.root.userData.bodyMesh.material[0].normalScale.set(0.18 * val, 0.18 * val);
+      });
+      if (this.sharedMat) {
+        this.sharedMat.obsidian.normalScale.set(0.22 * val, 0.22 * val);
+      }
+    });
     bindSlider("sl-fov", "fov", (val) => {
       this.camera.fov = val;
       this.camera.updateProjectionMatrix();
     });
+    bindSlider("sl-cam-distance", "camDistance", (val) => {
+      if (!this.controls) return;
+      const dir = this.camera.position.clone().sub(this.controls.target).normalize();
+      this.camera.position.copy(this.controls.target).addScaledVector(dir, val);
+    });
+
+    // Checkboxes & Reset
+    const chkAutoRotate = document.getElementById("chk-auto-rotate");
+    if (chkAutoRotate) {
+      chkAutoRotate.addEventListener("change", (e) => {
+        this.settings.autoRotate = e.target.checked;
+      });
+    }
+    const chkShadows = document.getElementById("chk-shadows");
+    if (chkShadows) {
+      chkShadows.addEventListener("change", (e) => {
+        this.settings.shadows = e.target.checked;
+        this.renderer.shadowMap.enabled = e.target.checked;
+        this.sunLight.castShadow = e.target.checked;
+      });
+    }
+    const btnResetSettings = document.getElementById("btn-reset-settings");
+    if (btnResetSettings) {
+      btnResetSettings.addEventListener("click", () => {
+        Object.assign(this.settings, {
+          sunIntensity: 3.8,
+          sunElevation: 46,
+          sunAzimuth: 32,
+          lanternGlow: 2.4,
+          ambient: 0.75,
+          exposure: 1.10,
+          marbleRoughness: 0.14,
+          marbleClearcoat: 0.35,
+          obsidianMetallic: 0.22,
+          bassorilievo: 0.32,
+          normalScale: 1.0,
+          fov: 38,
+          camDistance: 11.5,
+          autoRotate: false,
+          shadows: true,
+        });
+        this.updateSunPosition();
+        this.syncSliderUI();
+      });
+    }
+
+    // Rig Inspector Timeline Scrubber & Play/Pause
+    this.activeRigAnim = "Idle";
+    this.rigPlaying = false;
+    this.rigFrame = 0;
+    const rigScrubber = document.getElementById("rig-scrubber");
+    const rigFrameDisplay = document.getElementById("rig-frame-display");
+
+    document.querySelectorAll(".anim-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".anim-btn").forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        this.activeRigAnim = btn.dataset.anim;
+        this.applyRigPoseAtFrame(this.activeRigAnim, this.rigFrame);
+      });
+    });
+    if (rigScrubber) {
+      rigScrubber.addEventListener("input", (e) => {
+        this.rigFrame = parseInt(e.target.value, 10);
+        if (rigFrameDisplay) rigFrameDisplay.textContent = `Frame ${this.rigFrame} / 60`;
+        this.applyRigPoseAtFrame(this.activeRigAnim, this.rigFrame);
+      });
+    }
+    const btnRigPlay = document.getElementById("btn-rig-play");
+    const btnRigPause = document.getElementById("btn-rig-pause");
+    const btnRigReset = document.getElementById("btn-rig-reset");
+    if (btnRigPlay) btnRigPlay.addEventListener("click", () => (this.rigPlaying = true));
+    if (btnRigPause) btnRigPause.addEventListener("click", () => (this.rigPlaying = false));
+    if (btnRigReset) {
+      btnRigReset.addEventListener("click", () => {
+        this.rigPlaying = false;
+        this.rigFrame = 0;
+        if (rigScrubber) rigScrubber.value = 0;
+        if (rigFrameDisplay) rigFrameDisplay.textContent = "Frame 0 / 60";
+        this.applyRigPoseAtFrame(this.activeRigAnim, 0);
+      });
+    }
 
     // JSON Settings Modal
-    document.getElementById("btn-copy-json").addEventListener("click", () => {
+    const openJsonModal = () => {
       const json = JSON.stringify(this.settings, null, 2);
       document.getElementById("json-textarea").value = json;
       document.getElementById("json-modal").classList.remove("hidden");
-    });
+    };
+    document.getElementById("btn-copy-json").addEventListener("click", openJsonModal);
+    const btnPasteJson = document.getElementById("btn-paste-json");
+    if (btnPasteJson) btnPasteJson.addEventListener("click", openJsonModal);
+
     document.getElementById("btn-copy-json-clip").addEventListener("click", () => {
       const json = document.getElementById("json-textarea").value;
       navigator.clipboard.writeText(json);
-      alert("Settings JSON copied to clipboard!");
     });
     document.getElementById("btn-apply-json").addEventListener("click", () => {
       try {
@@ -1129,7 +1404,14 @@ class MahjongSolitaireApp {
     setVal("sl-marble-clearcoat", this.settings.marbleClearcoat);
     setVal("sl-obsidian-metallic", this.settings.obsidianMetallic);
     setVal("sl-bassorilievo", this.settings.bassorilievo);
+    setVal("sl-normal-scale", this.settings.normalScale);
     setVal("sl-fov", this.settings.fov);
+    setVal("sl-cam-distance", this.settings.camDistance);
+    this.tiles.forEach((t) => {
+      t.root.userData.bodyMesh.material[0].roughness = this.settings.marbleRoughness;
+      t.root.userData.bodyMesh.material[0].clearcoat = this.settings.marbleClearcoat;
+      t.root.userData.faceMesh.material.normalScale.set(this.settings.bassorilievo, this.settings.bassorilievo);
+    });
   }
 
   animate(now) {
@@ -1140,6 +1422,17 @@ class MahjongSolitaireApp {
       if (this.tweens[i].update(now)) {
         this.tweens.splice(i, 1);
       }
+    }
+
+    // Advance Rig Inspector timeline if playing
+    if (this.rigPlaying) {
+      this.rigFrame = (this.rigFrame + 0.5) % 61;
+      const intFrame = Math.floor(this.rigFrame);
+      const rigScrubber = document.getElementById("rig-scrubber");
+      const rigFrameDisplay = document.getElementById("rig-frame-display");
+      if (rigScrubber) rigScrubber.value = intFrame;
+      if (rigFrameDisplay) rigFrameDisplay.textContent = `Frame ${intFrame} / 60`;
+      this.applyRigPoseAtFrame(this.activeRigAnim, intFrame);
     }
 
     if (this.controls) {

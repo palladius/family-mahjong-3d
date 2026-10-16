@@ -7,6 +7,7 @@
       "id": "char_1",
       "suit": "characters",
       "matchGroup": "char_1",
+      "cardinality": 2,
       "glyph": "1萬",
       "title": "1 Characters (一萬)",
       "coupled": false
@@ -15,6 +16,7 @@
       "id": "char_2",
       "suit": "characters",
       "matchGroup": "char_2",
+      "cardinality": 2,
       "glyph": "2萬",
       "title": "2 Characters (二萬)",
       "coupled": false
@@ -23,6 +25,7 @@
       "id": "char_3",
       "suit": "characters",
       "matchGroup": "char_3",
+      "cardinality": 2,
       "glyph": "3萬",
       "title": "3 Characters (三萬)",
       "coupled": false
@@ -31,6 +34,7 @@
       "id": "char_4",
       "suit": "characters",
       "matchGroup": "char_4",
+      "cardinality": 2,
       "glyph": "4萬",
       "title": "4 Characters (四萬)",
       "coupled": false
@@ -39,6 +43,7 @@
       "id": "char_5",
       "suit": "characters",
       "matchGroup": "char_5",
+      "cardinality": 2,
       "glyph": "5萬",
       "title": "5 Characters (五萬)",
       "coupled": false
@@ -47,6 +52,7 @@
       "id": "char_6",
       "suit": "characters",
       "matchGroup": "char_6",
+      "cardinality": 2,
       "glyph": "6萬",
       "title": "6 Characters (六萬)",
       "coupled": false
@@ -55,6 +61,7 @@
       "id": "char_7",
       "suit": "characters",
       "matchGroup": "char_7",
+      "cardinality": 2,
       "glyph": "7萬",
       "title": "7 Characters (七萬)",
       "coupled": false
@@ -63,6 +70,7 @@
       "id": "char_8",
       "suit": "characters",
       "matchGroup": "char_8",
+      "cardinality": 2,
       "glyph": "8萬",
       "title": "8 Characters (八萬)",
       "coupled": false
@@ -71,6 +79,7 @@
       "id": "char_9",
       "suit": "characters",
       "matchGroup": "char_9",
+      "cardinality": 2,
       "glyph": "9萬",
       "title": "9 Characters (九萬)",
       "coupled": false
@@ -79,6 +88,7 @@
       "id": "dots_1",
       "suit": "dots",
       "matchGroup": "dots_1",
+      "cardinality": 2,
       "glyph": "1筒",
       "title": "1 Circles (一筒)",
       "coupled": false
@@ -87,6 +97,7 @@
       "id": "dots_2",
       "suit": "dots",
       "matchGroup": "dots_2",
+      "cardinality": 2,
       "glyph": "2筒",
       "title": "2 Circles (二筒)",
       "coupled": false
@@ -95,6 +106,7 @@
       "id": "dots_3",
       "suit": "dots",
       "matchGroup": "dots_3",
+      "cardinality": 2,
       "glyph": "3筒",
       "title": "3 Circles (三筒)",
       "coupled": false
@@ -103,6 +115,7 @@
       "id": "dots_4",
       "suit": "dots",
       "matchGroup": "dots_4",
+      "cardinality": 2,
       "glyph": "4筒",
       "title": "4 Circles (四筒)",
       "coupled": false
@@ -111,6 +124,7 @@
       "id": "dots_5",
       "suit": "dots",
       "matchGroup": "dots_5",
+      "cardinality": 2,
       "glyph": "5筒",
       "title": "5 Circles (五筒)",
       "coupled": false
@@ -119,6 +133,7 @@
       "id": "dots_6",
       "suit": "dots",
       "matchGroup": "dots_6",
+      "cardinality": 2,
       "glyph": "6筒",
       "title": "6 Circles (六筒)",
       "coupled": false
@@ -127,6 +142,7 @@
       "id": "dots_7",
       "suit": "dots",
       "matchGroup": "dots_7",
+      "cardinality": 2,
       "glyph": "7筒",
       "title": "7 Circles (七筒)",
       "coupled": false
@@ -135,6 +151,7 @@
       "id": "dots_8",
       "suit": "dots",
       "matchGroup": "dots_8",
+      "cardinality": 2,
       "glyph": "8筒",
       "title": "8 Circles (八筒)",
       "coupled": false
@@ -143,6 +160,7 @@
       "id": "dots_9",
       "suit": "dots",
       "matchGroup": "dots_9",
+      "cardinality": 2,
       "glyph": "9筒",
       "title": "9 Circles (九筒)",
       "coupled": false
@@ -151,6 +169,7 @@
       "id": "bamboo_1",
       "suit": "bamboo",
       "matchGroup": "bamboo_1",
+      "cardinality": 2,
       "glyph": "1索",
       "title": "1 Bamboo (一索)",
       "coupled": false
@@ -159,6 +178,7 @@
       "id": "bamboo_2",
       "suit": "bamboo",
       "matchGroup": "bamboo_2",
+      "cardinality": 2,
       "glyph": "2索",
       "title": "2 Bamboo (二索)",
       "coupled": false
@@ -167,6 +187,7 @@
       "id": "bamboo_3",
       "suit": "bamboo",
       "matchGroup": "bamboo_3",
+      "cardinality": 2,
       "glyph": "3索",
       "title": "3 Bamboo (三索)",
       "coupled": false
@@ -175,6 +196,7 @@
       "id": "bamboo_4",
       "suit": "bamboo",
       "matchGroup": "bamboo_4",
+      "cardinality": 2,
       "glyph": "4索",
       "title": "4 Bamboo (四索)",
       "coupled": false
@@ -183,6 +205,7 @@
       "id": "bamboo_5",
       "suit": "bamboo",
       "matchGroup": "bamboo_5",
+      "cardinality": 2,
       "glyph": "5索",
       "title": "5 Bamboo (五索)",
       "coupled": false
@@ -191,6 +214,7 @@
       "id": "bamboo_6",
       "suit": "bamboo",
       "matchGroup": "bamboo_6",
+      "cardinality": 2,
       "glyph": "6索",
       "title": "6 Bamboo (六索)",
       "coupled": false
@@ -199,6 +223,7 @@
       "id": "bamboo_7",
       "suit": "bamboo",
       "matchGroup": "bamboo_7",
+      "cardinality": 2,
       "glyph": "7索",
       "title": "7 Bamboo (七索)",
       "coupled": false
@@ -207,6 +232,7 @@
       "id": "bamboo_8",
       "suit": "bamboo",
       "matchGroup": "bamboo_8",
+      "cardinality": 2,
       "glyph": "8索",
       "title": "8 Bamboo (八索)",
       "coupled": false
@@ -215,6 +241,7 @@
       "id": "bamboo_9",
       "suit": "bamboo",
       "matchGroup": "bamboo_9",
+      "cardinality": 2,
       "glyph": "9索",
       "title": "9 Bamboo (九索)",
       "coupled": false
@@ -223,6 +250,7 @@
       "id": "wind_E",
       "suit": "winds",
       "matchGroup": "wind_E",
+      "cardinality": 2,
       "glyph": "東",
       "title": "East Wind (東)",
       "coupled": false
@@ -231,6 +259,7 @@
       "id": "wind_S",
       "suit": "winds",
       "matchGroup": "wind_S",
+      "cardinality": 2,
       "glyph": "南",
       "title": "South Wind (南)",
       "coupled": false
@@ -239,6 +268,7 @@
       "id": "wind_W",
       "suit": "winds",
       "matchGroup": "wind_W",
+      "cardinality": 2,
       "glyph": "西",
       "title": "West Wind (西)",
       "coupled": false
@@ -247,6 +277,7 @@
       "id": "wind_N",
       "suit": "winds",
       "matchGroup": "wind_N",
+      "cardinality": 2,
       "glyph": "北",
       "title": "North Wind (北)",
       "coupled": false
@@ -255,6 +286,7 @@
       "id": "dragon_red",
       "suit": "dragons",
       "matchGroup": "dragon_red",
+      "cardinality": 2,
       "glyph": "中",
       "title": "Red Dragon (紅中)",
       "coupled": false
@@ -263,6 +295,7 @@
       "id": "dragon_green",
       "suit": "dragons",
       "matchGroup": "dragon_green",
+      "cardinality": 2,
       "glyph": "發",
       "title": "Green Dragon (發財)",
       "coupled": false
@@ -271,6 +304,7 @@
       "id": "dragon_white",
       "suit": "dragons",
       "matchGroup": "dragon_white",
+      "cardinality": 2,
       "glyph": "白",
       "title": "White Dragon (白板)",
       "coupled": false
@@ -278,162 +312,194 @@
     {
       "id": "coupled_A1",
       "suit": "coupled_family",
-      "matchGroup": "theme_A_tang_silk",
-      "glyph": "春A1",
-      "code": "A1",
+      "matchGroup": "quartet_family_seasons",
+      "cardinality": 4,
+      "glyph": "春S1",
+      "code": "S1",
       "hanzi": "春",
-      "title": "Ale & Sebi • Tang Silk I",
-      "coupled": true
+      "title": "S1 • Solo Papà Riccardo (Family Quartet)",
+      "coupled": true,
+      "sliceMode": "custom_crop"
     },
     {
       "id": "coupled_A2",
       "suit": "coupled_family",
-      "matchGroup": "theme_A_tang_silk",
-      "glyph": "春A2",
-      "code": "A2",
-      "hanzi": "春",
-      "title": "Ale & Sebi • Tang Silk II",
-      "coupled": true
+      "matchGroup": "quartet_family_seasons",
+      "cardinality": 4,
+      "glyph": "夏S2",
+      "code": "S2",
+      "hanzi": "夏",
+      "title": "S2 • Solo Mamma Kate (Family Quartet)",
+      "coupled": true,
+      "sliceMode": "custom_crop"
     },
     {
       "id": "coupled_B1",
       "suit": "coupled_family",
-      "matchGroup": "theme_B_sightseeing",
-      "glyph": "夏B1",
-      "code": "B1",
-      "hanzi": "夏",
-      "title": "Ale & Sebi • Great Wall I",
-      "coupled": true
+      "matchGroup": "quartet_family_seasons",
+      "cardinality": 4,
+      "glyph": "秋S3",
+      "code": "S3",
+      "hanzi": "秋",
+      "title": "S3 • Solo Ale • Tang Silk (Family Quartet)",
+      "coupled": true,
+      "sliceMode": "custom_crop"
     },
     {
       "id": "coupled_B2",
       "suit": "coupled_family",
-      "matchGroup": "theme_B_sightseeing",
-      "glyph": "夏B2",
-      "code": "B2",
-      "hanzi": "夏",
-      "title": "Ale & Sebi • Great Wall II",
-      "coupled": true
+      "matchGroup": "quartet_family_seasons",
+      "cardinality": 4,
+      "glyph": "冬S4",
+      "code": "S4",
+      "hanzi": "冬",
+      "title": "S4 • Solo Sebi • Tang Silk (Family Quartet)",
+      "coupled": true,
+      "sliceMode": "custom_crop"
     },
     {
       "id": "coupled_C1",
       "suit": "coupled_family",
-      "matchGroup": "theme_C_cantonese_rice",
-      "glyph": "秋C1",
-      "code": "C1",
-      "hanzi": "秋",
-      "title": "Ale & Sebi • Cantonese Rice I",
-      "coupled": true
+      "matchGroup": "quartet_magic_flowers",
+      "cardinality": 4,
+      "glyph": "梅M1",
+      "code": "M1",
+      "hanzi": "梅",
+      "title": "M1 • Ale & Ghigna (Magic Quartet)",
+      "coupled": true,
+      "sliceMode": "full"
     },
     {
       "id": "coupled_C2",
       "suit": "coupled_family",
-      "matchGroup": "theme_C_cantonese_rice",
-      "glyph": "秋C2",
-      "code": "C2",
-      "hanzi": "秋",
-      "title": "Ale & Sebi • Cantonese Rice II",
-      "coupled": true
+      "matchGroup": "quartet_magic_flowers",
+      "cardinality": 4,
+      "glyph": "蘭M2",
+      "code": "M2",
+      "hanzi": "蘭",
+      "title": "M2 • Sebi & Pupurabbu (Magic Quartet)",
+      "coupled": true,
+      "sliceMode": "custom_crop"
     },
     {
       "id": "coupled_D1",
       "suit": "coupled_family",
-      "matchGroup": "theme_D_kungfu",
-      "glyph": "冬D1",
-      "code": "D1",
-      "hanzi": "冬",
-      "title": "Ale & Sebi • Shaolin Kung Fu I",
-      "coupled": true
+      "matchGroup": "quartet_magic_flowers",
+      "cardinality": 4,
+      "glyph": "菊M3",
+      "code": "M3",
+      "hanzi": "菊",
+      "title": "M3 • Solo Ghigna Genius (Magic Quartet)",
+      "coupled": true,
+      "sliceMode": "full"
     },
     {
       "id": "coupled_D2",
       "suit": "coupled_family",
-      "matchGroup": "theme_D_kungfu",
-      "glyph": "冬D2",
-      "code": "D2",
-      "hanzi": "冬",
-      "title": "Ale & Sebi • Shaolin Kung Fu II",
-      "coupled": true
+      "matchGroup": "quartet_magic_flowers",
+      "cardinality": 4,
+      "glyph": "竹M4",
+      "code": "M4",
+      "hanzi": "竹",
+      "title": "M4 • Solo Pupurabbu Lantern (Magic Quartet)",
+      "coupled": true,
+      "sliceMode": "full"
     },
     {
       "id": "coupled_E1",
       "suit": "coupled_family",
-      "matchGroup": "theme_E_panda",
-      "glyph": "梅E1",
+      "matchGroup": "pair_E_great_wall",
+      "cardinality": 2,
+      "glyph": "夏E1",
       "code": "E1",
-      "hanzi": "梅",
-      "title": "Ale & Sebi • Chengdu Pandas I",
-      "coupled": true
+      "hanzi": "夏",
+      "title": "E1 • Solo Ale • Great Wall (Left)",
+      "coupled": true,
+      "sliceMode": "left"
     },
     {
       "id": "coupled_E2",
       "suit": "coupled_family",
-      "matchGroup": "theme_E_panda",
-      "glyph": "梅E2",
+      "matchGroup": "pair_E_great_wall",
+      "cardinality": 2,
+      "glyph": "夏E2",
       "code": "E2",
-      "hanzi": "梅",
-      "title": "Ale & Sebi • Chengdu Pandas II",
-      "coupled": true
+      "hanzi": "夏",
+      "title": "E2 • Solo Sebi • Great Wall (Right)",
+      "coupled": true,
+      "sliceMode": "right"
     },
     {
       "id": "coupled_F1",
       "suit": "coupled_family",
-      "matchGroup": "theme_F_expedition",
-      "glyph": "蘭F1",
+      "matchGroup": "pair_F_cantonese_rice",
+      "cardinality": 2,
+      "glyph": "秋F1",
       "code": "F1",
-      "hanzi": "蘭",
-      "title": "Ale & Sebi • Dragon Peak I",
-      "coupled": true
+      "hanzi": "秋",
+      "title": "F1 • Solo Ale • Cantonese Rice (Left)",
+      "coupled": true,
+      "sliceMode": "left"
     },
     {
       "id": "coupled_F2",
       "suit": "coupled_family",
-      "matchGroup": "theme_F_expedition",
-      "glyph": "蘭F2",
+      "matchGroup": "pair_F_cantonese_rice",
+      "cardinality": 2,
+      "glyph": "秋F2",
       "code": "F2",
-      "hanzi": "蘭",
-      "title": "Ale & Sebi • Dragon Peak II",
-      "coupled": true
+      "hanzi": "秋",
+      "title": "F2 • Solo Sebi • Cantonese Rice (Right)",
+      "coupled": true,
+      "sliceMode": "right"
     },
     {
       "id": "coupled_G1",
       "suit": "coupled_family",
-      "matchGroup": "theme_G_compagni",
-      "glyph": "菊G1",
+      "matchGroup": "pair_G_shaolin_kungfu",
+      "cardinality": 2,
+      "glyph": "冬G1",
       "code": "G1",
-      "hanzi": "菊",
-      "title": "Ghigna 🐹 & Pupurabbu 👾 I",
-      "coupled": true
+      "hanzi": "冬",
+      "title": "G1 • Solo Ale • Shaolin Dragon (Left)",
+      "coupled": true,
+      "sliceMode": "custom_crop"
     },
     {
       "id": "coupled_G2",
       "suit": "coupled_family",
-      "matchGroup": "theme_G_compagni",
-      "glyph": "菊G2",
+      "matchGroup": "pair_G_shaolin_kungfu",
+      "cardinality": 2,
+      "glyph": "冬G2",
       "code": "G2",
-      "hanzi": "菊",
-      "title": "Ghigna 🐹 & Pupurabbu 👾 II",
-      "coupled": true
+      "hanzi": "冬",
+      "title": "G2 • Solo Sebi • Shaolin Tiger (Right)",
+      "coupled": true,
+      "sliceMode": "custom_crop"
     },
     {
       "id": "coupled_H1",
       "suit": "coupled_family",
-      "matchGroup": "theme_H_mum_dad",
-      "glyph": "竹H1",
+      "matchGroup": "pair_H_chengdu_pandas",
+      "cardinality": 2,
+      "glyph": "春H1",
       "code": "H1",
-      "hanzi": "竹",
-      "title": "Mamma Kate & Papà Ricc I",
-      "coupled": true
+      "hanzi": "春",
+      "title": "H1 • Solo Ale • Chengdu Panda (Left)",
+      "coupled": true,
+      "sliceMode": "left"
     },
     {
       "id": "coupled_H2",
       "suit": "coupled_family",
-      "matchGroup": "theme_H_mum_dad",
-      "glyph": "竹H2",
+      "matchGroup": "pair_H_chengdu_pandas",
+      "cardinality": 2,
+      "glyph": "春H2",
       "code": "H2",
-      "hanzi": "竹",
-      "title": "Mamma Kate & Papà Ricc II",
-      "coupled": true
+      "hanzi": "春",
+      "title": "H2 • Solo Sebi • Chengdu Panda (Right)",
+      "coupled": true,
+      "sliceMode": "right"
     }
   ]
 }

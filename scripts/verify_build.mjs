@@ -36,7 +36,7 @@ if (fs.existsSync(auditFile)) {
   assert(audit.allManifoldPass === true, `All meshes passed manifold check (0 non-manifold edges, 0 degenerate faces)`);
 }
 
-// 3. Textures & Manifest
+// 3. Textures, Portraits & Manifest
 const manifestFile = path.join(ROOT, "public/textures/manifest.json");
 assert(fs.existsSync(manifestFile), "Tile textures manifest.json exists");
 if (fs.existsSync(manifestFile)) {
@@ -44,7 +44,29 @@ if (fs.existsSync(manifestFile)) {
   assert(manifest.tileCount === 50, `Manifest defines exactly 50 tiles (found: ${manifest.tileCount})`);
   assert(manifest.suitsCount === 34, `34 Original Traditional Mahjong suits present`);
   assert(manifest.coupledCount === 16, `16 Coupled Non-Identical Family tiles present`);
+  const quartets = manifest.tiles.filter((t) => t.coupled && t.cardinality === 4);
+  const diptyques = manifest.tiles.filter((t) => t.coupled && t.cardinality === 2);
+  assert(quartets.length === 8, `8 Cardinality-4 Quartet tiles (S1..S4 Family Seasons + M1..M4 Magical Companions) present`);
+  assert(diptyques.length === 8, `8 Cardinality-2 Diptyque Split-Pair tiles (E1..H2) present`);
 }
+
+const requiredPortraits = [
+  "diptyque_S1_S2_papa_mamma.png",
+  "diptyque_S3_S4_ale_sebi_tang.png",
+  "diptyque_A_great_wall.png",
+  "diptyque_B_cantonese_rice.png",
+  "diptyque_C_shaolin_kungfu.png",
+  "diptyque_D_chengdu_pandas.png",
+  "quartet_F1_ale_ghigna.png",
+  "quartet_F2_sebi_pupurabbu.png",
+  "quartet_F3_solo_ghigna.png",
+  "quartet_F4_solo_pupurabbu.png",
+  "bamboo_1_sparrow_emblem.png",
+];
+requiredPortraits.forEach((f) => {
+  const p = path.join(ROOT, "public/portraits", f);
+  assert(fs.existsSync(p) && fs.statSync(p).size > 50000, `Pure 2D Nano Banana portrait '${f}' exists`);
+});
 
 // 4. Cycles Ground Truth Renders
 const cyclesRenders = [

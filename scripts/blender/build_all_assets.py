@@ -25,11 +25,11 @@ import bpy
 import bmesh
 from mathutils import Euler, Vector
 
-PROJECT_DIR = Path("/usr/local/google/home/ricc/.gemini/jetski/scratch/family-mahjong-3d")
+PROJECT_DIR = Path(__file__).resolve().parents[2]
 MODELS_DIR = PROJECT_DIR / "public" / "models"
 TEXTURES_DIR = PROJECT_DIR / "public" / "textures"
 CYCLES_DIR = PROJECT_DIR / "public" / "renders" / "cycles"
-ARTIFACT_DIR = Path("/usr/local/google/home/ricc/.gemini/jetski/brain/9ef9919c-2c1e-4390-86c1-6df5d260d22f")
+ARTIFACT_DIR = Path("/Users/ricc/.gemini/antigravity/brain/9efaaa30-d5fa-49dc-b7c4-7292c03768b3")
 
 for d in [MODELS_DIR, CYCLES_DIR]:
     d.mkdir(parents=True, exist_ok=True)
@@ -130,7 +130,7 @@ def build_manifold_mahjong_tile_mesh(
     Creates the 3 manifold mesh parts of a Canonical Mahjong Tile at world origin:
       1. Tile_Body_Mesh: Beveled White Imperial Marble body + Black Obsidian backing + Gold Kintsugi trim
       2. Face_Overlay_Mesh: Front face plane mapped to the 2D Oval Cameo / Traditional Mahjong card texture + normal map
-      3. Alphabet_Glyph_Mesh: Raised 3D golden corner alphabet badge
+      3. Alphabet_Glyph_Mesh: Raised 3D golden top-center crown inlay bar (never occluding top-left/top-right corner glyphs!)
     """
     if marble_mat is None:
         marble_mat = make_pbr_material(
@@ -217,10 +217,10 @@ def build_manifold_mahjong_tile_mesh(
     for poly in face_obj.data.polygons:
         poly.material_index = 0 if poly.normal.z > 0.7 else 1
 
-    # 3. Alphabet_Glyph_Mesh (Raised 3D corner alphabet overlay badge on top-left corner)
-    badge_w, badge_h, badge_d = 0.19, 0.15, 0.022
-    bx = -TILE_W * 0.30
-    by = TILE_H * 0.35
+    # 3. Alphabet_Glyph_Mesh (Raised 3D top-center golden crown inlay bar between top-left & top-right corner glyphs)
+    badge_w, badge_h, badge_d = 0.24, 0.032, 0.016
+    bx = 0.0
+    by = TILE_H * 0.422
     bz = TILE_D * 0.5 + plaque_d + badge_d * 0.45
     bpy.ops.mesh.primitive_cube_add(size=1.0, location=(bx, by, bz))
     glyph_obj = bpy.context.active_object
@@ -228,7 +228,7 @@ def build_manifold_mahjong_tile_mesh(
     glyph_obj.scale = (badge_w, badge_h, badge_d)
     bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
     g_bev = glyph_obj.modifiers.new(name="Bevel", type="BEVEL")
-    g_bev.width = 0.005
+    g_bev.width = 0.004
     g_bev.segments = 2
     bpy.ops.object.modifier_apply(modifier=g_bev.name)
     glyph_obj.data.materials.append(gold_mat)
@@ -272,8 +272,8 @@ def rig_and_animate_canonical_tile(body_obj, face_obj, glyph_obj):
     b_face.parent = b_body
 
     b_glyph = edit_bones.new("Alphabet_Glyph_Bone")
-    b_glyph.head = (-TILE_W * 0.30, TILE_H * 0.35, TILE_D * 0.5 + 0.01)
-    b_glyph.tail = (-TILE_W * 0.30, TILE_H * 0.35, TILE_D * 0.5 + 0.15)
+    b_glyph.head = (0.0, TILE_H * 0.422, TILE_D * 0.5 + 0.01)
+    b_glyph.tail = (0.0, TILE_H * 0.422, TILE_D * 0.5 + 0.15)
     b_glyph.parent = b_body
 
     bpy.ops.object.mode_set(mode="OBJECT")
@@ -464,12 +464,14 @@ def export_canonical_generic_tile_glb() -> dict:
         export_animations=True,
         export_nla_strips=True,
     )
+    if ARTIFACT_DIR.exists():
+        (ARTIFACT_DIR / out_path.name).write_bytes(out_path.read_bytes())
     print(f"[Blender] Exported {out_path.name} ({out_path.stat().st_size // 1024} KB)")
     return report
 
 
 def export_coupled_showcase_glb() -> dict:
-    print("[Blender] Building Coupled Family Pairs Showcase GLB (A1↔A2, B1↔B2, C1↔C2, H1↔H2)...")
+    print("[Blender] Building Coupled Family Quartets & Diptyque Pairs Showcase GLB (S1..S4, M1..M2, E1↔E2)...")
     clear_scene()
 
     # Rosewood & Celadon Jade display plinth
@@ -508,8 +510,8 @@ def export_coupled_showcase_glb() -> dict:
         ("coupled_B2", -0.3, 0.0),
         ("coupled_C1", 1.1, 0.0),
         ("coupled_C2", 2.2, 0.0),
-        ("coupled_H1", 3.5, 0.0),
-        ("coupled_H2", 4.6, 0.0),
+        ("coupled_E1", 3.5, 0.0),
+        ("coupled_E2", 4.6, 0.0),
     ]
     for tid, x_pos, y_pos in showcase_tiles:
         b, f, g = build_manifold_mahjong_tile_mesh(f"Show_{tid}", tile_id=tid, bassorilievo_strength=0.32)
@@ -523,6 +525,8 @@ def export_coupled_showcase_glb() -> dict:
     report = audit_current_scene_meshes("tile_coupled_showcase.glb")
     out_path = MODELS_DIR / "tile_coupled_showcase.glb"
     bpy.ops.export_scene.gltf(filepath=str(out_path), export_format="GLB", export_apply=True)
+    if ARTIFACT_DIR.exists():
+        (ARTIFACT_DIR / out_path.name).write_bytes(out_path.read_bytes())
     print(f"[Blender] Exported {out_path.name} ({out_path.stat().st_size // 1024} KB)")
     return report
 
@@ -652,6 +656,8 @@ def export_temple_environment_glb() -> dict:
     report = audit_current_scene_meshes("temple_environment.glb")
     out_path = MODELS_DIR / "temple_environment.glb"
     bpy.ops.export_scene.gltf(filepath=str(out_path), export_format="GLB", export_apply=True)
+    if ARTIFACT_DIR.exists():
+        (ARTIFACT_DIR / out_path.name).write_bytes(out_path.read_bytes())
     print(f"[Blender] Exported {out_path.name} ({out_path.stat().st_size // 1024} KB)")
     return report
 
@@ -752,12 +758,12 @@ def render_cycles_ground_truth_suite():
                 z = TILE_D * 0.5 + l_idx * sz
                 inst.location = (x, y, z)
 
-    # Also place two hero coupled pairs (A1↔A2 Tang Silk & C1↔C2 Cantonese Rice) at the front edge for macro inspection
+    # Place the complete Carlesso Family Seasons Quartet (S1 Papà, S2 Mamma, S3 Ale, S4 Sebi) at the front edge for macro inspection
     front_showcase = [
         ("coupled_A1", -1.65, -3.75, TILE_D * 0.5, math.radians(18.0)),
         ("coupled_A2", -0.58, -3.75, TILE_D * 0.5, math.radians(18.0)),
-        ("coupled_C1", 0.58, -3.75, TILE_D * 0.5, math.radians(18.0)),
-        ("coupled_C2", 1.65, -3.75, TILE_D * 0.5, math.radians(18.0)),
+        ("coupled_B1", 0.58, -3.75, TILE_D * 0.5, math.radians(18.0)),
+        ("coupled_B2", 1.65, -3.75, TILE_D * 0.5, math.radians(18.0)),
     ]
     for tid, fx, fy, fz, tilt_x in front_showcase:
         inst = templates[tid].copy()
@@ -826,7 +832,7 @@ def render_cycles_ground_truth_suite():
         ("cycles_cam1_hero.png", (0.0, -9.6, 6.4), (0.0, -0.3, 0.8), 38.0),
         ("cycles_cam2_topdown.png", (0.0, -0.8, 10.2), (0.0, -0.2, 0.6), 40.0),
         ("cycles_cam3_low_pavement.png", (5.4, -7.8, 2.2), (0.0, -1.2, 0.4), 36.0),
-        ("cycles_cam4_tile_macro.png", (-0.8, -5.5, 1.85), (-0.8, -3.65, 0.35), 55.0),
+        ("cycles_cam4_tile_macro.png", (0.0, -5.8, 1.95), (0.0, -3.65, 0.35), 48.0),
     ]
 
     for fname, pos, tgt, lens in cameras:
@@ -836,7 +842,8 @@ def render_cycles_ground_truth_suite():
         print(f"[Cycles] Rendering {fname}...")
         bpy.ops.render.render(write_still=True)
         # Also copy to Artifact dir so it can be embedded directly in Markdown artifacts
-        (ARTIFACT_DIR / fname).write_bytes(out_file.read_bytes())
+        if ARTIFACT_DIR.exists():
+            (ARTIFACT_DIR / fname).write_bytes(out_file.read_bytes())
 
 
 def main():
