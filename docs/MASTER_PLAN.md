@@ -12,13 +12,14 @@ The application is a AAA-quality, playable 3D Solitary Mahjong web app built wit
 - **Decoupled 2D Oval Medallion Architecture**: Rather than generating unstable 3D tiles with AI, pure 2D character portraits were generated from canonical GIC photos, audited with the Character Consistency criteria (score: 9.9/10), masked into gold-rimmed **Oval Cameo Medallions** on the 2D tile face, and mapped with tangent-space normal maps for an adjustable **Bassorilievo relief slider** (`0.0 = Flat 2D` $\rightarrow$ `1.5 = Sculpted Relief`).
 - **Deck & Coupling Rules**:
   - **34 Original Authentic Traditional Mahjong Suits & Honours**: Characters (`一萬..九萬`), Circles (`一筒..九筒`), Bamboos (`一索..九索` with authentic Sparrow), Winds (`東 南 西 北`), and Dragons (`中 發 白`).
-  - **16 Coupled Non-Identical Family Tiles (8 Pairs `A1↔A2` .. `H1↔H2`)**:
-    - `A1↔A2` (`春`): Ale & Sebi in Imperial Tang Silk Courtyard
-    - `B1↔B2` (`夏`): Ale & Sebi Great Wall & Pagoda Sightseeing Explorers
-    - `C1↔C2` (`秋`): Ale & Sebi enjoying Cantonese Fried Rice at Dim Sum
-    - `D1↔D2` (`冬`): Ale & Sebi in Shaolin Kung Fu Dragon & Tiger stances
-    - `E1↔E2` (`梅`): Ale & Sebi at Chengdu Panda Bamboo Sanctuary
-    - `F1↔F2` (`蘭`): Ale & Sebi Dragon Peak Mountain Explorers
+  - **16 Coupled Non-Identical Family Tiles (8 Pairs `A1↔A2` .. `H1↔H2`) — DUALI NON UGUALI**:
+  - *Riccardo's Rule*: Sostituiscono i pezzi floreali/stagionali del Mahjong (`春夏秋冬` e `梅蘭菊竹`), che sono **DIVERSI ma accoppiabili per tema**! Ogni coppia ha due pose complementari/duali (es. in uno Ale in primo piano con Sebi accanto, nell'altro Sebi in primo piano con Ale accanto, oppure due prospettive speculari dell'avventura):
+    - `A1↔A2` (`春`): Ale & Sebi in Imperial Tang Silk Courtyard (Duale I & II)
+    - `B1↔B2` (`夏`): Ale & Sebi Great Wall & Pagoda Sightseeing Explorers (Duale I & II)
+    - `C1↔C2` (`秋`): Ale & Sebi enjoying Cantonese Fried Rice at Dim Sum (Duale I & II)
+    - `D1↔D2` (`冬`): Ale & Sebi in Shaolin Kung Fu Dragon & Tiger stances (Duale I & II)
+    - `E1↔E2` (`梅`): Ale & Sebi at Chengdu Panda Bamboo Sanctuary (Duale I & II)
+    - `F1↔F2` (`蘭`): Ale & Sebi Dragon Peak Mountain Explorers (Duale I & II)
     - `G1↔G2` (`菊`): Ghigna 🐹 (nerdy calico guinea pig) & Pupurabbu 👾 (friendly purple monster)
     - `H1↔H2` (`竹`): Mamma Kate & Papà Riccardo (Mum & Dad — strictly Mum & Dad, NEVER King/Queen!)
 - **4 Multi-Difficulty Tracks (100% Reverse-Peel Solvable)**:
