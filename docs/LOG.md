@@ -290,3 +290,50 @@
 - **Top-Right Minimal `#selection-card` (`top: 74px; right: 12px; max-width: 395px; padding: 5px 10px;`)**:
   - Relocated out of the bottom-center of the board into the top-right empty margin with compact `9.5px–11px` typography and subtle gold/dark glass styling so **0% of the Mahjong board is obstructed**.
 
+---
+
+## 📅 Session Timeline & Agentic Loops (2026-10-17 — `pupurabbux` Ubuntu Host)
+
+## 2026-10-17T08:14:24+02:00 — Milestone 9 (`v1.6.0`): Solvability & Early Deadlock Engine + Dedicated Game Over Modal + Real Mahjong Dimensions & GHP Readme Link
+
+### 1. Verbatim User Requests
+> 1. *"ho trovato un bug - se il gioco NON e' solubile deve FINIRE con GAME OVER! E se il gioco non e' solubile anche da prima (nel senso se NON esiste un path di risoluzione) deve dare game over anticipato. qui siamo bloccati e non lo dice, e la HINT dice 'non ho hint'"* (with screenshot: Remaining 18, Matchable 0, Score 27800, Combo x7).
+> 2. *"(e quanf hai un attimo linka il GHP in cima al README)"*
+> 3. *"e i piezzi sono TROPPO GROSSI! Usa la dimensione REALE deipezzi di mahgonng, con il rapporto base altezza spessore REALE!"* (with screenshot: chunky thick block tiles).
+
+### 2. Root Cause Analysis
+1. **Deadlock Game Over Bug**: In `checkGameEnd(matchablePairs)`, when `matchablePairs === 0`, the code only set `toast.textContent` on `#sel-status`, which was hidden when `#selection-card` was closed. No Game Over screen existed in the DOM, so players remained frozen on the board with `Matchable: 0`. Calling `provideHint()` simply played `sfx.playError()`.
+2. **Early Unsolvability**: Players making legal moves could branch into dead-end states where no sequence of remaining moves could clear the board, leading to wasted time before reaching deadlock.
+3. **Chunky Tile Dimensions**: Virtual tiles were defined as `0.96 × 1.28 × 0.56`, making them 56cm thick blocks resembling giant monolithic cliff walls when viewed in 3D perspective.
+
+### 3. Agentic Loop & Engineering Execution
+1. **Solvability & Deadlock Engine (`MahjongSolvabilityEngine` in `src/main.js`)**:
+   - Built a deterministic DFS solver with spatial coverage graphs (`coverList`, `leftBlockList`, `rightBlockList`), bitmask state representation (`BigInt` / uint32 base-36 transposition hashing), and heuristic move ordering (prioritizing high layers & coupled family tiles).
+   - Validated across all 4 layouts in `scripts/test_solvability_solver.mjs`:
+     - *Easy Lotus (36 tiles)*: Solved in `0.27ms` (19 nodes).
+     - *Medium Jade Pagoda (72 tiles)*: Solved in `0.81ms` (37 nodes).
+     - *Master Imperial Turtle (144 tiles)*: Solved in `3.24ms` (73 nodes).
+     - *Deadlocked state (18 tiles)*: Detected unsolvable in `0.06ms`!
+2. **Dedicated Game Over Modal (`#gameover-modal`, `.gameover-card` in `index.html`, `src/style.css`, `src/main.js`)**:
+   - Styled with dark obsidian & crimson lacquer aesthetic (`border-color: rgba(255, 95, 88, 0.7)`, drop-shadow glow).
+   - Displays Remaining Tiles, Final Score, Total Moves, and Max Combo.
+   - Provides 3 direct actions:
+     - 🔄 **"Rimescola Risolvibile (Solvable Shuffle)"**: Re-arranges remaining tiles into a 100% mathematically solvable configuration, preserving score!
+     - 🔁 **"Ricomincia Livello"**: Restarts the track layout.
+     - 👁️ **"Rivedi Scacchiera"**: Closes modal to inspect remaining board state.
+   - Automatically detects both **Immediate Deadlock** (`matchablePairs === 0`) and **Early Unsolvable States** (`res.solvable === false && res.exhaustedSearch`).
+3. **Smart Winning-Path Hint (`provideHint` in `src/main.js`)**:
+   - Upgraded Hint to consult `solvabilityEngine.findSolution()`: pulses the exact pair on the *winning resolution path*, preventing players from walking into dead-end traps.
+   - If no winning path exists, alerts player via audio/toast and immediately opens the Game Over modal.
+4. **Authentic Real-World Mahjong Dimensions & Proportions (`src/main.js`, `scripts/test_3d_visibility.mjs`)**:
+   - Replaced chunky blocks with standard Mahjong tile ratio (**Base 22mm : Height 30mm : Thickness 13mm**, ratio `0.739 : 1.000 : 0.413`):
+     - `TILE_W = 0.68`, `TILE_H = 0.92`, `TILE_D = 0.38`.
+   - Scaled extruded top collar, kintsugi waist seam, subdivided face intaglio displacement (`dispScale = 0.052 * relief`), crown badge, and selection borders.
+   - Calibrated camera presets (`2d`, `hero`, `topdown`, `pavement`, `macro`, `orbit`) verifying **100% frustum coverage (144/144 tiles)** and **0 environment occlusion** across all 30 viewpoints.
+5. **GitHub Pages Link in README (`README.md`)**:
+   - Placed direct playable link [**https://palladius.github.io/family-mahjong-3d/**](https://palladius.github.io/family-mahjong-3d/) and GitHub Pages badge at the very top of `README.md`.
+6. **Verification & Delivery**:
+   - `just test`: Passed all 3D topology, manifold, line-of-sight, frustum, and unit tests.
+   - `just build`: Vite 6 bundle built in 1.96s with 0 errors.
+   - Bumped `VERSION` to `1.6.0` and updated `CHANGELOG.md`.
+

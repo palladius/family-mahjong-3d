@@ -1,5 +1,22 @@
 # Changelog - Carlesso Family Mahjong 3D 🀄🐉
 
+## [1.6.0] - 2026-10-17
+### Added
+- **🛑 Dedicated Game Over Modal & Solvability Engine (`MahjongSolvabilityEngine`, `#gameover-modal`)**:
+  - Implemented an ultra-fast graph precomputation DFS solver with state hashing (running in ~1-3ms).
+  - Automatically detects **Immediate Deadlock** (`matchablePairs === 0`) and **Early Unsolvable States** (when no valid path exists to clear remaining tiles, even if some moves remain).
+  - Triggers a beautiful dark obsidian & red-lacquer `#gameover-modal` displaying Remaining Tiles, Final Score, Moves, and Combo.
+  - Added 4 actions: **"🔄 Rimescola Risolvibile (Solvable Shuffle)"** (rescues the game into a 100% solvable board), **"🔁 Ricomincia Livello"**, and **"👁️ Rivedi Scacchiera"**.
+- **💡 Smart Winning-Path Hint (`provideHint`)**:
+  - Upgraded Hint to consult the Solvability Engine: pulses a pair that lies directly on the *winning resolution path*, preventing players from falling into dead-end traps!
+  - If no winning moves or paths exist, alerts the user and displays Game Over with the Solvable Shuffle option.
+- **📐 Authentic Real-World Mahjong Tile Dimensions & Proportions**:
+  - Replaced oversized chunky brick dimensions (`0.96 × 1.28 × 0.56`) with authentic real-world Mahjong proportions (`22mm × 30mm × 13mm`, ratio `0.739 : 1.000 : 0.413`): `TILE_W = 0.68`, `TILE_H = 0.92`, `TILE_D = 0.38`.
+  - Scaled collar, kintsugi waist seam, badge, and selection frames.
+  - Calibrated camera viewpoints across all 6 presets (`2d`, `hero`, `topdown`, `pavement`, `macro`, `orbit`) ensuring 100% frustum coverage and zero occlusion.
+- **🌐 GitHub Pages Playable Badge & Link**:
+  - Added prominent banner and badge at the top of `README.md` linking directly to `https://palladius.github.io/family-mahjong-3d/`.
+
 ## [1.5.0] - 2026-10-16
 ### Added
 - **🏆 Adversarial Net of 3 Critic Subagents & Top-3 `S1 春 • Solo Papà Riccardo` Remaster (`scripts/generate_s1_riccardo_candidates.py`, `scripts/finalize_s1_top3.py`)**:

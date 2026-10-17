@@ -17,9 +17,9 @@ import * as THREE from "three";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
 
-const TILE_W = 0.90;
-const TILE_H = 1.20;
-const TILE_D = 0.65;
+const TILE_W = 0.68;
+const TILE_H = 0.92;
+const TILE_D = 0.38;
 
 let failed = false;
 function assert(cond, msg) {
@@ -41,8 +41,24 @@ assert(mainJs.includes("this.sharedGeo.selOuterPurple") && mainJs.includes("this
 assert(mainJs.includes("550") && mainJs.includes("showPairMatchCard"), "550ms ('mezzo secondo') matched-pair visibility pause is wired for manual & demo play");
 assert(mainJs.includes('"2d":') && mainJs.includes("toggle2DMode"), "Dedicated 2D flat top-down camera preset & toggle are wired in src/main.js");
 assert(mainJs.includes("getDidYouKnowLore") && mainJs.includes("updateWow3DPreview"), "WOW rotating 3D tile inspector & 'Did you know?' cultural lore are wired in src/main.js");
+assert(
+  mainJs.includes("TILE_W = 0.68") && mainJs.includes("TILE_H = 0.92") && mainJs.includes("TILE_D = 0.38"),
+  "src/main.js enforces authentic real Mahjong proportions (22mm x 30mm x 13mm ratio)"
+);
+assert(
+  mainJs.includes("MahjongSolvabilityEngine") &&
+    mainJs.includes("triggerGameOver") &&
+    mainJs.includes("early_unsolvable"),
+  "Solvability Engine with Early Deadlock & Solvability detection is wired in src/main.js"
+);
 const indexHtml = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
 const styleCss = fs.readFileSync(path.join(ROOT, "src/style.css"), "utf8");
+assert(
+  indexHtml.includes('id="gameover-modal"') &&
+    indexHtml.includes('id="btn-gameover-shuffle"') &&
+    indexHtml.includes('id="btn-gameover-restart"'),
+  "Dedicated Game Over Modal with Solvable Shuffle & Restart buttons is present in index.html"
+);
 assert(
   indexHtml.includes('id="help-modal"') &&
     indexHtml.includes('id="btn-help-toggle"') &&
@@ -178,12 +194,12 @@ function applyEnvVisibilityGuard(presetKey, camPos) {
 }
 
 const presets = {
-  "2d": { pos: [0.0, 24.5, 0.001], target: [0.0, 0.2, 0.0], fov: 26 },
-  hero: { pos: [0.0, 8.8, 11.6], target: [0.0, 0.3, 0.0], fov: 38 },
-  topdown: { pos: [0.0, 15.6, 1.6], target: [0.0, 0.3, 0.0], fov: 40 },
-  pavement: { pos: [5.4, 2.6, 8.4], target: [0.0, 0.4, -0.5], fov: 36 },
-  macro: { pos: [0.0, 2.1, 6.2], target: [0.0, 0.35, 3.2], fov: 44 },
-  orbit: { pos: [0.0, 8.6, 12.0], target: [0.0, 0.4, 0.0], fov: 40 },
+  "2d": { pos: [0.0, 19.5, 0.001], target: [0.0, 0.2, 0.0], fov: 28 },
+  hero: { pos: [0.0, 7.2, 9.6], target: [0.0, 0.2, 0.0], fov: 38 },
+  topdown: { pos: [0.0, 12.8, 1.4], target: [0.0, 0.2, 0.0], fov: 40 },
+  pavement: { pos: [4.4, 2.2, 6.8], target: [0.0, 0.3, -0.4], fov: 36 },
+  macro: { pos: [0.0, 1.8, 4.8], target: [0.0, 0.25, 2.4], fov: 44 },
+  orbit: { pos: [0.0, 7.0, 10.0], target: [0.0, 0.3, 0.0], fov: 40 },
 };
 
 // Add 24 360-degree orbit viewpoints at various heights to guarantee NO angle is blocked

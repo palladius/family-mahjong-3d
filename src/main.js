@@ -2,10 +2,10 @@ import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 
-// Canonical Tile Scale Contract
-const TILE_W = 0.96;
-const TILE_H = 1.28;
-const TILE_D = 0.56;
+// Canonical Tile Scale Contract (Authentic Real-World Mahjong Dimensions: 22mm x 30mm x 13mm, Ratio 0.739 : 1.000 : 0.413)
+const TILE_W = 0.68;
+const TILE_H = 0.92;
+const TILE_D = 0.38;
 
 // Audio Synthesizer (Web Audio API - Zero external assets needed)
 class SoundFX {
@@ -220,6 +220,167 @@ const TRACK_LAYOUTS = {
     },
   },
 };
+
+// ═══════════════════════════════════════════════════════════════════════
+// Solvability & Deadlock Engine (Graph Precomputation + Fast DFS + State Hashing)
+// ═══════════════════════════════════════════════════════════════════════
+class MahjongSolvabilityEngine {
+  constructor(tiles, areTilesMatchingFn) {
+    this.tiles = tiles;
+    this.areTilesMatching = areTilesMatchingFn;
+    this.n = tiles.length;
+    this.slots = tiles.map((t) => t.slot);
+
+    // Precompute spatial coverage and side blocking graphs
+    this.coverList = new Array(this.n);
+    this.leftBlockList = new Array(this.n);
+    this.rightBlockList = new Array(this.n);
+
+    for (let i = 0; i < this.n; i++) {
+      this.coverList[i] = [];
+      this.leftBlockList[i] = [];
+      this.rightBlockList[i] = [];
+      const s = this.slots[i];
+      for (let j = 0; j < this.n; j++) {
+        if (i === j) continue;
+        const o = this.slots[j];
+        if (o.l === s.l + 1 && Math.abs(o.c - s.c) < 0.95 && Math.abs(o.r - s.r) < 0.95) {
+          this.coverList[i].push(j);
+        }
+        if (o.l === s.l && Math.abs(o.r - s.r) < 0.8) {
+          const dc = o.c - s.c;
+          if (dc > 0.8 && dc < 1.3) this.rightBlockList[i].push(j);
+          if (dc < -0.8 && dc > -1.3) this.leftBlockList[i].push(j);
+        }
+      }
+    }
+  }
+
+  isFree(idx, mask) {
+    const covers = this.coverList[idx];
+    for (let k = 0; k < covers.length; k++) {
+      if (mask[covers[k]]) return false;
+    }
+    let leftBlocked = false;
+    const lefts = this.leftBlockList[idx];
+    for (let k = 0; k < lefts.length; k++) {
+      if (mask[lefts[k]]) {
+        leftBlocked = true;
+        break;
+      }
+    }
+    let rightBlocked = false;
+    const rights = this.rightBlockList[idx];
+    for (let k = 0; k < rights.length; k++) {
+      if (mask[rights[k]]) {
+        rightBlocked = true;
+        break;
+      }
+    }
+    return !leftBlocked || !rightBlocked;
+  }
+
+  getFreeIndices(mask) {
+    const res = [];
+    for (let i = 0; i < this.n; i++) {
+      if (mask[i] && this.isFree(i, mask)) res.push(i);
+    }
+    return res;
+  }
+
+  getMatchablePairs(freeIndices) {
+    const pairs = [];
+    for (let i = 0; i < freeIndices.length; i++) {
+      const idxA = freeIndices[i];
+      const dataA = this.tiles[idxA].data;
+      for (let j = i + 1; j < freeIndices.length; j++) {
+        const idxB = freeIndices[j];
+        const dataB = this.tiles[idxB].data;
+        if (this.areTilesMatching(dataA, dataB)) {
+          pairs.push([idxA, idxB]);
+        }
+      }
+    }
+    return pairs;
+  }
+
+  encodeState(mask) {
+    let s = "";
+    let cur = 0;
+    let b = 0;
+    for (let i = 0; i < this.n; i++) {
+      if (mask[i]) cur |= 1 << b;
+      b++;
+      if (b === 30) {
+        s += cur.toString(36) + ".";
+        cur = 0;
+        b = 0;
+      }
+    }
+    if (b > 0) s += cur.toString(36);
+    return s;
+  }
+
+  findSolution(currentMask, maxNodes = 25000) {
+    const mask = new Uint8Array(currentMask);
+    let remaining = 0;
+    for (let i = 0; i < this.n; i++) if (mask[i]) remaining++;
+
+    const visitedDeadends = new Set();
+    const solutionPath = [];
+    let nodeCount = 0;
+
+    const dfs = (remCount) => {
+      nodeCount++;
+      if (remCount === 0) return true;
+      if (nodeCount > maxNodes) return false;
+
+      const stateKey = this.encodeState(mask);
+      if (visitedDeadends.has(stateKey)) return false;
+
+      const free = this.getFreeIndices(mask);
+      const pairs = this.getMatchablePairs(free);
+
+      if (pairs.length === 0) {
+        visitedDeadends.add(stateKey);
+        return false;
+      }
+
+      // Heuristic ordering: prioritize higher layers & coupled tiles
+      pairs.sort((a, b) => {
+        const coupledScoreA = (this.tiles[a[0]].data.coupled ? 1 : 0) + (this.tiles[a[1]].data.coupled ? 1 : 0);
+        const coupledScoreB = (this.tiles[b[0]].data.coupled ? 1 : 0) + (this.tiles[b[1]].data.coupled ? 1 : 0);
+        const layerA = this.slots[a[0]].l + this.slots[a[1]].l;
+        const layerB = this.slots[b[0]].l + this.slots[b[1]].l;
+        return layerB + coupledScoreB * 2 - (layerA + coupledScoreA * 2);
+      });
+
+      for (let p = 0; p < pairs.length; p++) {
+        const [a, b] = pairs[p];
+        mask[a] = 0;
+        mask[b] = 0;
+        solutionPath.push([a, b]);
+
+        if (dfs(remCount - 2)) return true;
+
+        solutionPath.pop();
+        mask[a] = 1;
+        mask[b] = 1;
+      }
+
+      visitedDeadends.add(stateKey);
+      return false;
+    };
+
+    const solved = dfs(remaining);
+    return {
+      solvable: solved,
+      path: solved ? solutionPath : null,
+      nodeCount,
+      exhaustedSearch: nodeCount <= maxNodes,
+    };
+  }
+}
 
 class MahjongSolitaireApp {
   constructor() {
@@ -451,6 +612,11 @@ class MahjongSolitaireApp {
     this.hideSelectionCard();
     this.updateHUD();
 
+    const goModal = document.getElementById("gameover-modal");
+    if (goModal) goModal.classList.add("hidden");
+    const vicModal = document.getElementById("victory-modal");
+    if (vicModal) vicModal.classList.add("hidden");
+
     const track = TRACK_LAYOUTS[trackKey] || TRACK_LAYOUTS.master;
     const slots = track.generateSlots();
 
@@ -490,8 +656,10 @@ class MahjongSolitaireApp {
       });
     });
 
-    this.updateFreeTiles();
+    this.solvabilityEngine = new MahjongSolvabilityEngine(this.tiles, (a, b) => this.areTilesMatching(a, b));
+    const { matchablePairs } = this.updateFreeTiles();
     this.updateHUD();
+    this.checkGameEnd(matchablePairs);
   }
 
   makeHollowRectShape(outerW, outerH, innerW, innerH) {
@@ -519,18 +687,18 @@ class MahjongSolitaireApp {
   initSharedTileResources() {
     if (this.sharedGeo) return;
     const collarShape = this.makeHollowRectShape(TILE_W, TILE_H, TILE_W * 0.90, TILE_H * 0.91);
-    const collarGeo = new THREE.ExtrudeGeometry(collarShape, { depth: 0.080, bevelEnabled: false });
+    const collarGeo = new THREE.ExtrudeGeometry(collarShape, { depth: 0.050, bevelEnabled: false });
     collarGeo.rotateX(-Math.PI / 2);
 
     this.sharedGeo = {
-      // Lowered inner cavity floor (-0.076) so downward-displaced 3D carved grooves ('il buco bassorilievo') are NEVER clipped!
-      body: new THREE.BoxGeometry(TILE_W, TILE_D - 0.076, TILE_H),
+      // Lowered inner cavity floor so downward-displaced 3D carved grooves ('il buco bassorilievo') are NEVER clipped!
+      body: new THREE.BoxGeometry(TILE_W, TILE_D - 0.048, TILE_H),
       topCollar: collarGeo,
       kintsugi: new THREE.BoxGeometry(TILE_W * 1.004, TILE_D * 0.06, TILE_H * 1.004),
       // 72x96 high-density subdivided face mesh so displacementMap physically carves 3D grooves & pits into the tile!
       face: new THREE.PlaneGeometry(TILE_W * 0.94, TILE_H * 0.95, 72, 96),
       // Top-center golden crown inlay bar (never occludes top-left or top-right corner glyphs!)
-      badge: new THREE.BoxGeometry(0.24, 0.016, 0.032),
+      badge: new THREE.BoxGeometry(0.18, 0.012, 0.024),
       // Yellow-Purple Selection Double Border ("bordino giallo-viola")
       selOuterPurple: this.makeHollowRectGeometry(TILE_W * 1.12, TILE_H * 1.10, TILE_W * 1.01, TILE_H * 1.00),
       selInnerYellow: this.makeHollowRectGeometry(TILE_W * 1.01, TILE_H * 1.00, TILE_W * 0.90, TILE_H * 0.91),
@@ -717,14 +885,14 @@ class MahjongSolitaireApp {
       marbleMat, // -Z
     ];
     const bodyMesh = new THREE.Mesh(this.sharedGeo.body, bodyMaterials);
-    bodyMesh.position.y = -0.038;
+    bodyMesh.position.y = -0.024;
     bodyMesh.castShadow = true;
     bodyMesh.receiveShadow = true;
     root.add(bodyMesh);
 
     // 1a. Outer Marble Top Collar Frame (flush with +TILE_D * 0.5 around the 3D carved face window)
     const collarMesh = new THREE.Mesh(this.sharedGeo.topCollar, marbleMat);
-    collarMesh.position.y = TILE_D * 0.5 - 0.080;
+    collarMesh.position.y = TILE_D * 0.5 - 0.050;
     collarMesh.castShadow = true;
     collarMesh.receiveShadow = true;
     root.add(collarMesh);
@@ -748,7 +916,7 @@ class MahjongSolitaireApp {
 
     const activeMap = this.oniricaMode ? oniricaTex : faceTex;
     const activeRelief = this.oniricaMode ? 0.12 : this.settings.bassorilievo;
-    const dispScale = 0.076 * activeRelief;
+    const dispScale = 0.052 * activeRelief;
 
     const faceMat = new THREE.MeshStandardMaterial({
       map: activeMap,
@@ -772,7 +940,7 @@ class MahjongSolitaireApp {
       this.sharedGeo.badge,
       tileData.coupled ? this.sharedMat.badgeCoupled : this.sharedMat.badgeStandard
     );
-    badgeMesh.position.set(0.0, TILE_D * 0.5 + 0.014, -TILE_H * 0.422);
+    badgeMesh.position.set(0.0, TILE_D * 0.5 + 0.010, -TILE_H * 0.422);
     badgeMesh.castShadow = true;
     root.add(badgeMesh);
 
@@ -785,7 +953,7 @@ class MahjongSolitaireApp {
     innerYellowMesh.position.y = 0.002;
     selectionBorder.add(outerPurpleMesh);
     selectionBorder.add(innerYellowMesh);
-    selectionBorder.position.y = TILE_D * 0.5 + 0.012;
+    selectionBorder.position.y = TILE_D * 0.5 + 0.008;
     selectionBorder.visible = false;
     root.add(selectionBorder);
 
@@ -1020,17 +1188,72 @@ class MahjongSolitaireApp {
   }
 
   checkGameEnd(matchablePairs) {
-    const remaining = this.tiles.filter((t) => !t.removed).length;
+    const activeTiles = this.tiles.filter((t) => !t.removed);
+    const remaining = activeTiles.length;
     if (remaining === 0) {
       document.getElementById("vic-score").textContent = this.score;
       document.getElementById("vic-moves").textContent = this.movesHistory.length;
       document.getElementById("vic-combo").textContent = `x${this.combo}`;
       document.getElementById("victory-modal").classList.remove("hidden");
-    } else if (matchablePairs === 0) {
-      // Auto-offer shuffle when no moves remain
-      const toast = document.getElementById("sel-status");
-      if (toast) toast.textContent = "No matchable pairs remain — click Shuffle to continue solvably!";
+      return;
     }
+
+    // 1. Immediate Deadlock: 0 free matching pairs remain
+    if (matchablePairs === 0) {
+      this.triggerGameOver("immediate");
+      return;
+    }
+
+    // 2. Early Solvability Detection:
+    // Even if matchablePairs > 0, check if a winning resolution path actually exists!
+    if (this.solvabilityEngine) {
+      const currentMask = new Uint8Array(this.tiles.length);
+      for (let i = 0; i < this.tiles.length; i++) {
+        currentMask[i] = this.tiles[i].removed ? 0 : 1;
+      }
+      const res = this.solvabilityEngine.findSolution(currentMask);
+      if (!res.solvable && res.exhaustedSearch) {
+        this.triggerGameOver("early_unsolvable");
+        return;
+      }
+      this.cachedWinningPath = res.path;
+    }
+  }
+
+  triggerGameOver(reason = "immediate") {
+    const modal = document.getElementById("gameover-modal");
+    if (!modal) return;
+    const titleEl = document.getElementById("gameover-title");
+    const descEl = document.getElementById("gameover-desc");
+    const remEl = document.getElementById("gameover-remaining");
+    const scoreEl = document.getElementById("gameover-score");
+    const movesEl = document.getElementById("gameover-moves");
+    const comboEl = document.getElementById("gameover-combo");
+
+    const remainingCount = this.tiles.filter((t) => !t.removed).length;
+    if (remEl) remEl.textContent = remainingCount;
+    if (scoreEl) scoreEl.textContent = this.score;
+    if (movesEl) movesEl.textContent = this.movesHistory.length;
+    if (comboEl) comboEl.textContent = `x${this.combo}`;
+
+    if (reason === "immediate") {
+      if (titleEl) titleEl.textContent = "Game Over • Stallo Immediato!";
+      if (descEl) descEl.textContent = "Nessuna coppia libera rimasta sulla scacchiera. Non ci sono ulteriori mosse legali possibili!";
+    } else {
+      if (titleEl) titleEl.textContent = "Game Over Anticipato • Nessun Percorso!";
+      if (descEl) descEl.textContent = "Attenzione: da questa posizione NON esiste alcun percorso di risoluzione per vincere. Sei in un vicolo cieco!";
+    }
+
+    const toast = document.getElementById("sel-status");
+    if (toast) {
+      toast.textContent =
+        reason === "immediate"
+          ? "⚠️ Stallo: nessuna coppia disponibile. Clicca 'Rimescola Risolvibile' per continuare!"
+          : "⚠️ Game Over Anticipato: nessun percorso vincente possibile da qui!";
+    }
+
+    sfx.playError();
+    modal.classList.remove("hidden");
   }
 
   getDidYouKnowLore(d) {
@@ -1292,7 +1515,44 @@ class MahjongSolitaireApp {
   }
 
   provideHint() {
-    const { freeTiles } = this.updateFreeTiles();
+    const { freeTiles, matchablePairs } = this.updateFreeTiles();
+    const remainingCount = this.tiles.filter((t) => !t.removed).length;
+
+    if (matchablePairs === 0 || remainingCount === 0) {
+      sfx.playError();
+      const toast = document.getElementById("sel-status");
+      if (toast) toast.textContent = "Nessuna mossa rimasta — Gioco in stallo!";
+      this.triggerGameOver("immediate");
+      return;
+    }
+
+    // Smart Hint: Find winning path and highlight the winning pair
+    if (this.solvabilityEngine) {
+      const currentMask = new Uint8Array(this.tiles.length);
+      for (let i = 0; i < this.tiles.length; i++) {
+        currentMask[i] = this.tiles[i].removed ? 0 : 1;
+      }
+      const res = this.solvabilityEngine.findSolution(currentMask);
+      if (res.solvable && res.path && res.path.length > 0) {
+        const [idxA, idxB] = res.path[0];
+        const tA = this.tiles[idxA];
+        const tB = this.tiles[idxB];
+        sfx.playMatch();
+        this.pulseTile(tA);
+        this.pulseTile(tB);
+        const toast = document.getElementById("sel-status");
+        if (toast) {
+          toast.textContent = `💡 Suggerimento vincente: ${tA.data.code || tA.data.glyph} e ${tB.data.code || tB.data.glyph}`;
+        }
+        return;
+      } else if (!res.solvable && res.exhaustedSearch) {
+        sfx.playError();
+        this.triggerGameOver("early_unsolvable");
+        return;
+      }
+    }
+
+    // Fallback naive hint if solver budget timed out
     for (let i = 0; i < freeTiles.length; i++) {
       for (let j = i + 1; j < freeTiles.length; j++) {
         if (this.areTilesMatching(freeTiles[i].data, freeTiles[j].data)) {
@@ -1373,9 +1633,15 @@ class MahjongSolitaireApp {
       this.pulseTile(tile);
     });
 
+    const goModal = document.getElementById("gameover-modal");
+    if (goModal) goModal.classList.add("hidden");
+
+    this.solvabilityEngine = new MahjongSolvabilityEngine(this.tiles, (a, b) => this.areTilesMatching(a, b));
     sfx.playMatch();
-    this.updateFreeTiles();
+    const { matchablePairs } = this.updateFreeTiles();
     this.updateHUD();
+    const toast = document.getElementById("sel-status");
+    if (toast) toast.textContent = "Scacchiera rimescolata con successo in configurazione risolvibile!";
   }
 
   toggleDemoSolver() {
@@ -1494,13 +1760,13 @@ class MahjongSolitaireApp {
 
   setCameraPreset(presetKey) {
     const presets = {
-      // 2D Anti-Motion-Sickness Flat Overhead View (telephoto FOV 26° from Y=24.5 so all 144 tiles + HUD margins fit 100% inside the screen!)
-      "2d": { pos: [0.0, 24.5, 0.001], target: [0.0, 0.2, 0.0], fov: 26 },
-      hero: { pos: [0.0, 8.8, 11.6], target: [0.0, 0.3, 0.0], fov: 38 },
-      topdown: { pos: [0.0, 15.6, 1.6], target: [0.0, 0.3, 0.0], fov: 40 },
-      pavement: { pos: [5.4, 2.6, 8.4], target: [0.0, 0.4, -0.5], fov: 36 },
-      macro: { pos: [0.0, 2.1, 6.2], target: [0.0, 0.35, 3.2], fov: 44 },
-      orbit: { pos: [0.0, 8.6, 12.0], target: [0.0, 0.4, 0.0], fov: 40 },
+      // 2D Anti-Motion-Sickness Flat Overhead View (telephoto FOV 28° from Y=19.5 so all 144 tiles + HUD margins fit 100% inside the screen!)
+      "2d": { pos: [0.0, 19.5, 0.001], target: [0.0, 0.2, 0.0], fov: 28 },
+      hero: { pos: [0.0, 7.2, 9.6], target: [0.0, 0.2, 0.0], fov: 38 },
+      topdown: { pos: [0.0, 12.8, 1.4], target: [0.0, 0.2, 0.0], fov: 40 },
+      pavement: { pos: [4.4, 2.2, 6.8], target: [0.0, 0.3, -0.4], fov: 36 },
+      macro: { pos: [0.0, 1.8, 4.8], target: [0.0, 0.25, 2.4], fov: 44 },
+      orbit: { pos: [0.0, 7.0, 10.0], target: [0.0, 0.3, 0.0], fov: 40 },
     };
 
     this.activeCameraPreset = presets[presetKey] ? presetKey : "hero";
@@ -1651,6 +1917,8 @@ class MahjongSolitaireApp {
         this.toggleHelpModal(false);
         const jsonModal = document.getElementById("json-modal");
         if (jsonModal) jsonModal.classList.add("hidden");
+        const goModal = document.getElementById("gameover-modal");
+        if (goModal) goModal.classList.add("hidden");
       } else if (key === "i" || e.key === " ") {
         e.preventDefault();
         this.provideHint();
@@ -1849,6 +2117,29 @@ class MahjongSolitaireApp {
     document.getElementById("btn-close-vic").addEventListener("click", () => {
       document.getElementById("victory-modal").classList.add("hidden");
     });
+
+    // Game Over Modal Action Buttons
+    const btnGoShuffle = document.getElementById("btn-gameover-shuffle");
+    if (btnGoShuffle) {
+      btnGoShuffle.addEventListener("click", () => {
+        document.getElementById("gameover-modal")?.classList.add("hidden");
+        this.solvableShuffle();
+      });
+    }
+    const btnGoRestart = document.getElementById("btn-gameover-restart");
+    if (btnGoRestart) {
+      btnGoRestart.addEventListener("click", () => {
+        document.getElementById("gameover-modal")?.classList.add("hidden");
+        const trackKey = document.getElementById("track-select")?.value || "master";
+        this.setupBoard(trackKey);
+      });
+    }
+    const btnGoReview = document.getElementById("btn-gameover-review");
+    if (btnGoReview) {
+      btnGoReview.addEventListener("click", () => {
+        document.getElementById("gameover-modal")?.classList.add("hidden");
+      });
+    }
 
     // Check URL query parameters for ?debug=1
     const params = new URLSearchParams(window.location.search);

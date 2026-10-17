@@ -498,7 +498,7 @@
     </div>
   </div>
 
-  <!-- Victory / Game Over Overlay Modal -->
+  <!-- Victory Overlay Modal -->
   <div id="victory-modal" class="modal-overlay hidden">
     <div class="modal-card">
       <div class="modal-badge">🀄</div>
@@ -512,6 +512,26 @@
       <div class="modal-buttons">
         <button id="btn-play-again" class="action-btn highlight">Play Next Layout</button>
         <button id="btn-close-vic" class="secondary-btn">Review Board</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Game Over Modal (Deadlock & Early Unsolvable Detector) -->
+  <div id="gameover-modal" class="modal-overlay hidden">
+    <div class="modal-card gameover-card">
+      <div class="modal-badge" id="gameover-badge">🀄</div>
+      <h2 id="gameover-title">Game Over • Stallo!</h2>
+      <p id="gameover-desc">Nessuna mossa rimasta o nessun percorso di risoluzione possibile da questa configurazione.</p>
+      <div class="modal-stats">
+        <div>Tessere Rimanenti: <strong id="gameover-remaining">0</strong></div>
+        <div>Punteggio: <strong id="gameover-score">0</strong></div>
+        <div>Mosse: <strong id="gameover-moves">0</strong></div>
+        <div>Max Combo: <strong id="gameover-combo">x1</strong></div>
+      </div>
+      <div class="modal-buttons">
+        <button id="btn-gameover-shuffle" class="action-btn highlight" title="Rimescola le tessere rimaste in modo matematicamente risolvibile">🔄 Rimescola Risolvibile</button>
+        <button id="btn-gameover-restart" class="action-btn" title="Ricomincia questo livello">🔁 Ricomincia Livello</button>
+        <button id="btn-gameover-review" class="secondary-btn" title="Esamina le tessere rimaste sulla scacchiera">👁️ Rivedi Scacchiera</button>
       </div>
     </div>
   </div>

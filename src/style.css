@@ -692,6 +692,19 @@ button {
   filter: drop-shadow(0 0 12px var(--gold-glow));
 }
 
+.gameover-card {
+  border-color: rgba(255, 95, 88, 0.7);
+  box-shadow: 0 16px 48px rgba(255, 60, 60, 0.32), 0 0 24px rgba(255, 80, 80, 0.15);
+}
+
+.gameover-card h2 {
+  color: #ff7b72 !important;
+}
+
+.gameover-card #gameover-badge {
+  filter: drop-shadow(0 0 16px rgba(255, 90, 90, 0.65));
+}
+
 .modal-card h2 {
   font-size: 22px;
   color: var(--gold);
