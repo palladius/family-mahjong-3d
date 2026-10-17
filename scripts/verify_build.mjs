@@ -64,7 +64,6 @@ if (fs.existsSync(manifestFile)) {
 const requiredPortraits = [
   "quartet_S1_papa_riccardo.png",
   "quartet_S1_papa_riccardo_top1.png",
-  "quartet_S1_papa_riccardo_top2.png",
   "quartet_S1_papa_riccardo_top3.png",
   "quartet_S2_mamma_kate2016.png",
   "diptyque_S1_S2_papa_mamma.png",
@@ -87,9 +86,20 @@ requiredPortraits.forEach((f) => {
   assert(fs.existsSync(p) && fs.statSync(p).size > 50000, `Pure 2D Nano Banana portrait '${f}' exists`);
 });
 
-["coupled_A1_top1.png", "coupled_A1_top2.png", "coupled_A1_top3.png"].forEach((f) => {
+assert(
+  !fs.existsSync(path.join(ROOT, "public/portraits/quartet_S1_papa_riccardo_top2.png")),
+  "Rejected 'quartet_S1_papa_riccardo_top2.png' is cleanly removed"
+);
+assert(
+  fs.readFileSync(path.join(ROOT, "public/portraits/quartet_S1_papa_riccardo.png")).equals(
+    fs.readFileSync(path.join(ROOT, "public/portraits/quartet_S1_papa_riccardo_top3.png"))
+  ),
+  "Canonical 'quartet_S1_papa_riccardo.png' matches WINNER 'quartet_S1_papa_riccardo_top3.png'"
+);
+
+["coupled_A1_top3.png", "coupled_A1_top1.png"].forEach((f) => {
   const p = path.join(ROOT, "public/textures/tiles", f);
-  assert(fs.existsSync(p) && fs.statSync(p).size > 50000, `Adversarial Net Top-3 S1 Mahjong Tile '${f}' exists`);
+  assert(fs.existsSync(p) && fs.statSync(p).size > 50000, `S1 Mahjong Tile '${f}' exists`);
 });
 
 // 4. Cycles Ground Truth Renders

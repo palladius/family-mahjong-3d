@@ -337,3 +337,20 @@
    - `just build`: Vite 6 bundle built in 1.96s with 0 errors.
    - Bumped `VERSION` to `1.6.0` and updated `CHANGELOG.md`.
 
+---
+
+## 2026-10-17T10:26:20+02:00 — Milestone 10 (`v1.6.1`): Choreographic Director Final Selection for `S1 春 • Solo Papà Riccardo` (`top3` Wins, `top1` Kept in Subordine, `top2` Removed)
+
+### 1. Verbatim User Request
+> "questo no quartet_S1_papa_riccardo_top2 .
+> La 3 vince 🥉 TOP 3 Portrait (quartet_S1_papa_riccardo_top3.png)
+> e la 1 tienila, in subordine."
+
+### 2. Engineering Execution
+1. **Promoted `quartet_S1_papa_riccardo_top3.png` (`s1_cand_08.png`) as Active Winner**:
+   - Updated `scripts/finalize_s1_top3.py` so `public/portraits/quartet_S1_papa_riccardo_top3.png` is copied to `public/portraits/quartet_S1_papa_riccardo.png` and rebuilt `public/textures/tiles/coupled_A1.png`, `public/textures/tiles_onirica/coupled_A1.png`, `public/textures/tiles_depth/coupled_A1_depth.png`, `public/textures/tiles_normal/coupled_A1_normal.png`, and `public/portraits/diptyque_S1_S2_papa_mamma.png`.
+2. **Kept `top1` in Reserve (*in subordine*) & Removed `top2`**:
+   - Retained `public/portraits/quartet_S1_papa_riccardo_top1.png`, `public/textures/tiles/coupled_A1_top1.png`, and `public/textures/tiles_onirica/onirica_coupled_A1_top1.png` in the repository.
+   - Deleted rejected `quartet_S1_papa_riccardo_top2.png`, `coupled_A1_top2.png`, and `onirica_coupled_A1_top2.png` and added byte-equality and absence assertions in `scripts/verify_build.mjs`.
+
+

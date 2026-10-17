@@ -7,13 +7,12 @@
 # ]
 # ///
 """
-Finalizes the Adversarial Net Consensus Top 3 portraits for S1 春 • Solo Papà Riccardo:
-  - Top 1: s1_cand_01.png -> public/portraits/quartet_S1_papa_riccardo_top1.png (and canonical quartet_S1_papa_riccardo.png)
-  - Top 2: s1_cand_04.png -> public/portraits/quartet_S1_papa_riccardo_top2.png
-  - Top 3: s1_cand_08.png -> public/portraits/quartet_S1_papa_riccardo_top3.png
-Also builds the rendered Mahjong tiles (coupled_A1_top1..3.png and onirica_coupled_A1_top1..3.png)
-and updates coupled_A1.png, onirica_coupled_A1.png, coupled_A1_depth.png, coupled_A1_normal.png,
-and diptyque_S1_S2_papa_mamma.png.
+Finalizes the Choreographic Director's selection for S1 春 • Solo Papà Riccardo:
+  - WINNER (#1 Active Default): quartet_S1_papa_riccardo_top3.png (s1_cand_08.png)
+    -> sets canonical public/portraits/quartet_S1_papa_riccardo.png and coupled_A1.png
+  - RUNNER-UP (Kept in subordine): quartet_S1_papa_riccardo_top1.png (s1_cand_01.png)
+    -> kept as public/portraits/quartet_S1_papa_riccardo_top1.png & coupled_A1_top1.png
+  - REMOVED: quartet_S1_papa_riccardo_top2.png (rejected by Choreographic Director)
 """
 
 import shutil
@@ -31,21 +30,32 @@ TILES_DIR = ROOT / "public" / "textures" / "tiles"
 ONIRICA_DIR = ROOT / "public" / "textures" / "tiles_onirica"
 ARTIFACT_DIR = Path("/Users/ricc/.gemini/antigravity/brain/9efaaa30-d5fa-49dc-b7c4-7292c03768b3")
 
-TOP3 = [
-    ("top1", "s1_cand_01.png", "Top 1 (Unanimous Consensus 8.96/10 • Navy & Gold Brocade on Marble Bridge)"),
-    ("top2", "s1_cand_04.png", "Top 2 (Red-Team #1 9.70/10 • Midnight-Blue Silk & Gold Dragon Pin)"),
-    ("top3", "s1_cand_08.png", "Top 3 (Dynamic 3/4 Angle 8.96/10 • Navy & Crimson Dragon Collar)"),
+KEPT_CANDIDATES = [
+    ("top1", "s1_cand_01.png", "Runner-Up (In Subordine • Navy & Gold Brocade on Marble Bridge)"),
+    ("top3", "s1_cand_08.png", "WINNER 🏆 (Active Default • NB Pro Crimson & Gold Studio Portrait)"),
 ]
 
 
 def main():
-    for rank_tag, cand_file, desc in TOP3:
+    # Remove rejected top2 files if present
+    for f in [
+        PORTRAITS_DIR / "quartet_S1_papa_riccardo_top2.png",
+        TILES_DIR / "coupled_A1_top2.png",
+        ONIRICA_DIR / "onirica_coupled_A1_top2.png",
+        ARTIFACT_DIR / "quartet_S1_papa_riccardo_top2.png",
+        ARTIFACT_DIR / "coupled_A1_top2.png",
+        ARTIFACT_DIR / "onirica_coupled_A1_top2.png",
+    ]:
+        if f.exists():
+            f.unlink()
+            print(f"🗑️ Removed rejected file: {f.name}")
+
+    for rank_tag, cand_file, desc in KEPT_CANDIDATES:
         src = CAND_DIR / cand_file
         dst_portrait = PORTRAITS_DIR / f"quartet_S1_papa_riccardo_{rank_tag}.png"
         shutil.copy2(src, dst_portrait)
         print(f"✅ Saved portrait {dst_portrait.name} ({desc})")
 
-        # Temporarily set as quartet_S1_papa_riccardo.png and build coupled_A1 tile
         shutil.copy2(src, PORTRAITS_DIR / "quartet_S1_papa_riccardo.png")
         builder.generate_coupled_family_oval_tiles()
 
@@ -60,11 +70,11 @@ def main():
             shutil.copy2(tile_out, ARTIFACT_DIR / tile_out.name)
             shutil.copy2(onirica_out, ARTIFACT_DIR / onirica_out.name)
 
-    # Set Top 1 (s1_cand_01.png) as canonical quartet_S1_papa_riccardo.png and rebuild canonical S1 maps
-    shutil.copy2(CAND_DIR / "s1_cand_01.png", PORTRAITS_DIR / "quartet_S1_papa_riccardo.png")
+    # Set WINNER (top3 / s1_cand_08.png) as canonical quartet_S1_papa_riccardo.png and rebuild canonical S1 maps
+    shutil.copy2(PORTRAITS_DIR / "quartet_S1_papa_riccardo_top3.png", PORTRAITS_DIR / "quartet_S1_papa_riccardo.png")
     builder.generate_coupled_family_oval_tiles()
 
-    # Update diptyque_S1_S2_papa_mamma.png with new canonical S1 + S2
+    # Update diptyque_S1_S2_papa_mamma.png with WINNER S1 (top3) + S2 (Mamma Kate)
     im_s1 = Image.open(PORTRAITS_DIR / "quartet_S1_papa_riccardo.png").convert("RGB")
     im_s2 = Image.open(PORTRAITS_DIR / "quartet_S2_mamma_kate2016.png").convert("RGB")
     h = max(im_s1.height, im_s2.height)
@@ -81,7 +91,7 @@ def main():
         shutil.copy2(TILES_DIR / "coupled_A1.png", ARTIFACT_DIR / "coupled_A1.png")
         shutil.copy2(ONIRICA_DIR / "coupled_A1.png", ARTIFACT_DIR / "onirica_coupled_A1.png")
 
-    print("🎉 Finalized Top 3 portraits and canonical S1 tile textures!")
+    print("🎉 Set TOP 3 (quartet_S1_papa_riccardo_top3.png) as active WINNER S1 and kept TOP 1 in subordine!")
 
 
 if __name__ == "__main__":

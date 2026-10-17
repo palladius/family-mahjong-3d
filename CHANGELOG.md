@@ -1,5 +1,12 @@
 # Changelog - Carlesso Family Mahjong 3D 🀄🐉
 
+## [1.6.1] - 2026-10-17
+### Changed
+- **🏆 `S1 春 • Solo Papà Riccardo` Final Selection (`quartet_S1_papa_riccardo_top3.png` Wins, `top1` Kept in Subordine, `top2` Removed)**:
+  - Promoted **`quartet_S1_papa_riccardo_top3.png`** (`s1_cand_08.png`) as the active canonical `public/portraits/quartet_S1_papa_riccardo.png`, `public/textures/tiles/coupled_A1.png`, `public/textures/tiles_onirica/coupled_A1.png`, and `public/portraits/diptyque_S1_S2_papa_mamma.png`.
+  - Kept **`quartet_S1_papa_riccardo_top1.png`** (`coupled_A1_top1.png`, `onirica_coupled_A1_top1.png`) in reserve (*in subordine*).
+  - Removed rejected `quartet_S1_papa_riccardo_top2.png`, `coupled_A1_top2.png`, and `onirica_coupled_A1_top2.png`.
+
 ## [1.6.0] - 2026-10-17
 ### Added
 - **🛑 Dedicated Game Over Modal & Solvability Engine (`MahjongSolvabilityEngine`, `#gameover-modal`)**:
