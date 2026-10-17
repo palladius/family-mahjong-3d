@@ -288,7 +288,7 @@
       "matchGroup": "dragon_red",
       "cardinality": 2,
       "glyph": "中",
-      "title": "Red Dragon (紅中)",
+      "title": "Red Dragon • Ornate Carved Shenlong (紅中)",
       "coupled": false
     },
     {
@@ -297,7 +297,7 @@
       "matchGroup": "dragon_green",
       "cardinality": 2,
       "glyph": "發",
-      "title": "Green Dragon (發財)",
+      "title": "Green Dragon • Imperial Jade Shenlong (發財)",
       "coupled": false
     },
     {
@@ -306,7 +306,7 @@
       "matchGroup": "dragon_white",
       "cardinality": 2,
       "glyph": "白",
-      "title": "White Dragon (白板)",
+      "title": "White Dragon • Sapphire & Pearl Twin Dragons (白板)",
       "coupled": false
     },
     {

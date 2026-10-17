@@ -32,12 +32,11 @@ PORTRAITS_DIR = PROJECT_DIR / "public" / "portraits"
 for d in [PBR_DIR, TILES_DIR, NORMALS_DIR, DEPTH_DIR, ONIRICA_DIR, PORTRAITS_DIR]:
     d.mkdir(parents=True, exist_ok=True)
 
+CJK_BRUSH_FONT = PROJECT_DIR / "public" / "fonts" / "MaShanZheng-Regular.ttf"
 CJK_FONT_CANDIDATES = [
-    "/System/Library/Fonts/STHeiti Medium.ttc",
+    str(CJK_BRUSH_FONT),
     "/System/Library/Fonts/Supplemental/Songti.ttc",
-    "/System/Library/Fonts/PingFang.ttc",
-    "/usr/share/fonts/truetype/droid/DroidSansFallbackFull.ttf",
-    "/usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc",
+    "/System/Library/Fonts/ヒラギノ明朝 ProN.ttc",
 ]
 LATIN_BOLD_CANDIDATES = [
     "/System/Library/Fonts/Supplemental/Arial Bold.ttf",
@@ -51,14 +50,29 @@ LATIN_REG_CANDIDATES = [
 ]
 
 
-def cjk_font(size: int):
+TRAD_ONLY_HANZI = {"萬", "東", "風", "發", "蘭"}
+
+
+def cjk_font(size: int, text: str = ""):
+    needs_trad_songti = any(ch in TRAD_ONLY_HANZI for ch in text)
+    if not needs_trad_songti and CJK_BRUSH_FONT.exists():
+        try:
+            return ImageFont.truetype(str(CJK_BRUSH_FONT), size=size)
+        except Exception:
+            pass
     for p in CJK_FONT_CANDIDATES:
+        if p == str(CJK_BRUSH_FONT) and needs_trad_songti:
+            continue
         if Path(p).exists():
             try:
+                if p.endswith("Songti.ttc"):
+                    return ImageFont.truetype(p, size=size, index=1)
                 return ImageFont.truetype(p, size=size)
             except Exception:
                 continue
     return ImageFont.load_default()
+
+
 
 
 def latin_font(size: int, bold: bool = True):
@@ -252,43 +266,51 @@ def apply_incandescent_pen_carving(
     inner_valid = (xx > 22) & (xx < W - 22) & (yy > 22) & (yy < H - 22)
 
     if not is_oval:
-        # Suit & Honour Tiles: Every stroke, circle, and bamboo stalk is physically EXCAVATED into the marble!
-        carve_raw = np.clip((color_dist - 24.0) / 55.0, 0.0, 1.0) * inner_valid.astype(np.float32)
+        # Suit, Calligraphic & Ornate Dragon Tiles:
+        # Multi-Scale Distance-Transform V-Groove + Medial-Axis Spine Ridge (Zero flat bottom plateau!)
+        carve_raw = np.clip((color_dist - 22.0) / 52.0, 0.0, 1.0) * inner_valid.astype(np.float32)
         carve_im = Image.fromarray((carve_raw * 255.0).astype(np.uint8), mode="L")
 
-        # Multi-scale blur to form a realistic V/U-groove profile + raised molten-gold rim
-        groove_steep = np.asarray(carve_im.filter(ImageFilter.GaussianBlur(radius=3.2)), dtype=np.float32) / 255.0
-        groove_wide = np.asarray(carve_im.filter(ImageFilter.GaussianBlur(radius=9.5)), dtype=np.float32) / 255.0
-        dilated = np.asarray(carve_im.filter(ImageFilter.MaxFilter(size=9)).filter(ImageFilter.GaussianBlur(radius=3.0)), dtype=np.float32) / 255.0
+        # Inward distance field cascade via morphological erosion + Gaussian smoothing (V-chisel walls all the way to stroke center)
+        erode_1 = np.asarray(carve_im.filter(ImageFilter.MinFilter(size=5)).filter(ImageFilter.GaussianBlur(radius=2.2)), dtype=np.float32) / 255.0
+        erode_2 = np.asarray(carve_im.filter(ImageFilter.MinFilter(size=11)).filter(ImageFilter.GaussianBlur(radius=4.0)), dtype=np.float32) / 255.0
+        erode_3 = np.asarray(carve_im.filter(ImageFilter.MinFilter(size=19)).filter(ImageFilter.GaussianBlur(radius=6.5)), dtype=np.float32) / 255.0
 
-        # Raised rim right outside the carved trench (where the incandescent stylus pushes up a golden lip)
+        # Medial-axis kintsugi spine ridge inside wide calligraphic strokes (splits wide strokes into two angled 3D facets)
+        medial_spine = np.clip(erode_2 - erode_3 * 0.85, 0.0, 1.0) * erode_1
+
+        groove_steep = np.asarray(carve_im.filter(ImageFilter.GaussianBlur(radius=2.6)), dtype=np.float32) / 255.0
+        groove_wide = np.asarray(carve_im.filter(ImageFilter.GaussianBlur(radius=8.5)), dtype=np.float32) / 255.0
+        dilated = np.asarray(carve_im.filter(ImageFilter.MaxFilter(size=9)).filter(ImageFilter.GaussianBlur(radius=2.8)), dtype=np.float32) / 255.0
+
+        # Raised rim right outside the carved trench
         rim_ring = np.clip(dilated - carve_raw, 0.0, 1.0)
-        # Fine height map for per-pixel normal map & diffuse shading
-        groove_fine = np.clip(0.45 * carve_raw + 0.38 * groove_steep + 0.17 * groove_wide, 0.0, 1.0)
-        height_map = np.clip(0.88 + 0.10 * rim_ring - 0.85 * groove_fine, 0.0, 1.0)
+        # V-groove depth profile combining outer wall slope + deep inward V-trough + subtle raised medial-axis chisel spine
+        v_trough = np.clip(0.32 * carve_raw + 0.28 * groove_steep + 0.22 * erode_1 + 0.18 * erode_2 + 0.12 * groove_wide, 0.0, 1.0)
+        height_map = np.clip(0.88 + 0.10 * rim_ring - 0.86 * v_trough + 0.16 * medial_spine, 0.0, 1.0)
 
-        # Smooth macro height map for 3D vertex displacement (_depth.png) so curved circles/strokes NEVER stair-step on the 3D vertex grid!
+        # Smooth macro height map for 3D vertex displacement (_depth.png) preserving V-groove curvature on the 72x96 mesh
         disp_smooth = np.asarray(
-            Image.fromarray(np.clip(height_map * 255.0, 0, 255).astype(np.uint8), mode="L").filter(ImageFilter.GaussianBlur(radius=5.2)),
+            Image.fromarray(np.clip(height_map * 255.0, 0, 255).astype(np.uint8), mode="L").filter(ImageFilter.GaussianBlur(radius=3.8)),
             dtype=np.float32,
         ) / 255.0
 
         # Compute directional slope for incandescent-pen trench wall shading (light from top-left (-1, -1))
         gy, gx = np.gradient(height_map)
-        slope_light = (gx * 0.72 + gy * 0.72) * 14.5
+        slope_light = (gx * 0.72 + gy * 0.72) * 16.0
 
         shadow_mask = np.clip(-slope_light, 0.0, 1.0) * np.clip(dilated * 1.4, 0.0, 1.0)
         highlight_mask = np.clip(slope_light, 0.0, 1.0) * np.clip(dilated * 1.4, 0.0, 1.0)
-        cavity_ao = np.clip(groove_fine * 0.22, 0.0, 0.25)
+        cavity_ao = np.clip(v_trough * 0.24, 0.0, 0.26)
 
-        # Apply scorched-umber inner trench shadow + cavity AO + warm incandescent gold rim/wall glow
+        # Apply scorched-umber inner trench shadow + cavity AO + warm incandescent gold rim & medial-spine glow
         shaded = arr.copy()
         for c_i, umber_tint in enumerate([28.0, 16.0, 10.0]):
             shaded[:, :, c_i] = shaded[:, :, c_i] * (1.0 - cavity_ao)
-            shaded[:, :, c_i] = shaded[:, :, c_i] * (1.0 - shadow_mask * 0.62) + umber_tint * (shadow_mask * 0.62)
+            shaded[:, :, c_i] = shaded[:, :, c_i] * (1.0 - shadow_mask * 0.64) + umber_tint * (shadow_mask * 0.64)
 
-        incandescent_gold = np.array([255.0, 212.0, 118.0], dtype=np.float32)
-        glow_strength = np.clip(highlight_mask * 0.58 + rim_ring * 0.32, 0.0, 0.75)
+        incandescent_gold = np.array([255.0, 214.0, 118.0], dtype=np.float32)
+        glow_strength = np.clip(highlight_mask * 0.60 + rim_ring * 0.30 + medial_spine * 0.34, 0.0, 0.78)
         for c_i in range(3):
             shaded[:, :, c_i] = shaded[:, :, c_i] * (1.0 - glow_strength) + incandescent_gold[c_i] * glow_strength
 
@@ -411,7 +433,7 @@ def build_onirica_tile(
         int(col_rgb[2] * 0.72 + 50),
     )
     draw.text((52, 40), glyph_left, font=latin_font(62, bold=True), fill=soft_col)
-    draw.text((W - 122, 42), glyph_right, font=cjk_font(62), fill=soft_col)
+    draw.text((W - 122, 42), glyph_right, font=cjk_font(62, glyph_right), fill=soft_col)
 
     out_path = ONIRICA_DIR / f"{tile_id}.png"
     canvas.save(out_path, "PNG")
@@ -419,8 +441,53 @@ def build_onirica_tile(
         shutil.copy2(out_path, ARTIFACT_DIR / f"onirica_{tile_id}.png")
 
 
+def draw_imperial_cloud_flourishes(draw: ImageDraw.ImageDraw, cx: float, cy: float, rx: float, ry: float, col: tuple[int, int, int], gold: tuple[int, int, int]):
+    """Draws curved Imperial cloud-scroll & scalloped guilloché arcs around calligraphy so 3D normal/depth maps have 360° curved grooves."""
+    draw.ellipse([cx - rx, cy - ry, cx + rx, cy + ry], outline=gold, width=4)
+    draw.ellipse([cx - rx * 0.93, cy - ry * 0.93, cx + rx * 0.93, cy + ry * 0.93], outline=col, width=3)
+    # 8 scalloped cloud-scroll petals along the ring perimeter
+    for k in range(8):
+        ang = k * (math.pi / 4.0)
+        px = cx + math.cos(ang) * (rx * 0.965)
+        py = cy + math.sin(ang) * (ry * 0.965)
+        draw.ellipse([px - 14, py - 14, px + 14, py + 14], fill=(244, 238, 225), outline=gold, width=4)
+        draw.ellipse([px - 6, py - 6, px + 6, py + 6], fill=col)
+
+
+def composite_ornate_dragon_emblem(canvas: Image.Image, emblem_path: Path, box: tuple[int, int, int, int]):
+    """Seamlessly mats a 2D ornate Dragon + Calligraphy relief emblem (on ivory-white #FAF6EE) onto the marble tile canvas."""
+    x0, y0, x1, y1 = box
+    tw, th = x1 - x0, y1 - y0
+    emb = Image.open(emblem_path).convert("RGB")
+    ew, eh = emb.size
+    # Tight crop around the ornate dragon artwork
+    emb_crop = emb.crop((int(ew * 0.06), int(eh * 0.08), int(ew * 0.94), int(eh * 0.92))).resize((tw, th), Image.Resampling.LANCZOS)
+    emb_np = np.asarray(emb_crop, dtype=np.float32)
+
+    # Sample corner background of the emblem to compute exact pigment alpha
+    corners = np.concatenate([
+        emb_np[:20, :20].reshape(-1, 3),
+        emb_np[:20, -20:].reshape(-1, 3),
+        emb_np[-20:, :20].reshape(-1, 3),
+        emb_np[-20:, -20:].reshape(-1, 3),
+    ], axis=0)
+    bg_rgb = np.median(corners, axis=0)
+    dist = np.sqrt(np.sum((emb_np - bg_rgb) ** 2, axis=-1))
+
+    # Soft elliptical edge feather so outer border blends 100% into the marble canvas
+    yy, xx = np.mgrid[0:th, 0:tw]
+    nx = (xx - tw * 0.5) / (tw * 0.49)
+    ny = (yy - th * 0.5) / (th * 0.49)
+    rad = np.sqrt(nx * nx + ny * ny)
+    feather = np.clip((1.02 - rad) / 0.12, 0.0, 1.0)
+
+    alpha = np.clip((dist - 14.0) / 32.0, 0.0, 1.0) * feather
+    alpha_u8 = Image.fromarray(np.clip(alpha * 255.0, 0, 255).astype(np.uint8), mode="L").filter(ImageFilter.GaussianBlur(radius=0.8))
+    canvas.paste(emb_crop, (x0, y0), alpha_u8)
+
+
 def generate_original_mahjong_suits() -> list[dict]:
-    print("[MahjongArt] Generating 34 Original Suit & Honour Tiles (+10% Larger Hanzi, Larger 2/4 Dots, 3D Incandescent Carving)...")
+    print("[MahjongArt] Generating 34 Original Suit & Honour Tiles (Ornate 3D Carved Dragons, MaShanZheng Brush Calligraphy, V-Groove Carving)...")
     W, H = 768, 1024
     RED = (196, 30, 30)
     GREEN = (20, 132, 58)
@@ -430,17 +497,22 @@ def generate_original_mahjong_suits() -> list[dict]:
 
     manifest = []
 
-    # 1. Characters / Wan (一萬 .. 九萬) — +10% Larger Chinese Calligraphy (276px & 298px)
+    # 1. Characters / Wan (一萬 .. 九萬) — Brush Calligraphy + Curved Cloud-Scroll Seals
     cn_nums = ["一", "二", "三", "四", "五", "六", "七", "八", "九"]
     for idx, cn in enumerate(cn_nums, start=1):
         tid = f"char_{idx}"
         canvas, draw = make_marble_face_canvas(W, H, accent_rgb=GOLD)
         draw.text((48, 38), str(idx), font=latin_font(72, bold=True), fill=INK)
-        draw.text((W - 124, 40), cn, font=cjk_font(64), fill=BLUE)
-        draw_centered_text(draw, (W / 2, H * 0.34), cn, font=cjk_font(276), fill=BLUE, stroke_fill=(15, 25, 65), stroke_width=6)
-        draw_centered_text(draw, (W / 2, H * 0.71), "萬", font=cjk_font(298), fill=RED, stroke_fill=(110, 15, 15), stroke_width=6)
+        draw.text((W - 124, 40), cn, font=cjk_font(64, cn), fill=BLUE)
+        # Curved cloud-scroll seal rings around top numeral & bottom Wan
+        draw_imperial_cloud_flourishes(draw, W * 0.5, H * 0.34, 178, 142, BLUE, GOLD)
+        draw_imperial_cloud_flourishes(draw, W * 0.5, H * 0.72, 196, 168, RED, GOLD)
+        draw_centered_text(draw, (W / 2, H * 0.34), cn, font=cjk_font(272, cn), fill=BLUE, stroke_fill=GOLD, stroke_width=3)
+        draw_centered_text(draw, (W / 2, H * 0.71), "萬", font=cjk_font(278, "萬"), fill=RED, stroke_fill=GOLD, stroke_width=3)
         apply_incandescent_pen_carving(canvas, tid)
         shutil.copy2(TILES_DIR / f"{tid}.png", ONIRICA_DIR / f"{tid}.png")
+        if ARTIFACT_DIR.exists() and idx in (1, 8):
+            shutil.copy2(TILES_DIR / f"{tid}.png", ARTIFACT_DIR / f"{tid}.png")
         manifest.append({"id": tid, "suit": "characters", "matchGroup": tid, "cardinality": 2, "glyph": f"{idx}萬", "title": f"{idx} Characters ({cn}萬)", "coupled": False})
 
     # 2. Circles / Dots (一筒 .. 九筒) — Significantly Larger 2-Circles (r=148) & 4-Circles (r=124) & Fuller Layouts!
@@ -459,7 +531,7 @@ def generate_original_mahjong_suits() -> list[dict]:
         tid = f"dots_{idx}"
         canvas, draw = make_marble_face_canvas(W, H, accent_rgb=GOLD)
         draw.text((48, 38), str(idx), font=latin_font(72, bold=True), fill=INK)
-        draw.text((W - 124, 40), "筒", font=cjk_font(62), fill=RED)
+        draw.text((W - 124, 40), "筒", font=cjk_font(62, "筒"), fill=RED)
         if idx == 1:
             cx, cy = W * 0.5, H * 0.54
             draw.ellipse([cx - 236, cy - 236, cx + 236, cy + 236], fill=GREEN, outline=GOLD, width=8)
@@ -492,7 +564,7 @@ def generate_original_mahjong_suits() -> list[dict]:
         tid = f"bamboo_{idx}"
         canvas, draw = make_marble_face_canvas(W, H, accent_rgb=GOLD)
         draw.text((48, 38), str(idx), font=latin_font(72, bold=True), fill=INK)
-        draw.text((W - 124, 40), "索", font=cjk_font(62), fill=GREEN)
+        draw.text((W - 124, 40), "索", font=cjk_font(62, "索"), fill=GREEN)
         if idx in special_bamboos and special_bamboos[idx][0].exists():
             emb_path, cbox, custom_title = special_bamboos[idx]
             oval_w, oval_h = int(W * 0.82), int(H * 0.73)
@@ -520,7 +592,7 @@ def generate_original_mahjong_suits() -> list[dict]:
             shutil.copy2(TILES_DIR / f"{tid}.png", ONIRICA_DIR / f"{tid}.png")
             manifest.append({"id": tid, "suit": "bamboo", "matchGroup": tid, "cardinality": 2, "glyph": f"{idx}索", "title": f"{idx} Bamboo ({cn_nums[idx-1]}索)", "coupled": False})
 
-    # 4. Four Winds (東 南 西 北) — +10% Larger Hanzi (462px)
+    # 4. Four Winds (東 南 西 北) — Brush Calligraphy + Curved Guilloché Wind Medallion
     winds = [
         ("wind_E", "東", "E", "East Wind (東)"),
         ("wind_S", "南", "S", "South Wind (南)"),
@@ -530,30 +602,32 @@ def generate_original_mahjong_suits() -> list[dict]:
     for tid, hanzi, let, label in winds:
         canvas, draw = make_marble_face_canvas(W, H, accent_rgb=GOLD)
         draw.text((48, 38), let, font=latin_font(72, bold=True), fill=BLUE)
-        draw.text((W - 124, 40), "風", font=cjk_font(62), fill=INK)
-        draw_centered_text(draw, (W / 2, H * 0.54), hanzi, font=cjk_font(462), fill=INK, stroke_fill=GOLD, stroke_width=8)
+        draw.text((W - 124, 40), "風", font=cjk_font(62, "風"), fill=INK)
+        draw_imperial_cloud_flourishes(draw, W * 0.5, H * 0.54, 248, 268, BLUE, GOLD)
+        draw_centered_text(draw, (W / 2, H * 0.54), hanzi, font=cjk_font(425, hanzi), fill=INK, stroke_fill=GOLD, stroke_width=4)
         apply_incandescent_pen_carving(canvas, tid)
         shutil.copy2(TILES_DIR / f"{tid}.png", ONIRICA_DIR / f"{tid}.png")
         manifest.append({"id": tid, "suit": "winds", "matchGroup": tid, "cardinality": 2, "glyph": hanzi, "title": label, "coupled": False})
 
-    # 5. Three Dragons (中 發 白) — +10% Larger Hanzi (462px / 252px)
+    # 5. Three Dragons (中 發 白) — Bespoke Ornate 3D Carved Chinese Dragon & Brush Calligraphy Relief Emblems!
     dragons = [
-        ("dragon_red", "中", "C", RED, "Red Dragon (紅中)"),
-        ("dragon_green", "發", "F", GREEN, "Green Dragon (發財)"),
-        ("dragon_white", "白", "P", BLUE, "White Dragon (白板)"),
+        ("dragon_red", "中", "C", RED, "Red Dragon • Ornate Carved Shenlong (紅中)", PORTRAITS_DIR / "dragon_red_ornate_emblem.png"),
+        ("dragon_green", "發", "F", GREEN, "Green Dragon • Imperial Jade Shenlong (發財)", PORTRAITS_DIR / "dragon_green_ornate_emblem.png"),
+        ("dragon_white", "白", "P", BLUE, "White Dragon • Sapphire & Pearl Twin Dragons (白板)", PORTRAITS_DIR / "dragon_white_ornate_emblem.png"),
     ]
-    for tid, hanzi, let, col, label in dragons:
+    for tid, hanzi, let, col, label, emb_path in dragons:
         canvas, draw = make_marble_face_canvas(W, H, accent_rgb=col)
         draw.text((48, 38), let, font=latin_font(72, bold=True), fill=col)
-        draw.text((W - 124, 40), hanzi, font=cjk_font(62), fill=col)
-        if tid == "dragon_white":
-            draw.rounded_rectangle([105, 165, W - 105, H - 140], radius=32, outline=BLUE, width=24)
-            draw.rounded_rectangle([142, 202, W - 142, H - 177], radius=20, outline=GOLD, width=8)
-            draw_centered_text(draw, (W / 2, H * 0.54), "白", font=cjk_font(252), fill=BLUE, stroke_fill=GOLD, stroke_width=5)
+        draw.text((W - 124, 40), hanzi, font=cjk_font(62, hanzi), fill=col)
+        if emb_path.exists():
+            composite_ornate_dragon_emblem(canvas, emb_path, (48, 122, W - 48, H - 56))
         else:
-            draw_centered_text(draw, (W / 2, H * 0.54), hanzi, font=cjk_font(462), fill=col, stroke_fill=GOLD, stroke_width=8)
-        apply_incandescent_pen_carving(canvas, tid)
+            draw_centered_text(draw, (W / 2, H * 0.54), hanzi, font=cjk_font(462, hanzi), fill=col, stroke_fill=GOLD, stroke_width=4)
+        apply_incandescent_pen_carving(canvas, tid, is_oval=False)
         shutil.copy2(TILES_DIR / f"{tid}.png", ONIRICA_DIR / f"{tid}.png")
+        if ARTIFACT_DIR.exists():
+            shutil.copy2(TILES_DIR / f"{tid}.png", ARTIFACT_DIR / f"{tid}.png")
+            shutil.copy2(DEPTH_DIR / f"{tid}_depth.png", ARTIFACT_DIR / f"{tid}_depth.png")
         manifest.append({"id": tid, "suit": "dragons", "matchGroup": tid, "cardinality": 2, "glyph": hanzi, "title": label, "coupled": False})
 
     return manifest
@@ -769,7 +843,7 @@ def generate_coupled_family_oval_tiles() -> list[dict]:
         # Top-Left: Coupled/Quartet Code (+8% larger: 66px)
         draw.text((46, 36), glyph, font=latin_font(66, bold=True), fill=col_rgb)
         # Top-Right: Authentic Mahjong Season/Flower Hanzi (+8% larger: 68px)
-        draw.text((W - 124, 38), hanzi, font=cjk_font(68), fill=col_rgb)
+        draw.text((W - 124, 38), hanzi, font=cjk_font(68, hanzi), fill=col_rgb)
 
         # Enlarged Center Gold-Rimmed OVAL Cameo Medallion (0.83 x 0.71 — less empty white margin!)
         oval_w, oval_h = int(W * 0.83), int(H * 0.71)

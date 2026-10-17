@@ -205,21 +205,21 @@ def main():
     plinth.data.materials.append(plinth_mat)
 
     # Build 3 Showcase Tiles with Real 3D Excavated Grooves ('buco bassorilievo'):
-    # 1. Left: dots_2 (2-Pallini enlarged + 3D carved)
-    build_displaced_carved_tile(
-        "dots_2",
-        loc=(-1.12, 0.04, 0.05),
-        rot=(math.radians(24), math.radians(15), math.radians(-6)),
-        carve_depth_m=0.078,
-    )
-    # 2. Center Hero: dots_4 (4-Pallini enlarged + 3D carved, tilted toward raking light!)
+    # 1. Left: dots_4 (4-Pallini enlarged + 3D carved)
     build_displaced_carved_tile(
         "dots_4",
+        loc=(-1.12, 0.04, 0.05),
+        rot=(math.radians(24), math.radians(15), math.radians(-6)),
+        carve_depth_m=0.080,
+    )
+    # 2. Center Hero: dragon_red (Ornate 3D Carved Crimson & Gold Shenlong + Brush 中, tilted toward raking light!)
+    build_displaced_carved_tile(
+        "dragon_red",
         loc=(0.0, -0.10, 0.12),
         rot=(math.radians(30), math.radians(-12), math.radians(3)),
-        carve_depth_m=0.082,
+        carve_depth_m=0.085,
     )
-    # 3. Right: char_8 (8-Characters +10% larger Hanzi + 3D carved)
+    # 3. Right: char_8 (8-Characters Brush Calligraphy + Curved Cloud Seal + 3D carved)
     build_displaced_carved_tile(
         "char_8",
         loc=(1.12, 0.04, 0.05),

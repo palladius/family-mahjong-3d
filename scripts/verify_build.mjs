@@ -80,10 +80,31 @@ const requiredPortraits = [
   "bamboo_2_hotwheels_emblem.png",
   "bamboo_3_shiryu_dragon_emblem.png",
   "bamboo_4_gems_rubies_emblem.png",
+  "dragon_red_ornate_emblem.png",
+  "dragon_green_ornate_emblem.png",
+  "dragon_white_ornate_emblem.png",
 ];
 requiredPortraits.forEach((f) => {
   const p = path.join(ROOT, "public/portraits", f);
-  assert(fs.existsSync(p) && fs.statSync(p).size > 50000, `Pure 2D Nano Banana portrait '${f}' exists`);
+  assert(fs.existsSync(p) && fs.statSync(p).size > 50000, `Pure 2D Nano Banana portrait/emblem '${f}' exists`);
+});
+
+const brushFont = path.join(ROOT, "public/fonts/MaShanZheng-Regular.ttf");
+assert(fs.existsSync(brushFont) && fs.statSync(brushFont).size > 1000000, "Calligraphic brush font 'MaShanZheng-Regular.ttf' exists");
+
+const requiredFX = [
+  "powerup_frame1_cloud_puff_white.png",
+  "powerup_frame2_dragon_emerge_white.png",
+  "powerup_frame3_dragon_fire_white.png",
+  "powerup_frame1_cloud_puff_rgba.png",
+  "powerup_frame2_dragon_emerge_rgba.png",
+  "powerup_frame3_dragon_fire_rgba.png",
+  "dragon_powerup_white.mp4",
+  "dragon_powerup_audit_comparison.png",
+];
+requiredFX.forEach((f) => {
+  const p = path.join(ROOT, "public/fx", f);
+  assert(fs.existsSync(p) && fs.statSync(p).size > 20000, `Dragon Biribip Power-Up FX asset '${f}' exists`);
 });
 
 assert(
@@ -115,8 +136,20 @@ cyclesRenders.forEach((f) => {
   assert(fs.existsSync(p) && fs.statSync(p).size > 50000, `Cycles Master Render '${f}' exists`);
 });
 
-// 5. Playable App & Progress Gallery
+// 5. Playable App, Dragon Power-Up Overlay & Progress Gallery
 assert(fs.existsSync(path.join(ROOT, "index.html")), "index.html exists");
+const indexHtml = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+assert(
+  indexHtml.includes("dragon-powerup-overlay") && indexHtml.includes("dragon-powerup-canvas"),
+  "index.html includes transparent 2D-over-3D '#dragon-powerup-overlay' and '#dragon-powerup-canvas'"
+);
+const mainJs = fs.readFileSync(path.join(ROOT, "src/main.js"), "utf8");
+assert(
+  mainJs.includes("triggerDragonPowerUpEffect") &&
+    mainJs.includes("unpremultiplyWhiteVideoFrame") &&
+    mainJs.includes("powerup_frame2_dragon_emerge_rgba.png"),
+  "src/main.js wires 'triggerDragonPowerUpEffect', white un-premultiplication, and hero 'powerup_frame2_dragon_emerge_rgba.png'"
+);
 assert(fs.existsSync(path.join(ROOT, "public/progress.html")), "public/progress.html exists");
 assert(fs.existsSync(path.join(ROOT, "docs/LOG.md")), "docs/LOG.md exists");
 

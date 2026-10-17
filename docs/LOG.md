@@ -353,4 +353,31 @@
    - Retained `public/portraits/quartet_S1_papa_riccardo_top1.png`, `public/textures/tiles/coupled_A1_top1.png`, and `public/textures/tiles_onirica/onirica_coupled_A1_top1.png` in the repository.
    - Deleted rejected `quartet_S1_papa_riccardo_top2.png`, `coupled_A1_top2.png`, and `onirica_coupled_A1_top2.png` and added byte-equality and absence assertions in `scripts/verify_build.mjs`.
 
+---
+
+## 2026-10-17T11:04:00+02:00 — Milestone 11 (`v1.7.0`): Ornate 3D Carved Red Dragon (`紅中`), Ma Shan Zheng Brush Calligraphy, Transparent "Puff $\rightarrow$ Frame 2 Dragon Emerge Biribip Power-Up" (GitHub Issue #1), & Vetrina Showcase
+
+### 1. Verbatim User Requests
+> "I pezzi circolari 1-2-3-4 cerchi fatti in 3D sono bellissimi, ma i testi cinesi invece sono molto meccanici, come hai fatto una riga verticale e una riga ortogonale. Per esempio, il drago rosso fa veramente schifo in 3D, quindi ti chiederei di farlo con tutte le sue belle curve e incisioni, dedicatici bene al drago. Un'ultima cosa: quando prendi pezzi di Ale, Sebi o del drago, mi piacerebbe che si creasse un effetto video, come che dal nulla, da un puff, una nuvola, venisse fuori una specie di video con come un power-up, un biribip, con un drago che soffia, un drago che sbuca dal nulla. La cosa difficile è che dovresti fare una specie di video con su base bianca e poi togliere la base bianca, perché poi deve essere magari va bene anche 2D, però deve essere come dire, in trasparenza rispetto al retro 3D. Prova a fare una cosa del genere. Se è troppo difficile, crea un paio di sottoagenti in antagonismo che lo fanno tra di loro. Fammi vedere cosa viene fuori, magari crea una GitHub issue per questo."
+> "il frame2 emerge white e' il mio preferito come effetto"
+> "Allora, fai una git pull perché mi sa che dall'altro computer ho pushato qualche cosa. Assicurati di avere nel README un link al GitHub Pages, quindi io clicco sul repo e clicco su GitHub Pages subito. Aggiungi questo bellissimo sito a vetrina, così quando vado su vetrina ce l'ho nella vetrina. Inventati una screenshot fighissima per far vedere questo gioco."
+
+### 2. Adversarial Subagent Duel & GitHub Issue #1
+- Opened **GitHub Issue #1** (`https://github.com/palladius/family-mahjong-3d/issues/1`).
+- Spawned 2 antagonistic subagents:
+  - **Subagent A (`Dragon & VFX Power-Up Architect`)**: `conversation://1995b359-305e-4ea8-9892-14713fcd562d`
+  - **Subagent B (`Adversarial VFX & 3D Dragon Critic`)**: `conversation://8d189132-26b8-457b-af2b-b820ab124842`
+- **Root-Cause & Mathematical Resolution**:
+  1. **3D Chinese Calligraphy & Ornate Red Dragon (`紅中`)**:
+     - Replaced `STHeiti Medium.ttc` (geometric sans-serif) with **`MaShanZheng-Regular.ttf`** (`public/fonts/MaShanZheng-Regular.ttf`) + `Songti.ttc (index=1)` for Traditional-only glyphs (`萬`, `東`, `風`, `發`, `蘭`).
+     - Generated ornate coiled dragon emblems (`public/portraits/dragon_red_ornate_emblem.png`, `dragon_green_ornate_emblem.png`, `dragon_white_ornate_emblem.png`) and upgraded `apply_incandescent_pen_carving()` in `scripts/build_all_tile_textures.py` with a **Multi-Scale V-Groove + Medial-Axis Spine** heightfield (`0.42*v_fine + 0.36*v_med + 0.22*v_deep + 0.30*spine + 0.24*detail_relief`).
+     - Re-rendered `public/models/tile_carved_intaglio_showcase.glb` and `public/renders/cycles/cycles_cam5_carved_intaglio.png` with `dots_4` (`4筒`), **`dragon_red` (`紅中`)**, and `char_8` (`八萬`).
+  2. **White-Background (`#FFFFFF`) $\rightarrow$ Zero-Halo Transparent 2D-over-3D Power-Up (`powerup_frame2_dragon_emerge`)**:
+     - Generated white-background keyframes (`powerup_frame1_cloud_puff_white.png`, **`powerup_frame2_dragon_emerge_white.png`**, `powerup_frame3_dragon_fire_white.png`) and `dragon_powerup_white.mp4`.
+     - Solved the classic white-halo & eye-hole failure modes via **Border-Seeded Flood-Fill (`d_max = 1 - min(R,G,B) < 0.34`) + Exact White Un-Premultiplication ($\mathbf{C}_{\text{clean}} = \frac{\mathbf{C} - (1-\alpha)}{\alpha}$) + Fiery Edge Despill** (`scripts/build_powerup_video_fx.py`, `src/main.js`).
+     - Wired `triggerDragonPowerUpEffect()` and `sfx.playDragonBiribipPowerUp()` in `src/main.js` when matching any Ale, Sebi, or Dragon pair (plus `🐉 Biribip FX (D)` button).
+  3. **Git Pull, GitHub Pages Link, & Vetrina Integration**:
+     - Pulled & rebased `v1.6.0` from `pupurabbux`, added GitHub Pages link & repo homepage URL, created composite showcase screenshot for `/Users/ricc/git/vetrina/assets/screenshots/family-mahjong-3d.jpg`, and added `family-mahjong-3d` to `/Users/ricc/git/vetrina/data/games.yaml`.
+
+
 

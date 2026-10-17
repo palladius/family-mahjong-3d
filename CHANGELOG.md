@@ -1,5 +1,18 @@
 # Changelog - Carlesso Family Mahjong 3D 🀄🐉
 
+## [1.7.0] - 2026-10-17
+### Added
+- **🐉 Ornate 3D Carved Red Dragon (`dragon_red` / `紅中`) & Organic Chinese Brush Calligraphy (`Ma Shan Zheng` + `Songti` • GitHub Issue #1)**:
+  - Replaced the mechanical sans-serif (`STHeiti Medium.ttc`) orthogonal lines on Chinese Character (`一萬..九萬`), Wind (`東 南 西 北`), and Dragon (`中 發 白`) tiles with authentic **Ma Shan Zheng** master Chinese brush calligraphy (`public/fonts/MaShanZheng-Regular.ttf`) + Songti Traditional fallback (`Songti.ttc index=1`).
+  - Generated bespoke ornate emblems (`public/portraits/dragon_red_ornate_emblem.png`, `dragon_green_ornate_emblem.png`, `dragon_white_ornate_emblem.png`) featuring a coiled imperial crimson-and-24k-gold Chinese dragon with engraved scales and auspicious cloud scrolls wrapping around the calligraphic `中`, `發`, and `白`.
+  - Upgraded `apply_incandescent_pen_carving()` in `scripts/build_all_tile_textures.py` with a **Multi-Scale V-Groove + Medial-Axis Spine** heightfield so every brush stroke and dragon scale carves into a curved 3D V-trench instead of a flat orthogonal plateau.
+  - Updated Headless Blender 5.0.1 showcase (`scripts/blender/build_carved_intaglio_showcase.py`, `public/models/tile_carved_intaglio_showcase.glb`, `public/renders/cycles/cycles_cam5_carved_intaglio.png`) featuring `4筒`, **`紅中` (Ornate 3D Carved Red Dragon hero)**, and `八萬`.
+- **✨ Transparent 2D-over-3D "Puff of Cloud $\rightarrow$ Frame 2 Dragon Emerge Biribip Power-Up" Video/Canvas FX (`scripts/build_powerup_video_fx.py`, `src/main.js`, `index.html`)**:
+  - Designed by an Adversarial Net of 2 Subagents (`Subagent A: Dragon & VFX Power-Up Architect` vs. `Subagent B: Adversarial VFX & 3D Dragon Critic`) for **GitHub Issue #1**.
+  - Generated white-background (`#FFFFFF`) keyframes (`public/fx/powerup_frame1_cloud_puff_white.png`, **`public/fx/powerup_frame2_dragon_emerge_white.png`** — RiccardinoCM26 🦖's favorite hero effect!, `public/fx/powerup_frame3_dragon_fire_white.png`) and white-background MP4 (`public/fx/dragon_powerup_white.mp4`).
+  - Implemented **Border-Seeded Flood-Fill + Exact White Un-Premultiplication ($\mathbf{C}_{\text{clean}} = \frac{\mathbf{C} - (1-\alpha)}{\alpha}$) + Fiery Edge Despill** to produce zero-halo transparent RGBA sprites (`powerup_frame1..3_*_rgba.png`) and live `<video>` frame keying without milky fringes or punched-out dragon eyes/teeth (`public/fx/dragon_powerup_audit_comparison.png`).
+  - Wired `triggerDragonPowerUpEffect()` and `sfx.playDragonBiribipPowerUp()` in `src/main.js` to trigger automatically whenever the player matches **Ale, Sebi, or Dragon** tiles (or on demand via `🐉 Biribip FX (D)` / Key `D`).
+
 ## [1.6.1] - 2026-10-17
 ### Changed
 - **🏆 `S1 春 • Solo Papà Riccardo` Final Selection (`quartet_S1_papa_riccardo_top3.png` Wins, `top1` Kept in Subordine, `top2` Removed)**:

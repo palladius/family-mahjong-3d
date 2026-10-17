@@ -1049,3 +1049,69 @@ button {
   font-family: inherit;
 }
 
+/* Transparent 2D-over-3D "Puff of Cloud -> Frame 2 Dragon Emerge Biribip Power-Up" Overlay */
+.action-btn.highlight-dragon {
+  background: linear-gradient(135deg, rgba(215, 38, 38, 0.32), rgba(245, 180, 45, 0.25));
+  color: #ffd97d;
+  font-weight: 700;
+  border-color: rgba(255, 110, 64, 0.65);
+}
+
+.action-btn.highlight-dragon:hover {
+  background: linear-gradient(135deg, rgba(235, 50, 50, 0.48), rgba(255, 200, 60, 0.36));
+  transform: translateY(-1px);
+}
+
+#dragon-powerup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 45;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+#dragon-powerup-canvas {
+  width: min(560px, 76vmin);
+  height: min(560px, 76vmin);
+  pointer-events: none;
+  filter: drop-shadow(0 0 28px rgba(255, 165, 45, 0.55));
+}
+
+.dragon-powerup-banner {
+  margin-top: -18px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(18, 12, 16, 0.82);
+  border: 1.5px solid rgba(255, 208, 92, 0.78);
+  border-radius: 999px;
+  padding: 5px 16px;
+  box-shadow: 0 6px 24px rgba(220, 45, 25, 0.55);
+  backdrop-filter: blur(6px);
+  pointer-events: none;
+}
+
+.dragon-powerup-badge {
+  background: linear-gradient(135deg, #ff3b2f 0%, #ffb700 100%);
+  color: #160808;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.6px;
+  padding: 2px 9px;
+  border-radius: 999px;
+}
+
+.dragon-powerup-caption {
+  font-size: 12px;
+  font-weight: 700;
+  color: #ffe8a3;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.9);
+}
+
+

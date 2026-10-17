@@ -2,13 +2,15 @@
 
 > **AAA-Quality 3D Solitary Mahjong Web App & Studio Look-Dev Suite** built with **Headless Blender 5.0.1 (`bpy`)**, **Three.js (`r170`)**, and **Vite 6**.
 
-🎮 **Gioca Online su GitHub Pages:** [**https://palladius.github.io/family-mahjong-3d/**](https://palladius.github.io/family-mahjong-3d/)
+🎮 **Gioca Subito su GitHub Pages:** [**https://palladius.github.io/family-mahjong-3d/**](https://palladius.github.io/family-mahjong-3d/) • 🖼️ [**Progress & 3D Gallery**](https://palladius.github.io/family-mahjong-3d/progress.html) • 🏛️ [**Vetrina Showcase**](https://palladius.github.io/vetrina/)
 
 [![Play on GitHub Pages](https://img.shields.io/badge/Play%20Online-GitHub%20Pages-brightgreen.svg?logo=github&style=for-the-badge)](https://palladius.github.io/family-mahjong-3d/)
-[![Version](https://img.shields.io/badge/version-1.6.0-gold.svg)](VERSION)
+[![Version](https://img.shields.io/badge/version-1.7.0-gold.svg)](VERSION)
 [![Blender](https://img.shields.io/badge/Blender-5.0.1%20Cycles-orange.svg)](https://blender.org)
 [![Three.js](https://img.shields.io/badge/Three.js-r170-black.svg)](https://threejs.org)
 [![Vite](https://img.shields.io/badge/Vite-6.0-purple.svg)](https://vitejs.dev)
+
+[![Carlesso Family 3D Mahjong Solitaire Showcase](public/renders/vetrina_hero_showcase.jpg)](https://palladius.github.io/family-mahjong-3d/)
 
 ---
 

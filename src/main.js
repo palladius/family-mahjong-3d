@@ -65,6 +65,39 @@ class SoundFX {
     osc.start();
     osc.stop(this.ctx.currentTime + 0.16);
   }
+  playDragonBiribipPowerUp() {
+    this.init();
+    if (!this.ctx) return;
+    const now = this.ctx.currentTime;
+    // 1. "Biribip!" rapid ascending power-up arpeggio (D5 -> F#5 -> A5 -> D6 -> F#6 -> A6)
+    const biribipNotes = [587.33, 739.99, 880.0, 1174.66, 1479.98, 1760.0];
+    biribipNotes.forEach((freq, i) => {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = i % 2 === 0 ? "square" : "triangle";
+      const tStart = now + i * 0.048;
+      osc.frequency.setValueAtTime(freq * 0.92, tStart);
+      osc.frequency.exponentialRampToValueAtTime(freq, tStart + 0.035);
+      gain.gain.setValueAtTime(0.18, tStart);
+      gain.gain.exponentialRampToValueAtTime(0.004, tStart + 0.24);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(tStart);
+      osc.stop(tStart + 0.25);
+    });
+    // 2. Cloud puff + Dragon fire breath low-mid resonant sweep
+    const roarOsc = this.ctx.createOscillator();
+    const roarGain = this.ctx.createGain();
+    roarOsc.type = "sawtooth";
+    roarOsc.frequency.setValueAtTime(240, now + 0.18);
+    roarOsc.frequency.exponentialRampToValueAtTime(88, now + 0.95);
+    roarGain.gain.setValueAtTime(0.14, now + 0.18);
+    roarGain.gain.exponentialRampToValueAtTime(0.003, now + 0.98);
+    roarOsc.connect(roarGain);
+    roarGain.connect(this.ctx.destination);
+    roarOsc.start(now + 0.18);
+    roarOsc.stop(now + 1.0);
+  }
 }
 
 const sfx = new SoundFX();
@@ -1091,6 +1124,9 @@ class MahjongSolitaireApp {
         // MATCH SUCCESS!
         // Show 2nd Yellow-Purple Border ("altro bordino giallo-viola") on 2nd tile too & wait 550ms ("mezzo secondo") before removing!
         sfx.playMatch();
+        if (this.isDragonOrAleSebiPowerUpPair(first.data, tile.data)) {
+          this.triggerDragonPowerUpEffect(first, tile);
+        }
         this.selectedTile = null;
         tile.selected = true;
         this.liftTile(tile, true);
@@ -1126,6 +1162,252 @@ class MahjongSolitaireApp {
     }
 
     this.updateHUD();
+  }
+
+  isDragonOrAleSebiPowerUpPair(t1, t2) {
+    const powerUpIds = new Set([
+      "dragon_red",
+      "dragon_green",
+      "dragon_white",
+      "bamboo_3", // Sirio il Dragone (Dragon Shiryu)
+      "coupled_B1", // S3 Solo Ale
+      "coupled_B2", // S4 Solo Sebi
+      "coupled_C1", // M1 Ale & Ghigna
+      "coupled_C2", // M2 Sebi & Pupurabbu
+      "coupled_E1",
+      "coupled_E2",
+      "coupled_F1",
+      "coupled_F2",
+      "coupled_G1",
+      "coupled_G2",
+      "coupled_H1",
+      "coupled_H2",
+    ]);
+    return powerUpIds.has(t1.id) || powerUpIds.has(t2.id);
+  }
+
+  initDragonPowerUpFX() {
+    if (this.dragonFXReady) return;
+    this.dragonFXReady = true;
+    this.dragonFXImages = {};
+    const frames = {
+      cloud: "./fx/powerup_frame1_cloud_puff_rgba.png",
+      emerge: "./fx/powerup_frame2_dragon_emerge_rgba.png", // Riccardino's favorite hero frame!
+      fire: "./fx/powerup_frame3_dragon_fire_rgba.png",
+    };
+    Object.entries(frames).forEach(([key, url]) => {
+      const img = new Image();
+      img.src = url;
+      this.dragonFXImages[key] = img;
+    });
+    this.dragonVideoScratch = document.createElement("canvas");
+    this.dragonVideoScratch.width = 256;
+    this.dragonVideoScratch.height = 256;
+  }
+
+  unpremultiplyWhiteVideoFrame(videoEl, targetW, targetH) {
+    // Real-time White-Background (#FFFFFF) Keying + Exact White Un-Premultiplication:
+    // C_clean = (C_obs - (1 - alpha)) / alpha, with inner radial protection so dragon eyes/teeth stay opaque!
+    if (!this.dragonVideoScratch) return null;
+    const sw = 240;
+    const sh = 240;
+    if (this.dragonVideoScratch.width !== sw) {
+      this.dragonVideoScratch.width = sw;
+      this.dragonVideoScratch.height = sh;
+    }
+    const sctx = this.dragonVideoScratch.getContext("2d", { willReadFrequently: true });
+    sctx.clearRect(0, 0, sw, sh);
+    sctx.drawImage(videoEl, 0, 0, sw, sh);
+    const imgData = sctx.getImageData(0, 0, sw, sh);
+    const data = imgData.data;
+    const cx = sw * 0.5;
+    const cy = sh * 0.52;
+    const innerR2 = (sw * 0.24) * (sw * 0.24);
+
+    for (let i = 0; i < data.length; i += 4) {
+      const px = (i >> 2) % sw;
+      const py = Math.floor((i >> 2) / sw);
+      const r = data[i] / 255;
+      const g = data[i + 1] / 255;
+      const b = data[i + 2] / 255;
+      const dMax = 1.0 - Math.min(r, g, b);
+      const dx = px - cx;
+      const dy = py - cy;
+      const dist2 = dx * dx + dy * dy;
+
+      let alpha = Math.min(1.0, Math.max(0.0, (dMax - 0.04) / 0.30));
+      alpha = alpha * alpha * (3.0 - 2.0 * alpha);
+      if (dist2 < innerR2 && dMax > 0.09) {
+        alpha = Math.max(alpha, 0.92);
+      }
+      if (alpha < 0.02) {
+        data[i + 3] = 0;
+      } else {
+        const invA = 1.0 / Math.max(alpha, 0.08);
+        let rc = Math.min(1.0, Math.max(0.0, (r - (1.0 - alpha)) * invA));
+        let gc = Math.min(1.0, Math.max(0.0, (g - (1.0 - alpha)) * invA));
+        let bc = Math.min(1.0, Math.max(0.0, (b - (1.0 - alpha)) * invA));
+        if (alpha < 0.65) {
+          const edgeW = (0.65 - alpha) / 0.65;
+          rc = rc * (1 - 0.35 * edgeW) + 1.0 * (0.35 * edgeW);
+          gc = gc * (1 - 0.35 * edgeW) + 0.58 * (0.35 * edgeW);
+          bc = bc * (1 - 0.35 * edgeW) + 0.12 * (0.35 * edgeW);
+        }
+        data[i] = Math.round(rc * 255);
+        data[i + 1] = Math.round(gc * 255);
+        data[i + 2] = Math.round(bc * 255);
+        data[i + 3] = Math.round(alpha * 255);
+      }
+    }
+    sctx.putImageData(imgData, 0, 0);
+    return this.dragonVideoScratch;
+  }
+
+  triggerDragonPowerUpEffect(tileA = null, tileB = null) {
+    this.initDragonPowerUpFX();
+    sfx.playDragonBiribipPowerUp();
+
+    const overlay = document.getElementById("dragon-powerup-overlay");
+    const canvas = document.getElementById("dragon-powerup-canvas");
+    const captionEl = document.getElementById("dragon-powerup-caption");
+    const videoEl = document.getElementById("dragon-powerup-video");
+    if (!overlay || !canvas) return;
+
+    if (captionEl) {
+      if (tileA && tileB) {
+        captionEl.textContent = `${tileA.data.code || tileA.data.glyph} ⚡ ${tileB.data.code || tileB.data.glyph} • Puff & Drago Imperiale!`;
+      } else {
+        captionEl.textContent = "紅中 • Il Drago Imperiale Emerge dalla Nuvola!";
+      }
+    }
+
+    overlay.classList.remove("hidden");
+    if (videoEl) {
+      try {
+        videoEl.currentTime = 0;
+        videoEl.play().catch(() => {});
+      } catch (_) {}
+    }
+
+    const ctx = canvas.getContext("2d");
+    const W = canvas.width;
+    const H = canvas.height;
+    const t0 = performance.now();
+    const totalMs = 1650;
+
+    // Generate 28 golden fire sparks & cloud particles
+    const sparks = Array.from({ length: 28 }, (_, idx) => {
+      const angle = (idx / 28) * Math.PI * 2 + (Math.random() - 0.5) * 0.25;
+      const speed = 130 + Math.random() * 190;
+      return {
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed - 35,
+        r: 3.5 + Math.random() * 5.5,
+        hue: 22 + Math.random() * 34,
+      };
+    });
+
+    if (this.dragonFXAnimId) cancelAnimationFrame(this.dragonFXAnimId);
+
+    const renderFrame = (now) => {
+      const elapsed = now - t0;
+      const u = Math.min(1.0, elapsed / totalMs);
+      ctx.clearRect(0, 0, W, H);
+
+      const cx = W * 0.5;
+      const cy = H * 0.5;
+
+      // Global envelope fade-out in final 280ms
+      const fadeOut = u > 0.82 ? Math.max(0.0, (1.0 - u) / 0.18) : 1.0;
+
+      // 1. Ambient golden-crimson energy shockwave behind the transparent sprite
+      ctx.save();
+      const glowRadius = 110 + Math.sin(u * Math.PI) * 165;
+      const grad = ctx.createRadialGradient(cx, cy, 12, cx, cy, glowRadius);
+      grad.addColorStop(0.0, `rgba(255, 215, 95, ${0.42 * fadeOut})`);
+      grad.addColorStop(0.55, `rgba(235, 68, 28, ${0.22 * fadeOut})`);
+      grad.addColorStop(1.0, "rgba(0, 0, 0, 0)");
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(cx, cy, glowRadius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      // 2. Phase 1 (0..380ms): Cloud Puff Burst (powerup_frame1_cloud_puff_rgba.png)
+      const cloudImg = this.dragonFXImages.cloud;
+      if (cloudImg && cloudImg.complete && elapsed < 520) {
+        const cu = Math.min(1.0, elapsed / 520);
+        const cScale = 0.38 + Math.sin(cu * Math.PI * 0.65) * 0.72;
+        const cAlpha = (cu < 0.45 ? cu / 0.45 : 1.0 - (cu - 0.45) / 0.55) * fadeOut;
+        const drawW = W * 0.82 * cScale;
+        const drawH = H * 0.82 * cScale;
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, Math.min(1, cAlpha));
+        ctx.drawImage(cloudImg, cx - drawW * 0.5, cy - drawH * 0.5, drawW, drawH);
+        ctx.restore();
+      }
+
+      // 3. Phase 2 (140..1650ms): HERO Frame 2 Dragon Emerge (powerup_frame2_dragon_emerge_rgba.png — User's Favorite!)
+      const emergeImg = this.dragonFXImages.emerge;
+      if (emergeImg && emergeImg.complete && elapsed > 110) {
+        const eu = Math.min(1.0, (elapsed - 110) / 1420);
+        // Spring scale pop out of the cloud puff
+        const spring = eu < 0.22 ? 0.45 + (eu / 0.22) * 0.63 : 1.08 - Math.min(0.08, (eu - 0.22) * 0.14);
+        const eAlpha = (eu < 0.16 ? eu / 0.16 : 1.0) * fadeOut;
+        const bobY = Math.sin(elapsed * 0.008) * 8;
+        const drawW = W * 0.86 * spring;
+        const drawH = H * 0.86 * spring;
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, Math.min(1, eAlpha));
+        ctx.drawImage(emergeImg, cx - drawW * 0.5, cy - drawH * 0.5 + bobY, drawW, drawH);
+        ctx.restore();
+      }
+
+      // 4. Phase 3 (820..1500ms): Subtle fiery breath highlight pulse (powerup_frame3_dragon_fire_rgba.png + live white-keyed MP4)
+      const fireImg = this.dragonFXImages.fire;
+      if (fireImg && fireImg.complete && elapsed > 760 && elapsed < 1520) {
+        const fu = (elapsed - 760) / 760;
+        const fAlpha = Math.sin(fu * Math.PI) * 0.55 * fadeOut;
+        const drawW = W * 0.90;
+        const drawH = H * 0.90;
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, Math.min(1, fAlpha));
+        ctx.drawImage(fireImg, cx - drawW * 0.5, cy - drawH * 0.5, drawW, drawH);
+        ctx.restore();
+      } else if (videoEl && videoEl.readyState >= 2 && elapsed > 200 && elapsed < 900) {
+        const keyedCanvas = this.unpremultiplyWhiteVideoFrame(videoEl, W, H);
+        if (keyedCanvas) {
+          ctx.save();
+          ctx.globalAlpha = 0.28 * fadeOut;
+          ctx.drawImage(keyedCanvas, cx - W * 0.42, cy - H * 0.42, W * 0.84, H * 0.84);
+          ctx.restore();
+        }
+      }
+
+      // 5. Golden Biribip Sparks & Dragon Embers
+      ctx.save();
+      const dtSec = elapsed / 1000;
+      sparks.forEach((sp) => {
+        const sx = cx + sp.vx * dtSec;
+        const sy = cy + sp.vy * dtSec + 40 * dtSec * dtSec;
+        const sAlpha = Math.max(0, (1.0 - u) * fadeOut);
+        ctx.fillStyle = `hsla(${sp.hue}, 100%, 62%, ${sAlpha})`;
+        ctx.beginPath();
+        ctx.arc(sx, sy, sp.r * (1.0 - 0.5 * u), 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.restore();
+
+      if (elapsed < totalMs) {
+        this.dragonFXAnimId = requestAnimationFrame(renderFrame);
+      } else {
+        ctx.clearRect(0, 0, W, H);
+        overlay.classList.add("hidden");
+        this.dragonFXAnimId = null;
+      }
+    };
+
+    this.dragonFXAnimId = requestAnimationFrame(renderFrame);
   }
 
   liftTile(tile, liftUp) {
@@ -1885,6 +2167,11 @@ class MahjongSolitaireApp {
       this.setupBoard(document.getElementById("track-select").value);
     });
     document.getElementById("btn-demo").addEventListener("click", () => this.toggleDemoSolver());
+    const btnDragonFX = document.getElementById("btn-dragon-fx");
+    if (btnDragonFX) {
+      btnDragonFX.addEventListener("click", () => this.triggerDragonPowerUpEffect());
+    }
+    this.initDragonPowerUpFX();
     document.getElementById("btn-surface-toggle").addEventListener("click", () => this.toggleSurface());
     const btn2d = document.getElementById("btn-2d-toggle");
     if (btn2d) {
@@ -1922,6 +2209,9 @@ class MahjongSolitaireApp {
       } else if (key === "i" || e.key === " ") {
         e.preventDefault();
         this.provideHint();
+      } else if (key === "d") {
+        e.preventDefault();
+        this.triggerDragonPowerUpEffect();
       } else if (key === "2") {
         this.toggle2DMode();
       } else if (key === "o") {

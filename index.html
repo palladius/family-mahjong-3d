@@ -59,6 +59,7 @@
         <button id="btn-shuffle" class="action-btn" title="Reshuffle remaining tiles solvably">🔀 Shuffle</button>
         <button id="btn-restart" class="action-btn" title="Restart current track">🔄 Restart</button>
         <button id="btn-demo" class="action-btn highlight" title="Toggle Auto-Play Demo Solver">▶ Demo Auto-Play</button>
+        <button id="btn-dragon-fx" class="action-btn highlight-dragon" title="Test Puff + Dragon Emerge Biribip Power-Up Effect (Key D)">🐉 Biribip FX (D)</button>
       </div>
 
       <div class="toggle-group">
@@ -302,6 +303,16 @@
     </div>
     <canvas id="wow-3d-canvas" width="124" height="124"></canvas>
     <div id="wow-3d-subtitle" class="wow-3d-subtitle">Imperial Marble &amp; Obsidian</div>
+  </div>
+
+  <!-- Transparent 2D-over-3D "Puff of Cloud -> Frame 2 Dragon Emerge Biribip Power-Up" Video/Canvas FX (Triggered on Ale, Sebi, or Dragon Match) -->
+  <div id="dragon-powerup-overlay" class="hidden" aria-hidden="true">
+    <video id="dragon-powerup-video" src="./fx/dragon_powerup_white.mp4" muted playsinline preload="auto" crossorigin="anonymous" class="hidden"></video>
+    <canvas id="dragon-powerup-canvas" width="680" height="680"></canvas>
+    <div id="dragon-powerup-banner" class="dragon-powerup-banner">
+      <span class="dragon-powerup-badge">🐉 BIRIBIP POWER-UP!</span>
+      <span id="dragon-powerup-caption" class="dragon-powerup-caption">紅中 • Il Drago Imperiale Emerge dalla Nuvola!</span>
+    </div>
   </div>
 
   <!-- Selected Tile / Matched Pair Preview Cartouche (Bottom: Yellow-Purple Highlight + "VA CON" Partner Preview + "Did you know?") -->
