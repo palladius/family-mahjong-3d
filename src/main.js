@@ -429,7 +429,16 @@ class MahjongSolitaireApp {
     this.activeSurface = "table"; // "table" or "pavement"
     const urlParams = new URLSearchParams(window.location.search);
     this.oniricaMode = urlParams.get("onirica") === "1";
-    this.activeCameraPreset = urlParams.get("2d") === "1" ? "2d" : "hero";
+    const isMobileViewport = typeof window !== "undefined" && (window.innerWidth <= 768 || ('ontouchstart' in window && window.innerWidth <= 1024));
+    if (urlParams.has("2d")) {
+      this.activeCameraPreset = urlParams.get("2d") === "1" ? "2d" : "hero";
+    } else if (urlParams.has("view")) {
+      this.activeCameraPreset = urlParams.get("view");
+    } else if (isMobileViewport) {
+      this.activeCameraPreset = "2d";
+    } else {
+      this.activeCameraPreset = "hero";
+    }
 
     // Look-Dev Settings with Defaults matching Blender Cycles Master Renders
     this.settings = {
@@ -488,6 +497,13 @@ class MahjongSolitaireApp {
 
     window.addEventListener("resize", () => {
       this.camera.aspect = window.innerWidth / window.innerHeight;
+      if (this.camera.aspect < 1.0 && (this.activeCameraPreset === "2d" || this.activeCameraPreset === "topdown")) {
+        const baseFov = this.activeCameraPreset === "2d" ? 28 : 40;
+        this.camera.fov = Math.min(72, Math.round(baseFov / this.camera.aspect));
+      } else {
+        const basePresets = { "2d": 28, hero: 38, topdown: 40, pavement: 36, macro: 44, orbit: 40 };
+        this.camera.fov = basePresets[this.activeCameraPreset] || 38;
+      }
       this.camera.updateProjectionMatrix();
       this.renderer.setSize(window.innerWidth, window.innerHeight);
     });
@@ -1080,7 +1096,24 @@ class MahjongSolitaireApp {
     this.mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
 
     this.raycaster.setFromCamera(this.mouse, this.camera);
-    const intersects = this.raycaster.intersectObjects(this.tiles.map((t) => t.root), true);
+    let intersects = this.raycaster.intersectObjects(this.tiles.map((t) => t.root), true);
+
+    // Touch optimization: forgiving tap tolerance on mobile/touchscreens
+    if (intersects.length === 0 && (e.pointerType === "touch" || ('ontouchstart' in window && window.innerWidth <= 1024))) {
+      const probeOffsets = [
+        [0.02, 0.0], [-0.02, 0.0], [0.0, 0.02], [0.0, -0.02],
+        [0.02, 0.02], [-0.02, -0.02], [0.02, -0.02], [-0.02, 0.02]
+      ];
+      for (const [ox, oy] of probeOffsets) {
+        const probeMouse = new THREE.Vector2(this.mouse.x + ox, this.mouse.y + oy);
+        this.raycaster.setFromCamera(probeMouse, this.camera);
+        const probeHits = this.raycaster.intersectObjects(this.tiles.map((t) => t.root), true);
+        if (probeHits.length > 0) {
+          intersects = probeHits;
+          break;
+        }
+      }
+    }
 
     if (intersects.length > 0) {
       let hitRoot = intersects[0].object;
@@ -1099,11 +1132,17 @@ class MahjongSolitaireApp {
     if (this.isPairPauseActive) return;
     if (!this.isTileFree(tile)) {
       sfx.playError();
+      if (typeof navigator !== "undefined" && navigator.vibrate) {
+        try { navigator.vibrate(40); } catch (_) {}
+      }
       this.wiggleTile(tile);
       return;
     }
 
     sfx.playClick();
+    if (typeof navigator !== "undefined" && navigator.vibrate) {
+      try { navigator.vibrate(12); } catch (_) {}
+    }
 
     if (!this.selectedTile) {
       // 1st Tile Selected -> Show Yellow-Purple Border ("bordino giallo-viola") on 1st tile!
@@ -1124,6 +1163,9 @@ class MahjongSolitaireApp {
         // MATCH SUCCESS!
         // Show 2nd Yellow-Purple Border ("altro bordino giallo-viola") on 2nd tile too & wait 550ms ("mezzo secondo") before removing!
         sfx.playMatch();
+        if (typeof navigator !== "undefined" && navigator.vibrate) {
+          try { navigator.vibrate([35, 30, 45]); } catch (_) {}
+        }
         if (this.isDragonOrAleSebiPowerUpPair(first.data, tile.data)) {
           this.triggerDragonPowerUpEffect(first, tile);
         }
@@ -1150,6 +1192,9 @@ class MahjongSolitaireApp {
       } else {
         // Mismatch: drop first, select second with Yellow-Purple border
         sfx.playError();
+        if (typeof navigator !== "undefined" && navigator.vibrate) {
+          try { navigator.vibrate(50); } catch (_) {}
+        }
         this.liftTile(first, false);
         first.selected = false;
         this.combo = 1;
@@ -2063,8 +2108,12 @@ class MahjongSolitaireApp {
       this.controls.enableRotate = this.activeCameraPreset !== "2d";
     }
 
-    this.settings.fov = cfg.fov;
-    this.camera.fov = cfg.fov;
+    let computedFov = cfg.fov;
+    if (this.camera && this.camera.aspect < 1.0 && (this.activeCameraPreset === "2d" || this.activeCameraPreset === "topdown")) {
+      computedFov = Math.min(72, Math.round(cfg.fov / this.camera.aspect));
+    }
+    this.settings.fov = computedFov;
+    this.camera.fov = computedFov;
     this.camera.updateProjectionMatrix();
 
     document.querySelectorAll(".cam-btn").forEach((b) => {
@@ -2166,6 +2215,26 @@ class MahjongSolitaireApp {
     document.getElementById("btn-restart").addEventListener("click", () => {
       this.setupBoard(document.getElementById("track-select").value);
     });
+    const btnFullscreen = document.getElementById("btn-fullscreen");
+    if (btnFullscreen) {
+      btnFullscreen.addEventListener("click", () => {
+        if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+          const docEl = document.documentElement;
+          if (docEl.requestFullscreen) docEl.requestFullscreen().catch(() => {});
+          else if (docEl.webkitRequestFullscreen) docEl.webkitRequestFullscreen();
+        } else {
+          if (document.exitFullscreen) document.exitFullscreen().catch(() => {});
+          else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+        }
+      });
+      const updateFsBtn = () => {
+        const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
+        btnFullscreen.innerHTML = isFs ? "🗗 Esci" : "⛶ Fullscreen";
+        btnFullscreen.classList.toggle("active", isFs);
+      };
+      document.addEventListener("fullscreenchange", updateFsBtn);
+      document.addEventListener("webkitfullscreenchange", updateFsBtn);
+    }
     document.getElementById("btn-demo").addEventListener("click", () => this.toggleDemoSolver());
     const btnDragonFX = document.getElementById("btn-dragon-fx");
     if (btnDragonFX) {

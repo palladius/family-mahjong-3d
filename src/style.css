@@ -1114,4 +1114,202 @@ button {
   text-shadow: 0 1px 6px rgba(0, 0, 0, 0.9);
 }
 
+/* ==========================================================================
+   Mobile Viewport & Touch Optimization (Issue #2)
+   Clean Fullscreen Viewport, Minimal Floating HUD, 2D Top-Down Focus
+   ========================================================================== */
+
+@media (max-width: 768px), (pointer: coarse) and (max-width: 1024px) {
+  html, body {
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+    position: fixed;
+    touch-action: none;
+    -webkit-overflow-scrolling: none;
+    overscroll-behavior: none;
+  }
+
+  #canvas-container {
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    touch-action: none;
+  }
+
+  /* 1. Header & Minimal Top Floating HUD ("Togli tutta la roba sopra e sotto") */
+  #game-hud {
+    height: auto;
+    padding: 6px 10px;
+    background: linear-gradient(180deg, rgba(14, 11, 16, 0.90) 0%, rgba(14, 11, 16, 0.50) 85%, transparent 100%);
+    border-bottom: 1px solid rgba(245, 212, 112, 0.2);
+    backdrop-filter: blur(8px);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+  }
+
+  /* Hide desktop look-dev studio bars, banners, subtitles and non-essential tools on mobile */
+  .brand-sub,
+  #btn-studio-toggle,
+  #btn-rig-toggle,
+  .link-btn,
+  #btn-surface-toggle,
+  #btn-onirica-toggle,
+  #btn-demo,
+  #btn-dragon-fx,
+  #btn-undo,
+  #studio-panel,
+  #rig-inspector {
+    display: none !important;
+  }
+
+  .hud-left {
+    gap: 8px;
+  }
+
+  .brand-title {
+    gap: 6px;
+  }
+
+  .brand-icon {
+    font-size: 22px;
+  }
+
+  .brand-text h1 {
+    font-size: 14px;
+    letter-spacing: 0.2px;
+  }
+
+  .track-picker {
+    padding: 2px 6px;
+    gap: 4px;
+    border-radius: 6px;
+  }
+
+  .track-picker label {
+    display: none;
+  }
+
+  .track-picker select {
+    font-size: 11px;
+    padding: 2px 4px;
+    max-width: 130px;
+  }
+
+  /* Compact minimal floating stat chips */
+  .hud-center {
+    gap: 4px;
+    order: 3;
+    width: 100%;
+    justify-content: space-between;
+    padding: 3px 6px;
+    background: rgba(22, 16, 26, 0.72);
+    border: 1px solid rgba(245, 212, 112, 0.25);
+    border-radius: 999px;
+  }
+
+  .stat-badge {
+    padding: 2px 6px;
+    font-size: 10px;
+  }
+
+  .stat-label {
+    font-size: 8px;
+    letter-spacing: 0.2px;
+  }
+
+  .stat-value {
+    font-size: 12px;
+  }
+
+  /* Minimal floating action controls */
+  .hud-right {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .hud-right .btn-group {
+    display: flex;
+    gap: 5px;
+  }
+
+  .hud-right .toggle-group {
+    display: flex;
+    gap: 5px;
+  }
+
+  .action-btn,
+  .toggle-btn {
+    padding: 5px 9px;
+    font-size: 11px;
+    min-height: 38px;
+    min-width: 38px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+  }
+
+  /* 2. Floating Minimal Mobile Dock at Bottom */
+  #camera-bar {
+    position: fixed;
+    bottom: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(100% - 24px);
+    max-width: 440px;
+    background: rgba(16, 12, 20, 0.88);
+    backdrop-filter: blur(14px);
+    border: 1.5px solid rgba(245, 212, 112, 0.35);
+    border-radius: 999px;
+    padding: 5px 8px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.65);
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    z-index: 25;
+  }
+
+  /* On mobile camera dock, keep essential view & quick action buttons */
+  #camera-bar .cam-btn[data-cam="pavement"],
+  #camera-bar .cam-btn[data-cam="macro"],
+  #camera-bar .cam-btn[data-cam="orbit"] {
+    display: none;
+  }
+
+  .cam-btn {
+    padding: 4px 8px;
+    min-width: 42px;
+    min-height: 42px;
+    border-radius: 999px;
+  }
+
+  .cam-icon {
+    width: 18px;
+    height: 18px;
+  }
+
+  .cam-text {
+    font-size: 9.5px;
+  }
+
+  /* Selection & Partner Cards positioned cleanly */
+  #selection-card {
+    top: 92px;
+    right: 8px;
+    transform: scale(0.85);
+    transform-origin: top right;
+  }
+
+  #pair-match-card {
+    top: 92px;
+    transform: translateX(-50%) scale(0.85);
+  }
+}
+
 

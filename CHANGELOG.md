@@ -1,5 +1,12 @@
 # Changelog - Carlesso Family Mahjong 3D 🀄🐉
 
+## [1.7.1] - 2026-10-18
+### Added
+- **📱 Mobile UX & Viewport Overhaul (GitHub Issue #2)**:
+  - **Clean Viewport & Fullscreen Experience**: Automatically collapses desktop look-dev studio bars, banners, and footer text on mobile viewports (`max-width: 768px`). Added one-tap `⛶ Fullscreen` toggle button.
+  - **Default 2D View with 3D Rotation Toggle**: Automatically defaults to clean 2D Top-Down planar view on mobile and small touch devices, with dynamic FOV calculation for portrait orientation to ensure all 144 tiles fit without horizontal clipping.
+  - **Forgiving Touch Hitboxes & Haptic Feedback**: Multi-point forgiving raycast hitboxes for touchscreens and haptic vibration feedback (`navigator.vibrate`) on valid pair matches, single selection, and mismatch errors.
+
 ## [1.7.0] - 2026-10-17
 ### Added
 - **🐉 Ornate 3D Carved Red Dragon (`dragon_red` / `紅中`) & Organic Chinese Brush Calligraphy (`Ma Shan Zheng` + `Songti` • GitHub Issue #1)**:
