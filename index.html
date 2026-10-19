@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Carlesso Family 3D Mahjong Solitaire 🀄</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🀄</text></svg>" />
-  <script type="module" crossorigin src="./assets/index-BsXoIrCv.js"></script>
+  <script type="module" crossorigin src="./assets/index-Bb93jT6G.js"></script>
   <link rel="stylesheet" crossorigin href="./assets/index-DjzkEXz-.css">
 </head>
 <body>
@@ -67,6 +67,9 @@
       <div class="toggle-group">
         <button id="btn-2d-toggle" class="toggle-btn" title="Toggle Flat 2D Top-Down View (Zero 3D Motion Sickness) vs. 3D Temple View">
           📐 <span id="view-mode-name" class="btn-label">2D / 3D</span>
+        </button>
+        <button id="btn-debug-symbols" class="toggle-btn" title="Toggle Debug Simboli in alto sulle tessere (C, S1..S4, 1..9 — Tasto S, Disabilitato di default)">
+          🏷️ <span id="debug-symbols-name" class="btn-label">Debug Simboli: OFF</span>
         </button>
         <button id="btn-onirica-toggle" class="toggle-btn" title="A/B Test Toggle: Classic Gold-Rimmed Oval vs. Modalità Onirica (Dreamlike Whisper-Fade on White Marble — Less is More)">
           🌙 <span id="onirica-name">Classica Ovale</span>
@@ -238,6 +241,7 @@
           <input type="range" id="sl-cam-distance" min="4.0" max="24.0" step="0.5" value="11.5" />
         </div>
         <div class="checkbox-row">
+          <label><input type="checkbox" id="chk-debug-symbols" /> 🏷️ Debug Simboli (Mostra C / S1 / S2 / 1..9 in alto)</label>
           <label><input type="checkbox" id="chk-auto-rotate" /> Auto-Rotate Viewport</label>
           <label><input type="checkbox" id="chk-shadows" checked /> Cast PBR Soft Shadows</label>
         </div>
