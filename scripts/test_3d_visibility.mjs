@@ -75,6 +75,14 @@ assert(
     styleCss.includes("max-width: 395px;"),
   "3D Tile Inspector oscillates ±30° (Math.PI/6) face-forward without purple, and #selection-card is compact & tucked in top-right out of board view"
 );
+assert(
+  indexHtml.includes('id="btn-fullscreen"') &&
+    mainJs.includes("isMobileViewport") &&
+    mainJs.includes("probeOffsets") &&
+    mainJs.includes("navigator.vibrate") &&
+    styleCss.includes("100dvh"),
+  "Mobile Viewport (Issue #2): #btn-fullscreen, 2D top-down default on mobile, forgiving touch hitboxes (probeOffsets), haptic feedback, and 100dvh clean HUD are wired"
+);
 
 // 2. Parse actual binary public/models/temple_environment.glb & build Three.js bounding meshes
 const glbPath = path.join(ROOT, "public/models/temple_environment.glb");

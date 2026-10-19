@@ -1298,18 +1298,26 @@ button {
     font-size: 9.5px;
   }
 
-  /* Selection & Partner Cards positioned cleanly */
+  /* Selection, 3D Inspector & Partner Cards positioned cleanly on mobile */
+  #wow-3d-popup {
+    top: 86px;
+    left: 6px;
+    transform: scale(0.76);
+    transform-origin: top left;
+  }
+
   #selection-card {
-    top: 92px;
-    right: 8px;
-    transform: scale(0.85);
+    top: 86px;
+    right: 6px;
+    transform: scale(0.82);
     transform-origin: top right;
   }
 
   #pair-match-card {
-    top: 92px;
-    transform: translateX(-50%) scale(0.85);
+    top: 86px;
+    transform: translateX(-50%) scale(0.82);
   }
 }
+
 
 

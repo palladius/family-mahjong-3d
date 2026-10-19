@@ -381,3 +381,19 @@
 
 
 
+---
+
+## 2026-10-19T17:58:00+02:00 — Milestone 12 (`v1.7.1`): Septober Action Item — Fullscreen Mobile UI, Clean Floating HUD & Default 2D View with 3D Orbit Toggle (GitHub Issue #2 / PR #3)
+
+### 1. Verbatim User Request & Septober Issue #2
+> "guarda GHI, penso ci sia un AI da speotber"
+> **GitHub Issue #2** (`feat(mobile): Fullscreen mobile UI, clean HUD and default 2D top-down view` — filed by Ermete Bottazzi 🚛 on behalf of Riccardo Carlesso and Andrea Patrignani):
+> - *"Togli tutta la roba sopra e sotto, facciamolo diventare uno schermo intero su cellulare, sarebbe più figo."*
+> - *"Default 2D poi puoi ruotarlo."*
+
+### 2. Engineering Execution & PR #3 Merge
+1. **Merged & Polished `origin/fix/issue-2` (PR #3) into `main` (`v1.7.1`)**:
+   - **Clean Fullscreen Mobile Viewport**: Added `@media (max-width: 768px), (pointer: coarse) and (max-width: 1024px)` in `src/style.css` locking `html, body, #canvas-container` to `100vw` $\times$ `100dvh` (`touch-action: none; overscroll-behavior: none`), hiding desktop look-dev controls (`#studio-panel`, `#rig-inspector`, `.brand-sub`, `.link-btn`, `#btn-surface-toggle`, `#btn-onirica-toggle`, `#btn-demo`, `#btn-dragon-fx`, `#btn-undo`), and keeping only floating HUD chips + a floating bottom pill dock (`#camera-bar`).
+   - **One-Tap Fullscreen Button (`#btn-fullscreen`)**: Added `⛶ Full` in `index.html` and wired `toggleFullscreen()` (`requestFullscreen` / `webkitRequestFullscreen`) in `src/main.js`.
+   - **Default 2D Top-Down View on Mobile + Seamless 3D Rotation Toggle**: Added `isMobileViewport()` detection (`window.matchMedia("(max-width: 768px), (pointer: coarse) and (max-width: 1024px)")`) so mobile sessions start in `2d` flat top-down view by default while allowing one-tap toggle to `hero` / `orbit` 3D rotation via `#btn-2d-toggle` and `#camera-bar`.
+   - **Portrait-Aware FOV Scaling, Forgiving Touch Hitboxes, & Haptic Feedback**: Added dynamic FOV scaling when `aspect < 1.0`, 5-point forgiving touch raycast probes (`probeOffsets`), and `navigator.vibrate` haptic feedback on tile selection, pair match, and mismatch.
