@@ -98,6 +98,26 @@ class SoundFX {
     roarOsc.start(now + 0.18);
     roarOsc.stop(now + 1.0);
   }
+  playFamilyPowerUp() {
+    this.init();
+    if (!this.ctx) return;
+    const now = this.ctx.currentTime;
+    // Warm, joyful pentatonic family celebration chime (C5 -> D5 -> E5 -> G5 -> A5 -> C6)
+    const familyNotes = [523.25, 587.33, 659.25, 783.99, 880.0, 1046.5];
+    familyNotes.forEach((freq, i) => {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = "triangle";
+      const tStart = now + i * 0.055;
+      osc.frequency.setValueAtTime(freq, tStart);
+      gain.gain.setValueAtTime(0.22, tStart);
+      gain.gain.exponentialRampToValueAtTime(0.004, tStart + 0.38);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(tStart);
+      osc.stop(tStart + 0.40);
+    });
+  }
 }
 
 const sfx = new SoundFX();
@@ -421,6 +441,7 @@ class MahjongSolitaireApp {
     this.manifest = null;
     this.tiles = [];
     this.selectedTile = null;
+    this.hoveredTile = null;
     this.score = 0;
     this.combo = 1;
     this.movesHistory = [];
@@ -429,7 +450,10 @@ class MahjongSolitaireApp {
     this.activeSurface = "table"; // "table" or "pavement"
     const urlParams = new URLSearchParams(window.location.search);
     this.oniricaMode = urlParams.get("onirica") === "1";
-    const isMobileViewport = typeof window !== "undefined" && (window.innerWidth <= 768 || ('ontouchstart' in window && window.innerWidth <= 1024));
+    const isMobileViewport =
+      typeof window !== "undefined" &&
+      (window.innerWidth <= 768 || ("ontouchstart" in window && window.innerWidth <= 1024));
+    this.isMobile = isMobileViewport;
     if (urlParams.has("2d")) {
       this.activeCameraPreset = urlParams.get("2d") === "1" ? "2d" : "hero";
     } else if (urlParams.has("view")) {
@@ -440,13 +464,13 @@ class MahjongSolitaireApp {
       this.activeCameraPreset = "hero";
     }
 
-    // Look-Dev Settings with Defaults matching Blender Cycles Master Renders
+    // Look-Dev Settings with lightweight Mobile GPU profile (shadows off on mobile for 60fps!)
     this.settings = {
       sunIntensity: 3.8,
       sunElevation: 46,
       sunAzimuth: 32,
       lanternGlow: 2.4,
-      ambient: 0.75,
+      ambient: this.isMobile ? 1.15 : 0.75,
       exposure: 1.10,
       marbleRoughness: 0.14,
       marbleClearcoat: 0.35,
@@ -456,7 +480,7 @@ class MahjongSolitaireApp {
       fov: 38,
       camDistance: 11.5,
       autoRotate: false,
-      shadows: true,
+      shadows: !this.isMobile,
     };
 
     this.tweens = [];
@@ -468,15 +492,30 @@ class MahjongSolitaireApp {
     requestAnimationFrame(this.animate);
   }
 
+  computeResponsiveFov(baseFov, presetKey) {
+    if (!this.camera) return baseFov;
+    const aspect = this.camera.aspect || window.innerWidth / window.innerHeight;
+    if (aspect < 1.0 && (presetKey === "2d" || presetKey === "topdown")) {
+      // Exact trigonometric horizontal-to-vertical FOV scaling so the 14.5-unit wide board fills 92% of portrait phones
+      const halfRad = (baseFov * Math.PI) / 360;
+      const vFov = (2 * Math.atan((Math.tan(halfRad) / Math.max(0.42, aspect)) * 0.86) * 180) / Math.PI;
+      return Math.min(76, Math.round(vFov));
+    }
+    return baseFov;
+  }
+
   initThree() {
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x120f14);
 
     this.camera = new THREE.PerspectiveCamera(this.settings.fov, window.innerWidth / window.innerHeight, 0.1, 100);
 
-    this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+    this.renderer = new THREE.WebGLRenderer({
+      antialias: !this.isMobile,
+      powerPreference: "high-performance",
+    });
     this.renderer.setSize(window.innerWidth, window.innerHeight);
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, this.isMobile ? 1.35 : 2.0));
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = this.settings.exposure;
     this.renderer.shadowMap.enabled = this.settings.shadows;
@@ -497,18 +536,17 @@ class MahjongSolitaireApp {
 
     window.addEventListener("resize", () => {
       this.camera.aspect = window.innerWidth / window.innerHeight;
-      if (this.camera.aspect < 1.0 && (this.activeCameraPreset === "2d" || this.activeCameraPreset === "topdown")) {
-        const baseFov = this.activeCameraPreset === "2d" ? 28 : 40;
-        this.camera.fov = Math.min(72, Math.round(baseFov / this.camera.aspect));
-      } else {
-        const basePresets = { "2d": 28, hero: 38, topdown: 40, pavement: 36, macro: 44, orbit: 40 };
-        this.camera.fov = basePresets[this.activeCameraPreset] || 38;
-      }
+      const basePresets = { "2d": 28, hero: 38, topdown: 40, pavement: 36, macro: 44, orbit: 40 };
+      const baseFov = basePresets[this.activeCameraPreset] || 38;
+      this.camera.fov = this.computeResponsiveFov(baseFov, this.activeCameraPreset);
       this.camera.updateProjectionMatrix();
       this.renderer.setSize(window.innerWidth, window.innerHeight);
     });
 
     this.renderer.domElement.addEventListener("pointerdown", (e) => this.onPointerDown(e));
+    if (!this.isMobile) {
+      this.renderer.domElement.addEventListener("pointermove", (e) => this.onPointerMove(e));
+    }
   }
 
   initLights() {
@@ -516,9 +554,9 @@ class MahjongSolitaireApp {
     this.scene.add(this.ambientLight);
 
     this.sunLight = new THREE.DirectionalLight(0xffeed4, this.settings.sunIntensity);
-    this.sunLight.castShadow = true;
-    this.sunLight.shadow.mapSize.width = 2048;
-    this.sunLight.shadow.mapSize.height = 2048;
+    this.sunLight.castShadow = this.settings.shadows;
+    this.sunLight.shadow.mapSize.width = this.isMobile ? 1024 : 2048;
+    this.sunLight.shadow.mapSize.height = this.isMobile ? 1024 : 2048;
     this.sunLight.shadow.camera.near = 1.0;
     this.sunLight.shadow.camera.far = 40.0;
     const d = 12;
@@ -529,20 +567,22 @@ class MahjongSolitaireApp {
     this.sunLight.shadow.bias = -0.0004;
     this.scene.add(this.sunLight);
 
-    // Warm Silk Lantern Glows around Courtyard
+    // Warm Silk Lantern Glows around Courtyard (skipped on mobile to save 4 dynamic PointLight shader loops per pixel!)
     this.lanternLights = [];
-    const lanternCoords = [
-      [-7.5, -5.5, 4.2],
-      [7.5, -5.5, 4.2],
-      [-7.5, 5.5, 4.2],
-      [7.5, 5.5, 4.2],
-    ];
-    lanternCoords.forEach(([lx, ly, lz]) => {
-      const pLight = new THREE.PointLight(0xff8833, this.settings.lanternGlow, 18, 1.2);
-      pLight.position.set(lx, lz, ly); // Three.js Y-up
-      this.scene.add(pLight);
-      this.lanternLights.push(pLight);
-    });
+    if (!this.isMobile) {
+      const lanternCoords = [
+        [-7.5, -5.5, 4.2],
+        [7.5, -5.5, 4.2],
+        [-7.5, 5.5, 4.2],
+        [7.5, 5.5, 4.2],
+      ];
+      lanternCoords.forEach(([lx, ly, lz]) => {
+        const pLight = new THREE.PointLight(0xff8833, this.settings.lanternGlow, 18, 1.2);
+        pLight.position.set(lx, lz, ly);
+        this.scene.add(pLight);
+        this.lanternLights.push(pLight);
+      });
+    }
 
     this.updateSunPosition();
   }
@@ -593,8 +633,8 @@ class MahjongSolitaireApp {
       this.templeEnv.rotation.set(0, 0, 0);
       this.templeEnv.traverse((child) => {
         if (child.isMesh) {
-          child.castShadow = true;
-          child.receiveShadow = true;
+          child.castShadow = !this.isMobile;
+          child.receiveShadow = !this.isMobile;
         }
       });
       this.scene.add(this.templeEnv);
@@ -619,11 +659,17 @@ class MahjongSolitaireApp {
       if (leg) this.envLegs.push(leg);
     }
     this.envOverheadObstacles = [];
+    this.templeEnv.updateMatrixWorld(true);
     this.templeEnv.traverse((child) => {
       if (
         child.isMesh &&
         (child.name.startsWith("Temple_Crimson_Pillar") || child.name.startsWith("Temple_Silk_Lantern"))
       ) {
+        // Precompute world bounding center ONCE so animate() never runs Box3.setFromObject per frame!
+        const box = new THREE.Box3().setFromObject(child);
+        const center = new THREE.Vector3();
+        box.getCenter(center);
+        child.userData.cachedCenter = center;
         this.envOverheadObstacles.push(child);
       }
     });
@@ -640,10 +686,7 @@ class MahjongSolitaireApp {
         mesh.visible = false;
         return;
       }
-      // If a pillar/lantern is on the camera side of the board and could cross the camera frustum, hide it so it NEVER blocks the board
-      const box = new THREE.Box3().setFromObject(mesh);
-      const center = new THREE.Vector3();
-      box.getCenter(center);
+      const center = mesh.userData.cachedCenter || mesh.position;
       const dotSide = center.x * camPos.x + center.z * camPos.z;
       const objDist = Math.hypot(center.x, center.z);
       mesh.visible = !(dotSide > 0 && camDistToCenter > objDist - 3.5);
@@ -739,28 +782,69 @@ class MahjongSolitaireApp {
     const collarGeo = new THREE.ExtrudeGeometry(collarShape, { depth: 0.050, bevelEnabled: false });
     collarGeo.rotateX(-Math.PI / 2);
 
+    // Performance optimization:
+    // - Mobile uses 1x1 face plane (2 triangles instead of 13,824 per tile — 6,900x fewer vertices!) with normal-map relief.
+    // - Desktop board uses 24x32 face plane (fast 60fps vertex displacement) and 48x64 for the single close-up 3D inspector tile.
+    const boardSegX = this.isMobile ? 1 : 24;
+    const boardSegY = this.isMobile ? 1 : 32;
+
     this.sharedGeo = {
-      // Lowered inner cavity floor so downward-displaced 3D carved grooves ('il buco bassorilievo') are NEVER clipped!
       body: new THREE.BoxGeometry(TILE_W, TILE_D - 0.048, TILE_H),
       topCollar: collarGeo,
       kintsugi: new THREE.BoxGeometry(TILE_W * 1.004, TILE_D * 0.06, TILE_H * 1.004),
-      // 72x96 high-density subdivided face mesh so displacementMap physically carves 3D grooves & pits into the tile!
-      face: new THREE.PlaneGeometry(TILE_W * 0.94, TILE_H * 0.95, 72, 96),
-      // Top-center golden crown inlay bar (never occludes top-left or top-right corner glyphs!)
+      face: new THREE.PlaneGeometry(TILE_W * 0.94, TILE_H * 0.95, boardSegX, boardSegY),
+      wowFace: new THREE.PlaneGeometry(TILE_W * 0.94, TILE_H * 0.95, this.isMobile ? 1 : 48, this.isMobile ? 1 : 64),
       badge: new THREE.BoxGeometry(0.18, 0.012, 0.024),
-      // Yellow-Purple Selection Double Border ("bordino giallo-viola")
       selOuterPurple: this.makeHollowRectGeometry(TILE_W * 1.12, TILE_H * 1.10, TILE_W * 1.01, TILE_H * 1.00),
       selInnerYellow: this.makeHollowRectGeometry(TILE_W * 1.01, TILE_H * 1.00, TILE_W * 0.90, TILE_H * 0.91),
     };
+
+    const makeMarbleMat = (hexColor, emissiveHex = 0x000000) => {
+      if (this.isMobile) {
+        return new THREE.MeshStandardMaterial({
+          color: hexColor,
+          emissive: new THREE.Color(emissiveHex),
+          map: this.pbrTextures.marbleBase,
+          roughness: this.settings.marbleRoughness,
+          metalness: 0.04,
+        });
+      }
+      return new THREE.MeshPhysicalMaterial({
+        color: hexColor,
+        emissive: new THREE.Color(emissiveHex),
+        map: this.pbrTextures.marbleBase,
+        normalMap: this.pbrTextures.marbleNorm,
+        normalScale: new THREE.Vector2(0.18 * this.settings.normalScale, 0.18 * this.settings.normalScale),
+        roughness: this.settings.marbleRoughness,
+        clearcoat: this.settings.marbleClearcoat,
+        clearcoatRoughness: 0.1,
+      });
+    };
+
+    const obsidianMat = new THREE.MeshStandardMaterial({
+      color: 0x111116,
+      map: this.pbrTextures.obsidianBase,
+      normalMap: this.isMobile ? null : this.pbrTextures.obsidianNorm,
+      normalScale: new THREE.Vector2(0.22 * this.settings.normalScale, 0.22 * this.settings.normalScale),
+      roughness: 0.10,
+      metalness: this.settings.obsidianMetallic,
+    });
+
+    const marbleFree = makeMarbleMat(0xfcf8ee, 0x000000);
+    const marbleBlocked = makeMarbleMat(0xe2ded4, 0x000000);
+    const marbleSelected = makeMarbleMat(0xfcf8ee, 0x3b155e);
+    const marblePulse = makeMarbleMat(0xfcf8ee, 0x228833);
+
     this.sharedMat = {
-      obsidian: new THREE.MeshStandardMaterial({
-        color: 0x111116,
-        map: this.pbrTextures.obsidianBase,
-        normalMap: this.pbrTextures.obsidianNorm,
-        normalScale: new THREE.Vector2(0.22 * this.settings.normalScale, 0.22 * this.settings.normalScale),
-        roughness: 0.10,
-        metalness: this.settings.obsidianMetallic,
-      }),
+      obsidian: obsidianMat,
+      marbleFree,
+      marbleBlocked,
+      marbleSelected,
+      marblePulse,
+      bodyMatFree: [marbleFree, marbleFree, marbleFree, obsidianMat, marbleFree, marbleFree],
+      bodyMatBlocked: [marbleBlocked, marbleBlocked, marbleBlocked, obsidianMat, marbleBlocked, marbleBlocked],
+      bodyMatSelected: [marbleSelected, marbleSelected, marbleSelected, obsidianMat, marbleSelected, marbleSelected],
+      bodyMatPulse: [marblePulse, marblePulse, marblePulse, obsidianMat, marblePulse, marblePulse],
       kintsugiGold: new THREE.MeshStandardMaterial({
         color: 0xf0c850,
         metalness: 0.92,
@@ -785,6 +869,56 @@ class MahjongSolitaireApp {
         side: THREE.DoubleSide,
       }),
     };
+  }
+
+  isMorphingDragonTile(tileData) {
+    // ONLY Drago Rosso (`dragon_red`) and Drago Verde (`dragon_green`) morph into the ornate "tarchiato" dragon on hover/select!
+    // Never `bamboo_3` ("Sirio il Dragone") and never `dragon_white`!
+    return Boolean(tileData && (tileData.id === "dragon_red" || tileData.id === "dragon_green"));
+  }
+
+  getDisplayTextureId(tileData, useOrnateForDragons = true) {
+    if (!tileData) return "coupled_A1";
+    if (useOrnateForDragons && this.isMorphingDragonTile(tileData)) {
+      return `${tileData.id}_ornate`;
+    }
+    return tileData.id;
+  }
+
+  ensureFaceTexturesLoaded(texId, texLoader = new THREE.TextureLoader()) {
+    if (!this.faceTextureCache) this.faceTextureCache = {};
+    if (!this.faceTextureCache[texId]) {
+      const faceTex = texLoader.load(`./textures/tiles/${texId}.png`);
+      faceTex.colorSpace = THREE.SRGBColorSpace;
+      const oniricaTex = texLoader.load(`./textures/tiles_onirica/${texId}.png`);
+      oniricaTex.colorSpace = THREE.SRGBColorSpace;
+      const normTex = texLoader.load(`./textures/tiles_normal/${texId}_normal.png`);
+      const depthTex = this.isMobile ? null : texLoader.load(`./textures/tiles_depth/${texId}_depth.png`);
+      this.faceTextureCache[texId] = { faceTex, oniricaTex, normTex, depthTex };
+    }
+    return this.faceTextureCache[texId];
+  }
+
+  setDragonOrnateState(tile, ornateActive) {
+    if (!tile || tile.removed || !this.isMorphingDragonTile(tile.data)) return;
+    const targetTexId = ornateActive ? `${tile.data.id}_ornate` : tile.data.id;
+    const cached = this.ensureFaceTexturesLoaded(targetTexId);
+    const mat = tile.root.userData.faceMesh?.material;
+    if (mat && cached) {
+      mat.map = this.oniricaMode ? cached.oniricaTex : cached.faceTex;
+      mat.normalMap = cached.normTex;
+      if (!this.isMobile && cached.depthTex) {
+        mat.displacementMap = cached.depthTex;
+      }
+      mat.needsUpdate = true;
+    }
+    // Chunky "tarchiato" muscular scale when ornate dragon is active on hover/select!
+    if (ornateActive) {
+      tile.root.scale.set(1.06, 1.14, 1.04);
+    } else {
+      tile.root.scale.set(1.0, 1.0, 1.0);
+    }
+    tile.isOrnateDragonActive = Boolean(ornateActive);
   }
 
   generateDeckPairs(numPairs) {
@@ -911,89 +1045,74 @@ class MahjongSolitaireApp {
     return assigned;
   }
 
-  createTileMesh(tileData, texLoader) {
+  createTileMesh(tileData, texLoader, isWowPreview = false) {
     const root = new THREE.Group();
+    const castShad = !this.isMobile && this.settings.shadows;
 
-    // 1. Tile Body: Imperial White Marble + Black Obsidian Backing (recessed top cavity for 3D carved grooves)
-    const marbleMat = new THREE.MeshPhysicalMaterial({
-      color: 0xfcf8ee,
-      map: this.pbrTextures.marbleBase,
-      normalMap: this.pbrTextures.marbleNorm,
-      normalScale: new THREE.Vector2(0.18 * this.settings.normalScale, 0.18 * this.settings.normalScale),
-      roughness: this.settings.marbleRoughness,
-      clearcoat: this.settings.marbleClearcoat,
-      clearcoatRoughness: 0.1,
-    });
-
-    const bodyMaterials = [
-      marbleMat, // +X
-      marbleMat, // -X
-      marbleMat, // +Y inner cavity floor
-      this.sharedMat.obsidian, // -Y bottom back
-      marbleMat, // +Z
-      marbleMat, // -Z
-    ];
-    const bodyMesh = new THREE.Mesh(this.sharedGeo.body, bodyMaterials);
+    // 1. Tile Body: Shared Imperial White Marble + Black Obsidian Backing (4 shared materials instead of 144!)
+    const bodyMesh = new THREE.Mesh(this.sharedGeo.body, this.sharedMat.bodyMatFree);
     bodyMesh.position.y = -0.024;
-    bodyMesh.castShadow = true;
-    bodyMesh.receiveShadow = true;
+    bodyMesh.castShadow = castShad;
+    bodyMesh.receiveShadow = castShad;
     root.add(bodyMesh);
 
-    // 1a. Outer Marble Top Collar Frame (flush with +TILE_D * 0.5 around the 3D carved face window)
-    const collarMesh = new THREE.Mesh(this.sharedGeo.topCollar, marbleMat);
+    // 1a. Outer Marble Top Collar Frame
+    const collarMesh = new THREE.Mesh(this.sharedGeo.topCollar, this.sharedMat.marbleFree);
     collarMesh.position.y = TILE_D * 0.5 - 0.050;
-    collarMesh.castShadow = true;
-    collarMesh.receiveShadow = true;
+    collarMesh.castShadow = castShad;
+    collarMesh.receiveShadow = castShad;
     root.add(collarMesh);
 
-    // 1b. Gold Kintsugi Waist Seam (between White Marble upper body and Black Obsidian base)
+    // 1b. Gold Kintsugi Waist Seam
     const kintsugiMesh = new THREE.Mesh(this.sharedGeo.kintsugi, this.sharedMat.kintsugiGold);
     kintsugiMesh.position.y = -TILE_D * 0.12;
     root.add(kintsugiMesh);
 
-    // 2. 3D Incandescent-Pen Carved Face Overlay (72x96 subdivided mesh with real vertex displacement + high-slope normal map!)
-    if (!this.faceTextureCache[tileData.id]) {
-      const faceTex = texLoader.load(`./textures/tiles/${tileData.id}.png`);
-      faceTex.colorSpace = THREE.SRGBColorSpace;
-      const oniricaTex = texLoader.load(`./textures/tiles_onirica/${tileData.id}.png`);
-      oniricaTex.colorSpace = THREE.SRGBColorSpace;
-      const normTex = texLoader.load(`./textures/tiles_normal/${tileData.id}_normal.png`);
-      const depthTex = texLoader.load(`./textures/tiles_depth/${tileData.id}_depth.png`);
-      this.faceTextureCache[tileData.id] = { faceTex, oniricaTex, normTex, depthTex };
+    // 2. 3D Carved Face Overlay:
+    // On the board, Drago Rosso & Drago Verde start with their clean Chinese symbol (`dragon_red`, `dragon_green`).
+    // In the close-up 3D preview (`isWowPreview = true`), they display their ornate "tarchiato" dragon (`dragon_red_ornate`, `dragon_green_ornate`)!
+    const initialTexId = isWowPreview ? this.getDisplayTextureId(tileData, true) : tileData.id;
+    const { faceTex, oniricaTex, normTex, depthTex } = this.ensureFaceTexturesLoaded(initialTexId, texLoader);
+    if (this.isMorphingDragonTile(tileData)) {
+      this.ensureFaceTexturesLoaded(`${tileData.id}_ornate`, texLoader);
     }
-    const { faceTex, oniricaTex, normTex, depthTex } = this.faceTextureCache[tileData.id];
 
     const activeMap = this.oniricaMode ? oniricaTex : faceTex;
     const activeRelief = this.oniricaMode ? 0.12 : this.settings.bassorilievo;
-    const dispScale = 0.052 * activeRelief;
+    const dispScale = this.isMobile ? 0.0 : 0.052 * activeRelief;
 
-    const faceMat = new THREE.MeshStandardMaterial({
+    const faceMatCfg = {
       map: activeMap,
       normalMap: normTex,
       normalScale: new THREE.Vector2(1.45 * activeRelief, 1.45 * activeRelief),
-      displacementMap: depthTex,
-      displacementScale: dispScale,
-      displacementBias: -0.88 * dispScale,
       roughness: this.oniricaMode ? 0.11 : 0.17,
       metalness: 0.08,
-    });
-    const faceMesh = new THREE.Mesh(this.sharedGeo.face, faceMat);
+    };
+    if (!this.isMobile && depthTex) {
+      faceMatCfg.displacementMap = depthTex;
+      faceMatCfg.displacementScale = dispScale;
+      faceMatCfg.displacementBias = -0.88 * dispScale;
+    }
+
+    const faceMat = new THREE.MeshStandardMaterial(faceMatCfg);
+    const faceGeo = isWowPreview && this.sharedGeo.wowFace ? this.sharedGeo.wowFace : this.sharedGeo.face;
+    const faceMesh = new THREE.Mesh(faceGeo, faceMat);
     faceMesh.rotation.x = -Math.PI / 2;
     faceMesh.position.y = TILE_D * 0.5 + 0.002;
-    faceMesh.castShadow = true;
-    faceMesh.receiveShadow = true;
+    faceMesh.castShadow = castShad;
+    faceMesh.receiveShadow = castShad;
     root.add(faceMesh);
 
-    // 3. Alphabet_Glyph_Mesh (Top-Center Golden Crown Inlay Bar — never occludes top-left or top-right corner glyphs!)
+    // 3. Alphabet_Glyph_Mesh (Top-Center Golden Crown Inlay Bar)
     const badgeMesh = new THREE.Mesh(
       this.sharedGeo.badge,
       tileData.coupled ? this.sharedMat.badgeCoupled : this.sharedMat.badgeStandard
     );
     badgeMesh.position.set(0.0, TILE_D * 0.5 + 0.010, -TILE_H * 0.422);
-    badgeMesh.castShadow = true;
+    badgeMesh.castShadow = castShad;
     root.add(badgeMesh);
 
-    // 4. Yellow-Purple Selection Double Border ("bordino giallo-viola" when tile 1 or tile 2 is selected!)
+    // 4. Yellow-Purple Selection Double Border ("bordino giallo-viola")
     const selectionBorder = new THREE.Group();
     const outerPurpleMesh = new THREE.Mesh(this.sharedGeo.selOuterPurple, this.sharedMat.selPurple);
     const innerYellowMesh = new THREE.Mesh(this.sharedGeo.selInnerYellow, this.sharedMat.selYellow);
@@ -1006,7 +1125,6 @@ class MahjongSolitaireApp {
     selectionBorder.visible = false;
     root.add(selectionBorder);
 
-    // Keep reference on root
     root.userData = {
       tileData: tileData,
       faceMesh: faceMesh,
@@ -1051,19 +1169,18 @@ class MahjongSolitaireApp {
   }
 
   updateFreeTiles() {
-    let freeCount = 0;
     const freeTiles = [];
 
     this.tiles.forEach((t) => {
       const free = this.isTileFree(t);
       t.isFree = free;
       if (free) {
-        freeCount++;
         freeTiles.push(t);
       }
-      // Subtle visual state
-      if (!t.removed && !t.selected) {
-        t.root.userData.bodyMesh.material[0].color.setHex(free ? 0xfcf8ee : 0xe2ded4);
+      // Subtle visual state using shared materials (zero allocations!)
+      if (!t.removed && !t.selected && this.sharedMat) {
+        t.root.userData.bodyMesh.material = free ? this.sharedMat.bodyMatFree : this.sharedMat.bodyMatBlocked;
+        t.root.userData.collarMesh.material = free ? this.sharedMat.marbleFree : this.sharedMat.marbleBlocked;
       }
     });
 
@@ -1083,11 +1200,48 @@ class MahjongSolitaireApp {
 
   areTilesMatching(t1, t2) {
     if (t1.coupled && t2.coupled) {
-      // Supports both Cardinality 4 Quartets (any 2 in quartet_family_seasons / quartet_magic_flowers match!)
-      // and Cardinality 2 Diptyque Split-Pairs (pair_E_great_wall .. pair_H_chengdu_pandas)!
       return t1.matchGroup === t2.matchGroup;
     }
-    return t1.id === t2.id; // Exact traditional suit match
+    return t1.id === t2.id;
+  }
+
+  onPointerMove(e) {
+    if (this.isMobile || this.isDemoRunning || this.isPairPauseActive) return;
+    // Throttle hover raycast to every 32ms (~30Hz) so mouse movement is zero-cost
+    const now = performance.now();
+    if (this._lastHoverCheck && now - this._lastHoverCheck < 32) return;
+    this._lastHoverCheck = now;
+
+    this.mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+    this.mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+    this.raycaster.setFromCamera(this.mouse, this.camera);
+
+    const activeRoots = [];
+    for (let i = 0; i < this.tiles.length; i++) {
+      if (!this.tiles[i].removed) activeRoots.push(this.tiles[i].root);
+    }
+    const intersects = this.raycaster.intersectObjects(activeRoots, true);
+    let hitTile = null;
+    if (intersects.length > 0) {
+      let hitRoot = intersects[0].object;
+      while (hitRoot.parent && !hitRoot.userData.tileData) {
+        hitRoot = hitRoot.parent;
+      }
+      const candidate = this.tiles.find((t) => t.root === hitRoot);
+      if (candidate && !candidate.removed && candidate.isFree) {
+        hitTile = candidate;
+      }
+    }
+
+    if (this.hoveredTile !== hitTile) {
+      if (this.hoveredTile && !this.hoveredTile.selected) {
+        this.setDragonOrnateState(this.hoveredTile, false);
+      }
+      this.hoveredTile = hitTile;
+      if (this.hoveredTile && this.isMorphingDragonTile(this.hoveredTile.data)) {
+        this.setDragonOrnateState(this.hoveredTile, true);
+      }
+    }
   }
 
   onPointerDown(e) {
@@ -1095,19 +1249,24 @@ class MahjongSolitaireApp {
     this.mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
     this.mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
 
+    const activeRoots = [];
+    for (let i = 0; i < this.tiles.length; i++) {
+      if (!this.tiles[i].removed) activeRoots.push(this.tiles[i].root);
+    }
+
     this.raycaster.setFromCamera(this.mouse, this.camera);
-    let intersects = this.raycaster.intersectObjects(this.tiles.map((t) => t.root), true);
+    let intersects = this.raycaster.intersectObjects(activeRoots, true);
 
     // Touch optimization: forgiving tap tolerance on mobile/touchscreens
-    if (intersects.length === 0 && (e.pointerType === "touch" || ('ontouchstart' in window && window.innerWidth <= 1024))) {
+    if (intersects.length === 0 && (e.pointerType === "touch" || this.isMobile)) {
       const probeOffsets = [
         [0.02, 0.0], [-0.02, 0.0], [0.0, 0.02], [0.0, -0.02],
-        [0.02, 0.02], [-0.02, -0.02], [0.02, -0.02], [-0.02, 0.02]
+        [0.02, 0.02], [-0.02, -0.02], [0.02, -0.02], [-0.02, 0.02],
       ];
       for (const [ox, oy] of probeOffsets) {
         const probeMouse = new THREE.Vector2(this.mouse.x + ox, this.mouse.y + oy);
         this.raycaster.setFromCamera(probeMouse, this.camera);
-        const probeHits = this.raycaster.intersectObjects(this.tiles.map((t) => t.root), true);
+        const probeHits = this.raycaster.intersectObjects(activeRoots, true);
         if (probeHits.length > 0) {
           intersects = probeHits;
           break;
@@ -1152,8 +1311,8 @@ class MahjongSolitaireApp {
       this.showSelectionCard(tile);
     } else if (this.selectedTile === tile) {
       // Deselect clicked tile
-      this.liftTile(tile, false);
       tile.selected = false;
+      this.liftTile(tile, false);
       this.selectedTile = null;
       this.hideSelectionCard();
     } else {
@@ -1161,13 +1320,18 @@ class MahjongSolitaireApp {
       const first = this.selectedTile;
       if (this.areTilesMatching(first.data, tile.data)) {
         // MATCH SUCCESS!
-        // Show 2nd Yellow-Purple Border ("altro bordino giallo-viola") on 2nd tile too & wait 550ms ("mezzo secondo") before removing!
         sfx.playMatch();
         if (typeof navigator !== "undefined" && navigator.vibrate) {
           try { navigator.vibrate([35, 30, 45]); } catch (_) {}
         }
-        if (this.isDragonOrAleSebiPowerUpPair(first.data, tile.data)) {
+        // Strictly separated Power-Up Videos:
+        // 1. ONLY Drago Rosso (`dragon_red`) or Drago Verde (`dragon_green`) -> Dragon Power-Up Video!
+        // 2. ONLY Carlesso Family tiles (`coupled_*`) -> Carlesso Family Power-Up Video!
+        // 3. All other tiles -> NO video!
+        if (this.isRedOrGreenDragonPair(first.data, tile.data)) {
           this.triggerDragonPowerUpEffect(first, tile);
+        } else if (this.isCarlessoFamilyPair(first.data, tile.data)) {
+          this.triggerFamilyPowerUpEffect(first, tile);
         }
         this.selectedTile = null;
         tile.selected = true;
@@ -1195,8 +1359,8 @@ class MahjongSolitaireApp {
         if (typeof navigator !== "undefined" && navigator.vibrate) {
           try { navigator.vibrate(50); } catch (_) {}
         }
-        this.liftTile(first, false);
         first.selected = false;
+        this.liftTile(first, false);
         this.combo = 1;
 
         this.selectedTile = tile;
@@ -1209,26 +1373,20 @@ class MahjongSolitaireApp {
     this.updateHUD();
   }
 
-  isDragonOrAleSebiPowerUpPair(t1, t2) {
-    const powerUpIds = new Set([
-      "dragon_red",
-      "dragon_green",
-      "dragon_white",
-      "bamboo_3", // Sirio il Dragone (Dragon Shiryu)
-      "coupled_B1", // S3 Solo Ale
-      "coupled_B2", // S4 Solo Sebi
-      "coupled_C1", // M1 Ale & Ghigna
-      "coupled_C2", // M2 Sebi & Pupurabbu
-      "coupled_E1",
-      "coupled_E2",
-      "coupled_F1",
-      "coupled_F2",
-      "coupled_G1",
-      "coupled_G2",
-      "coupled_H1",
-      "coupled_H2",
-    ]);
-    return powerUpIds.has(t1.id) || powerUpIds.has(t2.id);
+  isRedOrGreenDragonPair(t1, t2) {
+    // ONLY Drago Rosso (`dragon_red` / 中) and Drago Verde (`dragon_green` / 發)!
+    // NEVER `bamboo_3` ("Sirio il Dragone") and NEVER `dragon_white`!
+    return Boolean(
+      t1 &&
+        t2 &&
+        ((t1.id === "dragon_red" && t2.id === "dragon_red") ||
+          (t1.id === "dragon_green" && t2.id === "dragon_green"))
+    );
+  }
+
+  isCarlessoFamilyPair(t1, t2) {
+    // ONLY Carlesso Family coupled tiles (`S1..S4`, `M1..M4`, `E1..H2`)!
+    return Boolean(t1 && t2 && t1.coupled && t2.coupled);
   }
 
   initDragonPowerUpFX() {
@@ -1237,8 +1395,10 @@ class MahjongSolitaireApp {
     this.dragonFXImages = {};
     const frames = {
       cloud: "./fx/powerup_frame1_cloud_puff_rgba.png",
-      emerge: "./fx/powerup_frame2_dragon_emerge_rgba.png", // Riccardino's favorite hero frame!
+      emerge: "./fx/powerup_frame2_dragon_emerge_rgba.png", // Riccardino's favorite Dragon frame!
       fire: "./fx/powerup_frame3_dragon_fire_rgba.png",
+      familyCrest: "./fx/family_powerup_frame2_crest_rgba.png", // Carlesso Family Crest emerging from cloud puff!
+      familyCelebrate: "./fx/family_powerup_frame3_celebrate_rgba.png", // Carlesso Family celebration burst!
     };
     Object.entries(frames).forEach(([key, url]) => {
       const img = new Image();
@@ -1252,7 +1412,7 @@ class MahjongSolitaireApp {
 
   unpremultiplyWhiteVideoFrame(videoEl, targetW, targetH) {
     // Real-time White-Background (#FFFFFF) Keying + Exact White Un-Premultiplication:
-    // C_clean = (C_obs - (1 - alpha)) / alpha, with inner radial protection so dragon eyes/teeth stay opaque!
+    // C_clean = (C_obs - (1 - alpha)) / alpha, with inner radial protection so dragon eyes/teeth & panda/Ghigna fur stay opaque!
     if (!this.dragonVideoScratch) return null;
     const sw = 240;
     const sh = 240;
@@ -1314,16 +1474,17 @@ class MahjongSolitaireApp {
 
     const overlay = document.getElementById("dragon-powerup-overlay");
     const canvas = document.getElementById("dragon-powerup-canvas");
+    const badgeEl = document.getElementById("dragon-powerup-badge");
     const captionEl = document.getElementById("dragon-powerup-caption");
     const videoEl = document.getElementById("dragon-powerup-video");
     if (!overlay || !canvas) return;
 
+    if (badgeEl) badgeEl.textContent = "🐉 DRAGO IMPERIALE!";
     if (captionEl) {
-      if (tileA && tileB) {
-        captionEl.textContent = `${tileA.data.code || tileA.data.glyph} ⚡ ${tileB.data.code || tileB.data.glyph} • Puff & Drago Imperiale!`;
-      } else {
-        captionEl.textContent = "紅中 • Il Drago Imperiale Emerge dalla Nuvola!";
-      }
+      const isGreen = tileA && tileA.data && tileA.data.id === "dragon_green";
+      captionEl.textContent = isGreen
+        ? "發財 • Drago Verde di Giada Emerge dalla Nuvola!"
+        : "紅中 • Drago Rosso Imperiale Emerge dalla Nuvola!";
     }
 
     overlay.classList.remove("hidden");
@@ -1338,11 +1499,10 @@ class MahjongSolitaireApp {
     const W = canvas.width;
     const H = canvas.height;
     const t0 = performance.now();
-    const totalMs = 1650;
+    const totalMs = 1550;
 
-    // Generate 28 golden fire sparks & cloud particles
-    const sparks = Array.from({ length: 28 }, (_, idx) => {
-      const angle = (idx / 28) * Math.PI * 2 + (Math.random() - 0.5) * 0.25;
+    const sparks = Array.from({ length: 24 }, (_, idx) => {
+      const angle = (idx / 24) * Math.PI * 2 + (Math.random() - 0.5) * 0.25;
       const speed = 130 + Math.random() * 190;
       return {
         vx: Math.cos(angle) * speed,
@@ -1361,11 +1521,9 @@ class MahjongSolitaireApp {
 
       const cx = W * 0.5;
       const cy = H * 0.5;
-
-      // Global envelope fade-out in final 280ms
       const fadeOut = u > 0.82 ? Math.max(0.0, (1.0 - u) / 0.18) : 1.0;
 
-      // 1. Ambient golden-crimson energy shockwave behind the transparent sprite
+      // 1. Ambient golden-crimson energy shockwave
       ctx.save();
       const glowRadius = 110 + Math.sin(u * Math.PI) * 165;
       const grad = ctx.createRadialGradient(cx, cy, 12, cx, cy, glowRadius);
@@ -1378,10 +1536,10 @@ class MahjongSolitaireApp {
       ctx.fill();
       ctx.restore();
 
-      // 2. Phase 1 (0..380ms): Cloud Puff Burst (powerup_frame1_cloud_puff_rgba.png)
+      // 2. Phase 1 (0..500ms): Cloud Puff Burst (powerup_frame1_cloud_puff_rgba.png)
       const cloudImg = this.dragonFXImages.cloud;
-      if (cloudImg && cloudImg.complete && elapsed < 520) {
-        const cu = Math.min(1.0, elapsed / 520);
+      if (cloudImg && cloudImg.complete && elapsed < 500) {
+        const cu = Math.min(1.0, elapsed / 500);
         const cScale = 0.38 + Math.sin(cu * Math.PI * 0.65) * 0.72;
         const cAlpha = (cu < 0.45 ? cu / 0.45 : 1.0 - (cu - 0.45) / 0.55) * fadeOut;
         const drawW = W * 0.82 * cScale;
@@ -1392,11 +1550,10 @@ class MahjongSolitaireApp {
         ctx.restore();
       }
 
-      // 3. Phase 2 (140..1650ms): HERO Frame 2 Dragon Emerge (powerup_frame2_dragon_emerge_rgba.png — User's Favorite!)
+      // 3. Phase 2 (110..1550ms): HERO Frame 2 Dragon Emerge (powerup_frame2_dragon_emerge_rgba.png)
       const emergeImg = this.dragonFXImages.emerge;
       if (emergeImg && emergeImg.complete && elapsed > 110) {
-        const eu = Math.min(1.0, (elapsed - 110) / 1420);
-        // Spring scale pop out of the cloud puff
+        const eu = Math.min(1.0, (elapsed - 110) / 1350);
         const spring = eu < 0.22 ? 0.45 + (eu / 0.22) * 0.63 : 1.08 - Math.min(0.08, (eu - 0.22) * 0.14);
         const eAlpha = (eu < 0.16 ? eu / 0.16 : 1.0) * fadeOut;
         const bobY = Math.sin(elapsed * 0.008) * 8;
@@ -1408,10 +1565,10 @@ class MahjongSolitaireApp {
         ctx.restore();
       }
 
-      // 4. Phase 3 (820..1500ms): Subtle fiery breath highlight pulse (powerup_frame3_dragon_fire_rgba.png + live white-keyed MP4)
+      // 4. Phase 3: Subtle fiery breath highlight pulse
       const fireImg = this.dragonFXImages.fire;
-      if (fireImg && fireImg.complete && elapsed > 760 && elapsed < 1520) {
-        const fu = (elapsed - 760) / 760;
+      if (fireImg && fireImg.complete && elapsed > 720 && elapsed < 1450) {
+        const fu = (elapsed - 720) / 730;
         const fAlpha = Math.sin(fu * Math.PI) * 0.55 * fadeOut;
         const drawW = W * 0.90;
         const drawH = H * 0.90;
@@ -1419,7 +1576,7 @@ class MahjongSolitaireApp {
         ctx.globalAlpha = Math.max(0, Math.min(1, fAlpha));
         ctx.drawImage(fireImg, cx - drawW * 0.5, cy - drawH * 0.5, drawW, drawH);
         ctx.restore();
-      } else if (videoEl && videoEl.readyState >= 2 && elapsed > 200 && elapsed < 900) {
+      } else if (videoEl && videoEl.readyState >= 2 && elapsed > 200 && elapsed < 850) {
         const keyedCanvas = this.unpremultiplyWhiteVideoFrame(videoEl, W, H);
         if (keyedCanvas) {
           ctx.save();
@@ -1429,7 +1586,7 @@ class MahjongSolitaireApp {
         }
       }
 
-      // 5. Golden Biribip Sparks & Dragon Embers
+      // 5. Golden Sparks
       ctx.save();
       const dtSec = elapsed / 1000;
       sparks.forEach((sp) => {
@@ -1455,15 +1612,179 @@ class MahjongSolitaireApp {
     this.dragonFXAnimId = requestAnimationFrame(renderFrame);
   }
 
+  triggerFamilyPowerUpEffect(tileA = null, tileB = null) {
+    // Dedicated Carlesso Family Transparent 2D-over-3D Power-Up Video Effect!
+    // Built with the exact same White-Background (#FFFFFF) -> Zero-Halo Flood-Fill + Un-Premultiplication pipeline!
+    this.initDragonPowerUpFX();
+    sfx.playFamilyPowerUp();
+
+    const overlay = document.getElementById("dragon-powerup-overlay");
+    const canvas = document.getElementById("dragon-powerup-canvas");
+    const badgeEl = document.getElementById("dragon-powerup-badge");
+    const captionEl = document.getElementById("dragon-powerup-caption");
+    const videoEl = document.getElementById("family-powerup-video");
+    if (!overlay || !canvas) return;
+
+    if (badgeEl) badgeEl.textContent = "👑 FAMIGLIA CARLESSO!";
+    if (captionEl) {
+      if (tileA && tileB) {
+        captionEl.textContent = `${tileA.data.code || tileA.data.glyph} 💖 ${tileB.data.code || tileB.data.glyph} • Unione Magica Famiglia Carlesso!`;
+      } else {
+        captionEl.textContent = "👑 • La Famiglia Carlesso Emerge dalla Nuvola d'Oro!";
+      }
+    }
+
+    overlay.classList.remove("hidden");
+    if (videoEl) {
+      try {
+        videoEl.currentTime = 0;
+        videoEl.play().catch(() => {});
+      } catch (_) {}
+    }
+
+    const ctx = canvas.getContext("2d");
+    const W = canvas.width;
+    const H = canvas.height;
+    const t0 = performance.now();
+    const totalMs = 1550;
+
+    const sparks = Array.from({ length: 24 }, (_, idx) => {
+      const angle = (idx / 24) * Math.PI * 2 + (Math.random() - 0.5) * 0.25;
+      const speed = 120 + Math.random() * 170;
+      return {
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed - 30,
+        r: 3.5 + Math.random() * 5.0,
+        hue: idx % 2 === 0 ? 45 + Math.random() * 15 : 275 + Math.random() * 25, // Gold & Pupurabbu Violet!
+      };
+    });
+
+    if (this.dragonFXAnimId) cancelAnimationFrame(this.dragonFXAnimId);
+
+    const renderFrame = (now) => {
+      const elapsed = now - t0;
+      const u = Math.min(1.0, elapsed / totalMs);
+      ctx.clearRect(0, 0, W, H);
+
+      const cx = W * 0.5;
+      const cy = H * 0.5;
+      const fadeOut = u > 0.82 ? Math.max(0.0, (1.0 - u) / 0.18) : 1.0;
+
+      // 1. Warm Jade & Imperial Gold Aura behind the transparent family crest
+      ctx.save();
+      const glowRadius = 110 + Math.sin(u * Math.PI) * 160;
+      const grad = ctx.createRadialGradient(cx, cy, 12, cx, cy, glowRadius);
+      grad.addColorStop(0.0, `rgba(255, 228, 115, ${0.42 * fadeOut})`);
+      grad.addColorStop(0.55, `rgba(59, 198, 125, ${0.22 * fadeOut})`);
+      grad.addColorStop(1.0, "rgba(0, 0, 0, 0)");
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(cx, cy, glowRadius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      // 2. Phase 1 (0..480ms): Cloud Puff Burst (powerup_frame1_cloud_puff_rgba.png)
+      const cloudImg = this.dragonFXImages.cloud;
+      if (cloudImg && cloudImg.complete && elapsed < 480) {
+        const cu = Math.min(1.0, elapsed / 480);
+        const cScale = 0.38 + Math.sin(cu * Math.PI * 0.65) * 0.72;
+        const cAlpha = (cu < 0.45 ? cu / 0.45 : 1.0 - (cu - 0.45) / 0.55) * fadeOut;
+        const drawW = W * 0.80 * cScale;
+        const drawH = H * 0.80 * cScale;
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, Math.min(1, cAlpha));
+        ctx.drawImage(cloudImg, cx - drawW * 0.5, cy - drawH * 0.5, drawW, drawH);
+        ctx.restore();
+      }
+
+      // 3. Phase 2 (100..1550ms): Carlesso Family Crest Emerge (family_powerup_frame2_crest_rgba.png)
+      const crestImg = this.dragonFXImages.familyCrest;
+      if (crestImg && crestImg.complete && elapsed > 100) {
+        const eu = Math.min(1.0, (elapsed - 100) / 1350);
+        const spring = eu < 0.22 ? 0.45 + (eu / 0.22) * 0.63 : 1.08 - Math.min(0.08, (eu - 0.22) * 0.14);
+        const eAlpha = (eu < 0.16 ? eu / 0.16 : 1.0) * fadeOut;
+        const bobY = Math.sin(elapsed * 0.008) * 7;
+        const drawW = W * 0.84 * spring;
+        const drawH = H * 0.84 * spring;
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, Math.min(1, eAlpha));
+        ctx.drawImage(crestImg, cx - drawW * 0.5, cy - drawH * 0.5 + bobY, drawW, drawH);
+        ctx.restore();
+      }
+
+      // 4. Phase 3 (700..1480ms): Carlesso Family Celebration Burst (family_powerup_frame3_celebrate_rgba.png + live white-keyed MP4)
+      const celImg = this.dragonFXImages.familyCelebrate;
+      if (celImg && celImg.complete && elapsed > 700 && elapsed < 1480) {
+        const fu = (elapsed - 700) / 780;
+        const fAlpha = Math.sin(fu * Math.PI) * 0.72 * fadeOut;
+        const drawW = W * 0.88;
+        const drawH = H * 0.88;
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, Math.min(1, fAlpha));
+        ctx.drawImage(celImg, cx - drawW * 0.5, cy - drawH * 0.5, drawW, drawH);
+        ctx.restore();
+      } else if (videoEl && videoEl.readyState >= 2 && elapsed > 180 && elapsed < 820) {
+        const keyedCanvas = this.unpremultiplyWhiteVideoFrame(videoEl, W, H);
+        if (keyedCanvas) {
+          ctx.save();
+          ctx.globalAlpha = 0.28 * fadeOut;
+          ctx.drawImage(keyedCanvas, cx - W * 0.42, cy - H * 0.42, W * 0.84, H * 0.84);
+          ctx.restore();
+        }
+      }
+
+      // 5. Golden & Violet Celebration Sparks
+      ctx.save();
+      const dtSec = elapsed / 1000;
+      sparks.forEach((sp) => {
+        const sx = cx + sp.vx * dtSec;
+        const sy = cy + sp.vy * dtSec + 35 * dtSec * dtSec;
+        const sAlpha = Math.max(0, (1.0 - u) * fadeOut);
+        ctx.fillStyle = `hsla(${sp.hue}, 100%, 66%, ${sAlpha})`;
+        ctx.beginPath();
+        ctx.arc(sx, sy, sp.r * (1.0 - 0.5 * u), 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.restore();
+
+      if (elapsed < totalMs) {
+        this.dragonFXAnimId = requestAnimationFrame(renderFrame);
+      } else {
+        ctx.clearRect(0, 0, W, H);
+        overlay.classList.add("hidden");
+        this.dragonFXAnimId = null;
+      }
+    };
+
+    this.dragonFXAnimId = requestAnimationFrame(renderFrame);
+  }
+
   liftTile(tile, liftUp) {
     const is2D = this.activeCameraPreset === "2d";
     const targetY = tile.basePos.y + (liftUp ? 0.35 : 0.0);
     const targetTilt = liftUp && !is2D ? 0.16 : 0.0;
     this.addTween(tile.root.position, "y", targetY, 0.15);
     this.addTween(tile.root.rotation, "x", targetTilt, 0.15);
-    tile.root.userData.bodyMesh.material[0].emissive = new THREE.Color(liftUp ? 0x3b155e : 0x000000);
+    if (this.sharedMat) {
+      const matSet = liftUp
+        ? this.sharedMat.bodyMatSelected
+        : tile.isFree
+        ? this.sharedMat.bodyMatFree
+        : this.sharedMat.bodyMatBlocked;
+      const colMat = liftUp
+        ? this.sharedMat.marbleSelected
+        : tile.isFree
+        ? this.sharedMat.marbleFree
+        : this.sharedMat.marbleBlocked;
+      tile.root.userData.bodyMesh.material = matSet;
+      tile.root.userData.collarMesh.material = colMat;
+    }
     if (tile.root.userData.selectionBorder) {
       tile.root.userData.selectionBorder.visible = Boolean(liftUp);
+    }
+    // When Drago Rosso (`dragon_red`) or Drago Verde (`dragon_green`) is selected, transform into the ornate "tarchiato" dragon!
+    if (this.isMorphingDragonTile(tile.data)) {
+      this.setDragonOrnateState(tile, Boolean(liftUp || this.hoveredTile === tile));
     }
   }
 
@@ -1661,6 +1982,7 @@ class MahjongSolitaireApp {
   }
 
   updateWow3DPreview(tileA, tileB = null) {
+    if (this.isMobile) return;
     this.initWow3DPreview();
     const popup = document.getElementById("wow-3d-popup");
     if (!popup || !this.wowGroup) return;
@@ -1669,13 +1991,28 @@ class MahjongSolitaireApp {
       this.wowGroup.remove(this.wowGroup.children[0]);
     }
 
-    const texLoader = new THREE.TextureLoader();
-    const cloneA = this.createTileMesh(tileA.data, texLoader);
+    const texLoader = this.texLoader || new THREE.TextureLoader();
+    const applyOrnateIfDragon = (cloneRoot, data) => {
+      if (!this.isMorphingDragonTile(data)) return;
+      const ornateId = this.getDisplayTextureId(data, true);
+      const cached = this.ensureFaceTexturesLoaded(ornateId, texLoader);
+      const faceMat = cloneRoot.userData.faceMesh.material;
+      faceMat.map = this.oniricaMode ? cached.oniricaTex : cached.faceTex;
+      faceMat.normalMap = cached.normTex;
+      if (faceMat.displacementMap !== undefined) {
+        faceMat.displacementMap = cached.depthTex;
+      }
+      faceMat.needsUpdate = true;
+    };
+
+    const cloneA = this.createTileMesh(tileA.data, texLoader, true);
+    applyOrnateIfDragon(cloneA, tileA.data);
     // Stand tile upright (+Y face rotated to face +Z camera) so its carved face is 100% visible during ±30° oscillation
     cloneA.rotation.x = Math.PI * 0.45;
     if (cloneA.userData.selectionBorder) cloneA.userData.selectionBorder.visible = false;
     if (tileB) {
-      const cloneB = this.createTileMesh(tileB.data, texLoader);
+      const cloneB = this.createTileMesh(tileB.data, texLoader, true);
+      applyOrnateIfDragon(cloneB, tileB.data);
       cloneB.rotation.x = Math.PI * 0.45;
       if (cloneB.userData.selectionBorder) cloneB.userData.selectionBorder.visible = false;
       cloneA.position.set(-0.56, 0, 0);
@@ -1715,8 +2052,9 @@ class MahjongSolitaireApp {
     if (plusEl) plusEl.classList.add("hidden");
 
     const folder = this.oniricaMode ? "tiles_onirica" : "tiles";
+    const displayTexId = this.getDisplayTextureId(tile.data, true);
     if (thumb) {
-      thumb.src = `./textures/${folder}/${tile.data.id}.png`;
+      thumb.src = `./textures/${folder}/${displayTexId}.png`;
     }
     badge.textContent = tile.data.code || tile.data.glyph;
     title.textContent = tile.data.title;
@@ -1726,23 +2064,24 @@ class MahjongSolitaireApp {
           tile.data.matchGroup === "quartet_family_seasons"
             ? "Quartetto Famiglia (S1 Papà, S2 Mamma, S3 Ale, S4 Sebi)"
             : "Quartetto Compagni Magici (M1 Ale+Ghigna, M2 Sebi+Pupurabbu, M3 Ghigna, M4 Pupurabbu)";
-        status.textContent = `✨ JOLLY (Cardinalità 4) • ${groupDesc} — Va con QUALSIASI dei 4! (Premi H per Guida)`;
+        status.textContent = `✨ JOLLY (Cardinalità 4) • ${groupDesc} — Attiva Video Famiglia Carlesso!`;
       } else {
-        status.textContent = `🖼️ Dittico Diviso a Metà (${tile.data.code}) • Accoppia Ale (Sinistra 1) ↔ Sebi (Destra 2) dello stesso tema! (Premi H per Guida)`;
+        status.textContent = `🖼️ Dittico (${tile.data.code}) • Accoppia Ale (1) ↔ Sebi (2) dello stesso tema!`;
       }
+    } else if (this.isMorphingDragonTile(tile.data)) {
+      status.textContent = `🐉 Drago Imperiale (${tile.data.glyph}) • In hover/selezione diventa Tarchiato 3D e in coppia lancia il Video Drago!`;
     } else {
-      status.textContent = `🀄 Seme Tradizionale (${tile.data.glyph}) • Va con una tessera IDENTICA! (Premi H per Guida)`;
+      status.textContent = `🀄 Seme Tradizionale (${tile.data.glyph}) • Va con una tessera IDENTICA!`;
     }
-    if (dyk) {
+    if (dyk && !this.isMobile) {
       dyk.innerHTML = `💡 <strong>Did you know?</strong> ${this.getDidYouKnowLore(tile.data)}`;
     }
 
-    // Populate live "VA CON:" partner thumbnails
-    if (partnersBox && partnersList && this.manifest && this.manifest.tiles) {
+    // Populate live "VA CON:" partner thumbnails (skip DOM churn on mobile where hidden)
+    if (!this.isMobile && partnersBox && partnersList && this.manifest && this.manifest.tiles) {
       partnersBox.classList.remove("hidden");
       partnersList.innerHTML = "";
       const groupMembers = this.manifest.tiles.filter((m) => m.matchGroup === tile.data.matchGroup);
-      // For Diptyques (cardinality 2), highlight the complementary partner first
       const sortedPartners =
         groupMembers.length === 2
           ? groupMembers.filter((m) => m.id !== tile.data.id).concat(groupMembers.filter((m) => m.id === tile.data.id))
@@ -1761,7 +2100,8 @@ class MahjongSolitaireApp {
         const chip = document.createElement("div");
         chip.className = "sel-partner-chip";
         const img = document.createElement("img");
-        img.src = `./textures/${folder}/${p.id}.png`;
+        const pTexId = this.getDisplayTextureId(p, true);
+        img.src = `./textures/${folder}/${pTexId}.png`;
         img.alt = p.code || p.glyph;
         const lbl = document.createElement("span");
         lbl.textContent = p.code || p.glyph;
@@ -1786,9 +2126,11 @@ class MahjongSolitaireApp {
     const partnersBox = document.getElementById("sel-partners-box");
 
     const folder = this.oniricaMode ? "tiles_onirica" : "tiles";
-    if (thumb) thumb.src = `./textures/${folder}/${tileA.data.id}.png`;
+    const texA = this.getDisplayTextureId(tileA.data, true);
+    const texB = this.getDisplayTextureId(tileB.data, true);
+    if (thumb) thumb.src = `./textures/${folder}/${texA}.png`;
     if (thumb2) {
-      thumb2.src = `./textures/${folder}/${tileB.data.id}.png`;
+      thumb2.src = `./textures/${folder}/${texB}.png`;
       thumb2.classList.remove("hidden");
     }
     if (plusEl) plusEl.classList.remove("hidden");
@@ -1797,8 +2139,8 @@ class MahjongSolitaireApp {
     card.classList.add("pair-matched");
     badge.textContent = "✨ COPPIA!";
     title.textContent = `${tileA.data.title} ⚡ ${tileB.data.title}`;
-    status.textContent = "Entrambe le tessere selezionate (Giallo-Viola) • Rimozione tra 0.5s...";
-    if (dyk) {
+    status.textContent = "Entrambe le tessere selezionate • Rimozione tra 0.5s...";
+    if (dyk && !this.isMobile) {
       dyk.innerHTML = `💡 <strong>Did you know?</strong> ${this.getDidYouKnowLore(tileB.data)}`;
     }
     card.classList.remove("hidden");
@@ -1828,6 +2170,7 @@ class MahjongSolitaireApp {
     [tileA, tileB].forEach((t) => {
       t.removed = false;
       t.selected = false;
+      this.setDragonOrnateState(t, false);
       t.root.visible = true;
       t.root.scale.set(1, 1, 1);
       t.root.position.copy(t.basePos);
@@ -1896,16 +2239,25 @@ class MahjongSolitaireApp {
   pulseTile(tile) {
     const origY = tile.basePos.y;
     const t0 = performance.now();
+    const sharedMat = this.sharedMat;
     this.tweens.push({
-      update(now) {
+      update: (now) => {
         const dt = (now - t0) / 400;
         if (dt < 1.0) {
           tile.root.position.y = origY + Math.sin(dt * Math.PI) * 0.4;
-          tile.root.userData.bodyMesh.material[0].emissive = new THREE.Color(0x228833);
+          if (sharedMat && sharedMat.bodyMatPulse) {
+            tile.root.userData.bodyMesh.material = sharedMat.bodyMatPulse;
+          }
           return false;
         }
         tile.root.position.y = origY;
-        tile.root.userData.bodyMesh.material[0].emissive = new THREE.Color(0x000000);
+        if (sharedMat) {
+          tile.root.userData.bodyMesh.material = tile.selected
+            ? sharedMat.bodyMatSelected
+            : tile.isFree
+            ? sharedMat.bodyMatFree
+            : sharedMat.bodyMatBlocked;
+        }
         return true;
       },
     });
@@ -1936,23 +2288,21 @@ class MahjongSolitaireApp {
         ? this.assignSolvableDeckToSlots(remSlots, pairs)
         : pool.sort(() => Math.random() - 0.5);
 
-    const texLoader = new THREE.TextureLoader();
+    const texLoader = this.texLoader || new THREE.TextureLoader();
     remainingTiles.forEach((tile, i) => {
       tile.data = datas[i] || pool[i];
-      if (!this.faceTextureCache[tile.data.id]) {
-        const faceTex = texLoader.load(`./textures/tiles/${tile.data.id}.png`);
-        faceTex.colorSpace = THREE.SRGBColorSpace;
-        const oniricaTex = texLoader.load(`./textures/tiles_onirica/${tile.data.id}.png`);
-        oniricaTex.colorSpace = THREE.SRGBColorSpace;
-        const normTex = texLoader.load(`./textures/tiles_normal/${tile.data.id}_normal.png`);
-        const depthTex = texLoader.load(`./textures/tiles_depth/${tile.data.id}_depth.png`);
-        this.faceTextureCache[tile.data.id] = { faceTex, oniricaTex, normTex, depthTex };
+      tile.ornateActive = false;
+      const { faceTex, oniricaTex, normTex, depthTex } = this.ensureFaceTexturesLoaded(tile.data.id, texLoader);
+      if (this.isMorphingDragonTile(tile.data)) {
+        this.ensureFaceTexturesLoaded(`${tile.data.id}_ornate`, texLoader);
       }
-      const { faceTex, oniricaTex, normTex, depthTex } = this.faceTextureCache[tile.data.id];
-      tile.root.userData.faceMesh.material.map = this.oniricaMode ? oniricaTex : faceTex;
-      tile.root.userData.faceMesh.material.normalMap = normTex;
-      tile.root.userData.faceMesh.material.displacementMap = depthTex;
-      tile.root.userData.faceMesh.material.needsUpdate = true;
+      const faceMat = tile.root.userData.faceMesh.material;
+      faceMat.map = this.oniricaMode ? oniricaTex : faceTex;
+      faceMat.normalMap = normTex;
+      if (faceMat.displacementMap !== undefined) {
+        faceMat.displacementMap = depthTex;
+      }
+      faceMat.needsUpdate = true;
       tile.root.userData.badgeMesh.material = tile.data.coupled
         ? this.sharedMat.badgeCoupled
         : this.sharedMat.badgeStandard;
@@ -1965,7 +2315,7 @@ class MahjongSolitaireApp {
 
     this.solvabilityEngine = new MahjongSolvabilityEngine(this.tiles, (a, b) => this.areTilesMatching(a, b));
     sfx.playMatch();
-    const { matchablePairs } = this.updateFreeTiles();
+    this.updateFreeTiles();
     this.updateHUD();
     const toast = document.getElementById("sel-status");
     if (toast) toast.textContent = "Scacchiera rimescolata con successo in configurazione risolvibile!";
@@ -1974,7 +2324,9 @@ class MahjongSolitaireApp {
   toggleDemoSolver() {
     this.isDemoRunning = !this.isDemoRunning;
     const btn = document.getElementById("btn-demo");
-    btn.textContent = this.isDemoRunning ? "⏹ Stop Demo" : "▶ Demo Auto-Play";
+    if (btn) {
+      btn.innerHTML = this.isDemoRunning ? '⏹<span class="btn-label"> Stop</span>' : '▶<span class="btn-label"> Demo</span>';
+    }
     if (this.isDemoRunning) this.stepDemoSolver();
   }
 
@@ -1988,11 +2340,11 @@ class MahjongSolitaireApp {
     if (remaining === 0) {
       this.isDemoRunning = false;
       const btn = document.getElementById("btn-demo");
-      if (btn) btn.textContent = "▶ Demo Auto-Play";
+      if (btn) btn.innerHTML = '▶<span class="btn-label"> Demo</span>';
       return;
     }
     const { freeTiles } = this.updateFreeTiles();
-    // Prefer matching Coupled Family Quartet / Diptyque tiles first during Demo Auto-Play!
+    // Prefer matching Coupled Family Quartet / Diptyque or Red/Green Dragons first during Demo Auto-Play!
     const pairs = [];
     for (let i = 0; i < freeTiles.length; i++) {
       for (let j = i + 1; j < freeTiles.length; j++) {
@@ -2002,20 +2354,21 @@ class MahjongSolitaireApp {
       }
     }
     if (pairs.length > 0) {
-      pairs.sort((a, b) => (b[0].data.coupled ? 1 : 0) - (a[0].data.coupled ? 1 : 0));
+      pairs.sort((a, b) => {
+        const prioA = a[0].data.coupled || this.isMorphingDragonTile(a[0].data) ? 1 : 0;
+        const prioB = b[0].data.coupled || this.isMorphingDragonTile(b[0].data) ? 1 : 0;
+        return prioB - prioA;
+      });
       const [tA, tB] = pairs[0];
-      // Step 1: Select 1st tile -> shows 1st Yellow-Purple border ("bordino giallo-viola")
       this.handleTileClick(tA);
       setTimeout(() => {
         if (this.isDemoRunning) {
-          // Step 2: Select 2nd tile -> shows 2nd Yellow-Purple border & waits 550ms ("mezzo secondo") before flying away!
           this.handleTileClick(tB);
           setTimeout(() => this.stepDemoSolver(), 1150);
         }
       }, 450);
       return;
     }
-    // If no moves, auto-shuffle
     this.solvableShuffle();
     setTimeout(() => this.stepDemoSolver(), 750);
   }
@@ -2024,9 +2377,8 @@ class MahjongSolitaireApp {
     this.activeSurface = forceSurface || (this.activeSurface === "table" ? "pavement" : "table");
     const nameEl = document.getElementById("surface-name");
     const isTable = this.activeSurface === "table";
-    nameEl.textContent = isTable ? "Rosewood Table" : "Stone Pavement";
+    if (nameEl) nameEl.textContent = isTable ? "Rosewood Table" : "Stone Pavement";
 
-    // Smoothly lower or raise table model and legs along the Three.js vertical Y axis!
     if (this.envTable) {
       const targetTableY = isTable ? 0.0 : -3.5;
       this.addTween(this.envTable.position, "y", targetTableY, 0.4);
@@ -2036,7 +2388,6 @@ class MahjongSolitaireApp {
       this.envLegs.forEach((leg) => this.addTween(leg.position, "y", targetLegY, 0.4));
     }
 
-    // Move tiles to match new surface level
     const targetTileBaseY = isTable ? 0.28 : -0.45;
     this.tiles.forEach((t) => {
       const newY = targetTileBaseY + t.slot.l * (TILE_D * 1.02);
@@ -2050,7 +2401,7 @@ class MahjongSolitaireApp {
     const nameEl = document.getElementById("onirica-name");
     const btnEl = document.getElementById("btn-onirica-toggle");
     if (nameEl) {
-      nameEl.textContent = this.oniricaMode ? "Onirica (Less is More)" : "Classica Ovale";
+      nameEl.textContent = this.oniricaMode ? "Onirica" : "Classica";
     }
     if (btnEl) {
       btnEl.classList.toggle("active", this.oniricaMode);
@@ -2059,13 +2410,16 @@ class MahjongSolitaireApp {
     const activeRelief = this.oniricaMode ? 0.12 : this.settings.bassorilievo;
     const dispScale = 0.076 * activeRelief;
     this.tiles.forEach((t) => {
-      const cached = this.faceTextureCache[t.data.id];
+      const texId = this.getDisplayTextureId(t.data, t.ornateActive);
+      const cached = this.faceTextureCache[texId] || this.faceTextureCache[t.data.id];
       if (!cached) return;
       const mat = t.root.userData.faceMesh.material;
       mat.map = this.oniricaMode ? cached.oniricaTex : cached.faceTex;
       mat.normalScale.set(1.45 * activeRelief, 1.45 * activeRelief);
-      mat.displacementScale = dispScale;
-      mat.displacementBias = -0.88 * dispScale;
+      if (mat.displacementMap !== undefined) {
+        mat.displacementScale = dispScale;
+        mat.displacementBias = -0.88 * dispScale;
+      }
       mat.roughness = this.oniricaMode ? 0.11 : 0.17;
       mat.needsUpdate = true;
       if (t.data.coupled && !t.removed) {
@@ -2087,7 +2441,7 @@ class MahjongSolitaireApp {
 
   setCameraPreset(presetKey) {
     const presets = {
-      // 2D Anti-Motion-Sickness Flat Overhead View (telephoto FOV 28° from Y=19.5 so all 144 tiles + HUD margins fit 100% inside the screen!)
+      // 2D Anti-Motion-Sickness Flat Overhead View
       "2d": { pos: [0.0, 19.5, 0.001], target: [0.0, 0.2, 0.0], fov: 28 },
       hero: { pos: [0.0, 7.2, 9.6], target: [0.0, 0.2, 0.0], fov: 38 },
       topdown: { pos: [0.0, 12.8, 1.4], target: [0.0, 0.2, 0.0], fov: 40 },
@@ -2104,14 +2458,10 @@ class MahjongSolitaireApp {
 
     if (this.controls) {
       this.controls.target.set(cfg.target[0], cfg.target[1], cfg.target[2]);
-      // Lock 3D rotation in 2D mode so the user never experiences 3D motion sickness!
       this.controls.enableRotate = this.activeCameraPreset !== "2d";
     }
 
-    let computedFov = cfg.fov;
-    if (this.camera && this.camera.aspect < 1.0 && (this.activeCameraPreset === "2d" || this.activeCameraPreset === "topdown")) {
-      computedFov = Math.min(72, Math.round(cfg.fov / this.camera.aspect));
-    }
+    const computedFov = this.computeResponsiveFov(cfg.fov, this.activeCameraPreset);
     this.settings.fov = computedFov;
     this.camera.fov = computedFov;
     this.camera.updateProjectionMatrix();
@@ -2123,13 +2473,12 @@ class MahjongSolitaireApp {
     const btn2d = document.getElementById("btn-2d-toggle");
     const name2d = document.getElementById("view-mode-name");
     if (btn2d) btn2d.classList.toggle("active", this.activeCameraPreset === "2d");
-    if (name2d) name2d.textContent = this.activeCameraPreset === "2d" ? "2D Alto (Attivo)" : "Passa a 2D";
+    if (name2d) name2d.textContent = this.activeCameraPreset === "2d" ? "3D" : "2D";
 
     this.updateEnvironmentVisibility();
   }
 
   applyRigPoseAtFrame(animName, frame) {
-    // Applies procedural pose matching the 4 Blender NLA actions (Idle, Select, Pair, Disappear) onto the active/front tile
     const targetTile = this.selectedTile || this.tiles.find((t) => !t.removed && t.isFree) || this.tiles[0];
     if (!targetTile) return;
     const u = Math.max(0, Math.min(1, frame / 60));
@@ -2229,7 +2578,9 @@ class MahjongSolitaireApp {
       });
       const updateFsBtn = () => {
         const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
-        btnFullscreen.innerHTML = isFs ? "🗗 Esci" : "⛶ Fullscreen";
+        btnFullscreen.innerHTML = isFs
+          ? '🗗<span class="btn-label"> Esci</span>'
+          : '⛶<span class="btn-label"> Fullscreen</span>';
         btnFullscreen.classList.toggle("active", isFs);
       };
       document.addEventListener("fullscreenchange", updateFsBtn);
@@ -2252,7 +2603,7 @@ class MahjongSolitaireApp {
       if (this.oniricaMode) {
         btnOnirica.classList.add("active");
         const nameEl = document.getElementById("onirica-name");
-        if (nameEl) nameEl.textContent = "Onirica (Less is More)";
+        if (nameEl) nameEl.textContent = "Onirica";
       }
     }
 
@@ -2281,6 +2632,9 @@ class MahjongSolitaireApp {
       } else if (key === "d") {
         e.preventDefault();
         this.triggerDragonPowerUpEffect();
+      } else if (key === "f") {
+        e.preventDefault();
+        this.triggerFamilyPowerUpEffect();
       } else if (key === "2") {
         this.toggle2DMode();
       } else if (key === "o") {
@@ -2329,10 +2683,18 @@ class MahjongSolitaireApp {
     bindSlider("sl-exposure", "exposure", () => this.updateSunPosition());
 
     bindSlider("sl-marble-roughness", "marbleRoughness", (val) => {
-      this.tiles.forEach((t) => (t.root.userData.bodyMesh.material[0].roughness = val));
+      if (this.sharedMat) {
+        [this.sharedMat.marbleFree, this.sharedMat.marbleBlocked, this.sharedMat.marbleSelected].forEach((m) => {
+          if (m) m.roughness = val;
+        });
+      }
     });
     bindSlider("sl-marble-clearcoat", "marbleClearcoat", (val) => {
-      this.tiles.forEach((t) => (t.root.userData.bodyMesh.material[0].clearcoat = val));
+      if (this.sharedMat) {
+        [this.sharedMat.marbleFree, this.sharedMat.marbleBlocked, this.sharedMat.marbleSelected].forEach((m) => {
+          if (m && m.clearcoat !== undefined) m.clearcoat = val;
+        });
+      }
     });
     bindSlider("sl-obsidian-metallic", "obsidianMetallic", (val) => {
       if (this.sharedMat) this.sharedMat.obsidian.metalness = val;
@@ -2342,15 +2704,17 @@ class MahjongSolitaireApp {
       this.tiles.forEach((t) => {
         const mat = t.root.userData.faceMesh.material;
         mat.normalScale.set(1.45 * val, 1.45 * val);
-        mat.displacementScale = dispScale;
-        mat.displacementBias = -0.88 * dispScale;
+        if (mat.displacementMap !== undefined) {
+          mat.displacementScale = dispScale;
+          mat.displacementBias = -0.88 * dispScale;
+        }
       });
     });
     bindSlider("sl-normal-scale", "normalScale", (val) => {
-      this.tiles.forEach((t) => {
-        t.root.userData.bodyMesh.material[0].normalScale.set(0.18 * val, 0.18 * val);
-      });
       if (this.sharedMat) {
+        [this.sharedMat.marbleFree, this.sharedMat.marbleBlocked, this.sharedMat.marbleSelected].forEach((m) => {
+          if (m && m.normalScale) m.normalScale.set(0.18 * val, 0.18 * val);
+        });
         this.sharedMat.obsidian.normalScale.set(0.22 * val, 0.22 * val);
       }
     });
@@ -2397,7 +2761,7 @@ class MahjongSolitaireApp {
           fov: 38,
           camDistance: 11.5,
           autoRotate: false,
-          shadows: true,
+          shadows: !this.isMobile,
         });
         this.updateSunPosition();
         this.syncSliderUI();
@@ -2528,13 +2892,20 @@ class MahjongSolitaireApp {
     setVal("sl-fov", this.settings.fov);
     setVal("sl-cam-distance", this.settings.camDistance);
     const dispScale = 0.076 * this.settings.bassorilievo;
+    if (this.sharedMat) {
+      [this.sharedMat.marbleFree, this.sharedMat.marbleBlocked, this.sharedMat.marbleSelected].forEach((m) => {
+        if (!m) return;
+        m.roughness = this.settings.marbleRoughness;
+        if (m.clearcoat !== undefined) m.clearcoat = this.settings.marbleClearcoat;
+      });
+    }
     this.tiles.forEach((t) => {
-      t.root.userData.bodyMesh.material[0].roughness = this.settings.marbleRoughness;
-      t.root.userData.bodyMesh.material[0].clearcoat = this.settings.marbleClearcoat;
       const mat = t.root.userData.faceMesh.material;
       mat.normalScale.set(1.45 * this.settings.bassorilievo, 1.45 * this.settings.bassorilievo);
-      mat.displacementScale = dispScale;
-      mat.displacementBias = -0.88 * dispScale;
+      if (mat.displacementMap !== undefined) {
+        mat.displacementScale = dispScale;
+        mat.displacementBias = -0.88 * dispScale;
+      }
     });
   }
 
@@ -2567,13 +2938,14 @@ class MahjongSolitaireApp {
     this.updateEnvironmentVisibility();
     this.renderer.render(this.scene, this.camera);
 
-    // Render Top-Left 3D Tile Showcase (#wow-3d-popup) when visible:
-    // Oscillate ±30° (Math.PI / 6 ≈ 0.5236 rad) left-right so the carved 3D face stays 100% visible!
-    const wowPopup = document.getElementById("wow-3d-popup");
-    if (this.wowRenderer && this.wowGroup && wowPopup && !wowPopup.classList.contains("hidden")) {
-      this.wowGroup.rotation.y = Math.sin(now * 0.0022) * (Math.PI / 6);
-      this.wowGroup.rotation.x = Math.sin(now * 0.0016) * 0.12;
-      this.wowRenderer.render(this.wowScene, this.wowCamera);
+    // Render Top-Left 3D Tile Showcase (#wow-3d-popup) on desktop when visible
+    if (!this.isMobile && this.wowRenderer && this.wowGroup) {
+      const wowPopup = document.getElementById("wow-3d-popup");
+      if (wowPopup && !wowPopup.classList.contains("hidden")) {
+        this.wowGroup.rotation.y = Math.sin(now * 0.0022) * (Math.PI / 6);
+        this.wowGroup.rotation.x = Math.sin(now * 0.0016) * 0.12;
+        this.wowRenderer.render(this.wowScene, this.wowCamera);
+      }
     }
   }
 }

@@ -397,3 +397,41 @@
    - **One-Tap Fullscreen Button (`#btn-fullscreen`)**: Added `⛶ Full` in `index.html` and wired `toggleFullscreen()` (`requestFullscreen` / `webkitRequestFullscreen`) in `src/main.js`.
    - **Default 2D Top-Down View on Mobile + Seamless 3D Rotation Toggle**: Added `isMobileViewport()` detection (`window.matchMedia("(max-width: 768px), (pointer: coarse) and (max-width: 1024px)")`) so mobile sessions start in `2d` flat top-down view by default while allowing one-tap toggle to `hero` / `orbit` 3D rotation via `#btn-2d-toggle` and `#camera-bar`.
    - **Portrait-Aware FOV Scaling, Forgiving Touch Hitboxes, & Haptic Feedback**: Added dynamic FOV scaling when `aspect < 1.0`, 5-point forgiving touch raycast probes (`probeOffsets`), and `navigator.vibrate` haptic feedback on tile selection, pair match, and mismatch.
+
+
+---
+
+## 2026-10-19T18:22:00+02:00 — Milestone 13 (`v1.8.0`): Ultra-Clean Single-Row Mobile HUD, 60 FPS Lightweight 3D Engine (6,900x Fewer Triangles), Ornate "Tarchiato" Dragon Hover/Selection Morphing, & Exclusive Carlesso Family Power-Up Video
+
+### 1. Verbatim User Request
+> "cmq il gioco e' INGIOCABILE su mobile. va cambiato.
+> 1. tastini idioti sopra la scacchiera lo rendono in giocabile,d obbiamo progettarla meglio
+> 2. 3d SUER PESANTE
+>
+> poi i draghi in animazione sono troppi, il video c'e' sempre. Fallo che c'e' SOLO per i draghi rosso e verde, e gia che ci siamo i draghi rosso e verde sono FIGHISSIMI cosi ma non in linea con il gioco, quindi propongo:
+> - metti i draghi rossi e verdi con solo il simbolo cinese
+> - quando selezioni il drago verde o rosso (NON DRAGONE!) allora l'hover lo rende automaticamente tarchiato come e' adesso, bellissimo! E quando li accoppi viene fuori il video del drago.
+> - per tutti gli altri pezzi il video SOCMPARE.
+> - per i pezzi della famiglia carlesso creiamo un video in stile simile per la famiglia carlesso (decidi tu ma con quella trasparenza, che viene dal nulla come l'altro video, guarda come e' stato fatto )"
+
+### 2. Engineering Execution & Subagent Orchestration
+- **Subagent Dispatched (`Carlesso Family VFX Keyframe Generator`)**: `conversation://06e48c85-3df9-49c6-80f9-acb4989cae64`
+  - Generated 2 square 1024×1024 pure solid white (`#FFFFFF`) keyframes for the Carlesso Family Power-Up:
+    - `public/fx/family_powerup_frame2_crest_white.png` (Pupurabbu, Ghigna with nerd glasses, and Chengdu baby panda emerging from a golden-jade circular cloud crest with cherry blossoms & lotus petals)
+    - `public/fx/family_powerup_frame3_celebrate_white.png` (Festive climax burst of golden silk ribbons, red-gold Chinese lanterns, and stars)
+- **Zero-Halo Transparent RGBA + MP4 Pipeline (`scripts/build_powerup_video_fx.py`)**:
+  - Processed both family keyframes through our **Border-Seeded Flood-Fill (`d_max = 1 - min(R,G,B) < 0.34`) + Exact White Un-Premultiplication ($\mathbf{C}_{\text{clean}} = \frac{\mathbf{C} - (1-\alpha)}{\alpha}$)** pipeline with inner radial protection (`r < 0.25*W`) so Ghigna's white fur and the baby panda's white fur remain 100% opaque while the outer `#FFFFFF` background keys to `alpha = 0`:
+    - `public/fx/family_powerup_frame2_crest_rgba.png`
+    - `public/fx/family_powerup_frame3_celebrate_rgba.png`
+    - `public/fx/family_powerup_white.mp4` (779 KB, 36 frames @ 24fps)
+- **Clean Calligraphic Board Dragons + Automatic "Tarchiato" Ornate Dragon on Hover/Selection (`scripts/build_all_tile_textures.py`, `src/main.js`)**:
+  - Rebuilt `public/textures/tiles/dragon_red.png` (`中`) and `public/textures/tiles/dragon_green.png` (`發`) with **ONLY the traditional Chinese brush calligraphy character**, matching the clean board style of all other suits.
+  - Exported the ornate coiled 3D carved dragons to `public/textures/tiles/dragon_red_ornate.png` and `public/textures/tiles/dragon_green_ornate.png` (plus `_normal.png`, `_depth.png`, `tiles_onirica/`).
+  - Implemented `isMorphingDragonTile(tileData)` (strictly `dragon_red` and `dragon_green` — never `bamboo_3` *"Sirio il Dragone"* and never `dragon_white`) and `setDragonOrnateState(tile, ornateActive)` in `src/main.js`: hovering (`onPointerMove`) or selecting (`liftTile`) `dragon_red` or `dragon_green` swaps its 3D face texture and normal/displacement maps to `dragon_red_ornate` / `dragon_green_ornate` and scales the tile to a chunky "tarchiato" `[1.06, 1.14, 1.04]` relief!
+- **Strictly Separated Power-Up Videos (`src/main.js`)**:
+  - `isRedOrGreenDragonPair(a, b)` $\rightarrow$ triggers `triggerDragonPowerUpEffect(tileA, tileB)` **ONLY** for `dragon_red` (`中`) or `dragon_green` (`發`).
+  - `isCarlessoFamilyPair(a, b)` $\rightarrow$ triggers `triggerFamilyPowerUpEffect(tileA, tileB)` **ONLY** for Carlesso Family tiles (`coupled === true`: `S1..S4`, `M1..M4`, `E1..H2`).
+  - All other tiles (`dots_*`, `bamboo_*`, `char_*`, `wind_*`, `dragon_white`) trigger **NO video** (`"per tutti gli altri pezzi il video SCOMPARE"`).
+- **Ultra-Clean Single-Row Mobile HUD & 60 FPS Lightweight 3D Overhaul (`src/style.css`, `index.html`, `src/main.js`)**:
+  - **Mobile HUD**: Collapsed `#game-hud` to a single 38px horizontal bar (`flex-wrap: nowrap`), hid `#camera-bar`, `#wow-3d-popup`, and `.btn-label` text on mobile, keeping only 5 compact 30×30px icon buttons (`📖`, `💡`, `🔀`, `📐`, `⛶`) and turning `#selection-card` into a 36px bottom micro-pill.
+  - **3D Performance**: Reduced tile face geometry from `72x96` (1,990,656 triangles across 144 tiles) to `1x1` on mobile (288 triangles total — **6,900x reduction**) and `24x32` on desktop; shared 4 body material sets across all 144 tiles; cached `child.userData.cachedCenter` to eliminate per-frame `THREE.Box3().setFromObject()` allocations; and disabled shadow maps, 4 dynamic lantern `PointLight`s, and the secondary `wowRenderer` on mobile.

@@ -609,26 +609,52 @@ def generate_original_mahjong_suits() -> list[dict]:
         shutil.copy2(TILES_DIR / f"{tid}.png", ONIRICA_DIR / f"{tid}.png")
         manifest.append({"id": tid, "suit": "winds", "matchGroup": tid, "cardinality": 2, "glyph": hanzi, "title": label, "coupled": False})
 
-    # 5. Three Dragons (中 發 白) — Bespoke Ornate 3D Carved Chinese Dragon & Brush Calligraphy Relief Emblems!
+    # 5. Three Dragons (中 發 白) — Default tiles have ONLY the Chinese Calligraphic Symbol (harmonious with the board),
+    #    while `dragon_red_ornate` and `dragon_green_ornate` store the ornate "tarchiato" carved dragon for Hover/Selection!
     dragons = [
-        ("dragon_red", "中", "C", RED, "Red Dragon • Ornate Carved Shenlong (紅中)", PORTRAITS_DIR / "dragon_red_ornate_emblem.png"),
-        ("dragon_green", "發", "F", GREEN, "Green Dragon • Imperial Jade Shenlong (發財)", PORTRAITS_DIR / "dragon_green_ornate_emblem.png"),
-        ("dragon_white", "白", "P", BLUE, "White Dragon • Sapphire & Pearl Twin Dragons (白板)", PORTRAITS_DIR / "dragon_white_ornate_emblem.png"),
+        ("dragon_red", "中", "C", RED, "Drago Rosso • Red Dragon (紅中)", PORTRAITS_DIR / "dragon_red_ornate_emblem.png"),
+        ("dragon_green", "發", "F", GREEN, "Drago Verde • Green Dragon (發財)", PORTRAITS_DIR / "dragon_green_ornate_emblem.png"),
+        ("dragon_white", "白", "P", BLUE, "Drago Bianco • White Dragon (白板)", None),
     ]
     for tid, hanzi, let, col, label, emb_path in dragons:
+        # 5a. Default Board Tile: Clean Chinese Brush Calligraphy + Imperial Cloud Seal (100% consistent with Winds & Characters)
         canvas, draw = make_marble_face_canvas(W, H, accent_rgb=col)
         draw.text((48, 38), let, font=latin_font(72, bold=True), fill=col)
         draw.text((W - 124, 40), hanzi, font=cjk_font(62, hanzi), fill=col)
-        if emb_path.exists():
-            composite_ornate_dragon_emblem(canvas, emb_path, (48, 122, W - 48, H - 56))
-        else:
-            draw_centered_text(draw, (W / 2, H * 0.54), hanzi, font=cjk_font(462, hanzi), fill=col, stroke_fill=GOLD, stroke_width=4)
+        draw_imperial_cloud_flourishes(draw, W * 0.5, H * 0.54, 248, 268, col, GOLD)
+        if tid == "dragon_white":
+            # Traditional White Dragon (Bai Ban) carved sapphire-blue & gold rectangular frame around 白
+            draw.rounded_rectangle([128, 210, W - 128, H - 150], radius=36, outline=BLUE, width=14)
+            draw.rounded_rectangle([148, 230, W - 148, H - 170], radius=24, outline=GOLD, width=6)
+        draw_centered_text(draw, (W / 2, H * 0.54), hanzi, font=cjk_font(445, hanzi), fill=col, stroke_fill=GOLD, stroke_width=4)
         apply_incandescent_pen_carving(canvas, tid, is_oval=False)
         shutil.copy2(TILES_DIR / f"{tid}.png", ONIRICA_DIR / f"{tid}.png")
+
+        # 5b. Ornate "Tarchiato" Hover/Select Dragon Texture (`dragon_red_ornate`, `dragon_green_ornate`)
+        if emb_path is not None and emb_path.exists():
+            ornate_id = f"{tid}_ornate"
+            ocanvas, odraw = make_marble_face_canvas(W, H, accent_rgb=col)
+            odraw.text((48, 38), let, font=latin_font(72, bold=True), fill=col)
+            odraw.text((W - 124, 40), hanzi, font=cjk_font(62, hanzi), fill=col)
+            composite_ornate_dragon_emblem(ocanvas, emb_path, (48, 122, W - 48, H - 56))
+            apply_incandescent_pen_carving(ocanvas, ornate_id, is_oval=False)
+            shutil.copy2(TILES_DIR / f"{ornate_id}.png", ONIRICA_DIR / f"{ornate_id}.png")
+            if ARTIFACT_DIR.exists():
+                shutil.copy2(TILES_DIR / f"{ornate_id}.png", ARTIFACT_DIR / f"{ornate_id}.png")
+
         if ARTIFACT_DIR.exists():
             shutil.copy2(TILES_DIR / f"{tid}.png", ARTIFACT_DIR / f"{tid}.png")
             shutil.copy2(DEPTH_DIR / f"{tid}_depth.png", ARTIFACT_DIR / f"{tid}_depth.png")
-        manifest.append({"id": tid, "suit": "dragons", "matchGroup": tid, "cardinality": 2, "glyph": hanzi, "title": label, "coupled": False})
+        manifest.append({
+            "id": tid,
+            "suit": "dragons",
+            "matchGroup": tid,
+            "cardinality": 2,
+            "glyph": hanzi,
+            "title": label,
+            "coupled": False,
+            "hoverOrnateId": f"{tid}_ornate" if (emb_path is not None and emb_path.exists()) else None,
+        })
 
     return manifest
 

@@ -1,5 +1,24 @@
 # Changelog - Carlesso Family Mahjong 3D 🀄🐉
 
+## [1.8.0] - 2026-10-19
+### Added & Changed
+- **📱 Ultra-Clean Single-Row Mobile HUD ("Zero tastini idioti sopra la scacchiera")**:
+  - Replaced the multi-line mobile header and bottom camera dock with a **single-row 38px mobile top bar** (`#game-hud` with `flex-wrap: nowrap`), hiding `#camera-bar`, `#wow-3d-popup`, and all button text labels (`.btn-label`) on mobile so 5 compact 30×30px icon buttons (`📖`, `💡`, `🔀`, `📐`, `⛶`) leave >92% of the mobile screen 100% unobstructed for the Mahjong board.
+  - Transformed `#selection-card` on mobile into a non-intrusive 36px single-line micro-pill at `bottom: 6px`.
+- **⚡ 60 FPS Lightweight 3D Engine Overhaul ("3D Super Pesante" Eliminated — 6,900x Fewer Triangles on Mobile)**:
+  - Reduced tile face `PlaneGeometry` from `72x96` (13,824 triangles per tile = **1,990,656 triangles** across 144 tiles) to `1x1` on mobile (**2 triangles per tile** = 288 triangles total, a **6,900x reduction**!) and `24x32` on desktop (`48x64` reserved only for the single close-up `#wow-3d-popup` preview tile).
+  - Replaced 144 individual `MeshPhysicalMaterial` allocations with **4 shared body material sets** (`bodyMatFree`, `bodyMatBlocked`, `bodyMatSelected`, `bodyMatPulse` using lightweight `MeshStandardMaterial` on mobile).
+  - Eliminated per-frame `new THREE.Box3().setFromObject(mesh)` allocations inside `updateEnvironmentVisibility()` by caching `child.userData.cachedCenter` once when loading `temple_environment.glb`.
+  - Disabled shadow map rendering, 4 dynamic lantern `PointLight`s, and the secondary `wowRenderer` WebGL loop on mobile viewports.
+- **🐉 Red & Green Dragons (`dragon_red` 中 & `dragon_green` 發) — Clean Calligraphic Board Symbol + Automatic "Tarchiato" Ornate Dragon on Hover/Selection**:
+  - Default board textures (`public/textures/tiles/dragon_red.png` and `dragon_green.png`) now display **ONLY the traditional Chinese calligraphic character** (`中` in crimson, `發` in jade green), 100% consistent with the rest of the suits.
+  - Built dedicated ornate textures (`public/textures/tiles/dragon_red_ornate.png` and `dragon_green_ornate.png` + `_normal.png`, `_depth.png`, `tiles_onirica/`) with the coiled 3D carved dragons.
+  - Wired `setDragonOrnateState(tile, true)` in `src/main.js` so hovering or selecting **Drago Rosso (`dragon_red`)** or **Drago Verde (`dragon_green`)** (and *never* `bamboo_3` *"Sirio il Dragone"* or `dragon_white`) automatically morphs the tile into the chunky "tarchiato" ornate dragon (`scale(1.06, 1.14, 1.04)`)!
+- **🎬 Exclusive Power-Up Videos: Dragon Video ONLY for Red/Green Dragons + New Carlesso Family Power-Up Video**:
+  - **Dragon Power-Up Video (`triggerDragonPowerUpEffect`)**: Triggered **ONLY** when matching a pair of `dragon_red` (`中`) or `dragon_green` (`發`).
+  - **Carlesso Family Power-Up Video (`triggerFamilyPowerUpEffect`)**: Generated new white-background keyframes (`public/fx/family_powerup_frame2_crest_white.png`, `public/fx/family_powerup_frame3_celebrate_white.png`) via Nano Banana and ran our **Border-Seeded Flood-Fill + Exact White Un-Premultiplication** pipeline (`scripts/build_powerup_video_fx.py`) to produce zero-halo transparent RGBA sprites (`family_powerup_frame2_crest_rgba.png`, `family_powerup_frame3_celebrate_rgba.png`) and `public/fx/family_powerup_white.mp4`, emerging from the cloud puff (`powerup_frame1_cloud_puff_rgba.png`) whenever any Carlesso Family pair (`S1..S4`, `M1..M4`, `E1..H2`) is matched!
+  - **All Other Suits**: Zero video popup (`"per tutti gli altri pezzi il video SCOMPARE"`).
+
 ## [1.7.1] - 2026-10-18
 ### Added
 - **📱 Mobile UX & Viewport Overhaul (GitHub Issue #2)**:

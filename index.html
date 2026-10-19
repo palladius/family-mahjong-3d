@@ -53,19 +53,19 @@
 
     <div class="hud-right">
       <div class="btn-group">
-        <button id="btn-help-toggle" class="action-btn highlight-gold" title="Guida Visuale: Quale Tile va con Quale Tile (Premi Tasto H)">📖 Guida (H)</button>
-        <button id="btn-hint" class="action-btn" title="Highlight a free matching pair">💡 Hint</button>
-        <button id="btn-undo" class="action-btn" title="Undo last matched pair">↩ Undo</button>
-        <button id="btn-shuffle" class="action-btn" title="Reshuffle remaining tiles solvably">🔀 Shuffle</button>
-        <button id="btn-restart" class="action-btn" title="Restart current track">🔄 Restart</button>
-        <button id="btn-fullscreen" class="action-btn" title="Toggle Fullscreen Mode (Schermo Intero)">⛶ Fullscreen</button>
-        <button id="btn-demo" class="action-btn highlight" title="Toggle Auto-Play Demo Solver">▶ Demo Auto-Play</button>
-        <button id="btn-dragon-fx" class="action-btn highlight-dragon" title="Test Puff + Dragon Emerge Biribip Power-Up Effect (Key D)">🐉 Biribip FX (D)</button>
+        <button id="btn-help-toggle" class="action-btn highlight-gold" title="Guida Visuale: Quale Tile va con Quale Tile (Premi Tasto H)">📖 <span class="btn-label">Guida (H)</span></button>
+        <button id="btn-hint" class="action-btn" title="Highlight a free matching pair">💡 <span class="btn-label">Hint</span></button>
+        <button id="btn-undo" class="action-btn" title="Undo last matched pair">↩ <span class="btn-label">Undo</span></button>
+        <button id="btn-shuffle" class="action-btn" title="Reshuffle remaining tiles solvably">🔀 <span class="btn-label">Shuffle</span></button>
+        <button id="btn-restart" class="action-btn" title="Restart current track">🔄 <span class="btn-label">Restart</span></button>
+        <button id="btn-fullscreen" class="action-btn" title="Toggle Fullscreen Mode (Schermo Intero)">⛶ <span class="btn-label">Fullscreen</span></button>
+        <button id="btn-demo" class="action-btn highlight" title="Toggle Auto-Play Demo Solver">▶ <span class="btn-label">Demo Auto-Play</span></button>
+        <button id="btn-dragon-fx" class="action-btn highlight-dragon" title="Test Puff + Dragon Emerge Biribip Power-Up Effect (Key D)">🐉 <span class="btn-label">Biribip FX (D)</span></button>
       </div>
 
       <div class="toggle-group">
         <button id="btn-2d-toggle" class="toggle-btn" title="Toggle Flat 2D Top-Down View (Zero 3D Motion Sickness) vs. 3D Temple View">
-          📐 <span id="view-mode-name">2D / 3D</span>
+          📐 <span id="view-mode-name" class="btn-label">2D / 3D</span>
         </button>
         <button id="btn-onirica-toggle" class="toggle-btn" title="A/B Test Toggle: Classic Gold-Rimmed Oval vs. Modalità Onirica (Dreamlike Whisper-Fade on White Marble — Less is More)">
           🌙 <span id="onirica-name">Classica Ovale</span>
@@ -306,12 +306,15 @@
     <div id="wow-3d-subtitle" class="wow-3d-subtitle">Imperial Marble &amp; Obsidian</div>
   </div>
 
-  <!-- Transparent 2D-over-3D "Puff of Cloud -> Frame 2 Dragon Emerge Biribip Power-Up" Video/Canvas FX (Triggered on Ale, Sebi, or Dragon Match) -->
+  <!-- Transparent 2D-over-3D Power-Up Video/Canvas FX:
+       1. Dragon Biribip Power-Up (ONLY when matching Drago Rosso 中 or Drago Verde 發)
+       2. Carlesso Family Power-Up (ONLY when matching Carlesso Family tiles S1..S4, M1..M4, E1..H2) -->
   <div id="dragon-powerup-overlay" class="hidden" aria-hidden="true">
-    <video id="dragon-powerup-video" src="./fx/dragon_powerup_white.mp4" muted playsinline preload="auto" crossorigin="anonymous" class="hidden"></video>
+    <video id="dragon-powerup-video" src="./fx/dragon_powerup_white.mp4" muted playsinline preload="none" crossorigin="anonymous" class="hidden"></video>
+    <video id="family-powerup-video" src="./fx/family_powerup_white.mp4" muted playsinline preload="none" crossorigin="anonymous" class="hidden"></video>
     <canvas id="dragon-powerup-canvas" width="680" height="680"></canvas>
     <div id="dragon-powerup-banner" class="dragon-powerup-banner">
-      <span class="dragon-powerup-badge">🐉 BIRIBIP POWER-UP!</span>
+      <span id="dragon-powerup-badge" class="dragon-powerup-badge">🐉 BIRIBIP POWER-UP!</span>
       <span id="dragon-powerup-caption" class="dragon-powerup-caption">紅中 • Il Drago Imperiale Emerge dalla Nuvola!</span>
     </div>
   </div>

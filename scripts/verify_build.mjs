@@ -101,10 +101,25 @@ const requiredFX = [
   "powerup_frame3_dragon_fire_rgba.png",
   "dragon_powerup_white.mp4",
   "dragon_powerup_audit_comparison.png",
+  "family_powerup_frame2_crest_white.png",
+  "family_powerup_frame3_celebrate_white.png",
+  "family_powerup_frame2_crest_rgba.png",
+  "family_powerup_frame3_celebrate_rgba.png",
+  "family_powerup_white.mp4",
 ];
 requiredFX.forEach((f) => {
   const p = path.join(ROOT, "public/fx", f);
-  assert(fs.existsSync(p) && fs.statSync(p).size > 20000, `Dragon Biribip Power-Up FX asset '${f}' exists`);
+  assert(fs.existsSync(p) && fs.statSync(p).size > 20000, `Power-Up FX asset '${f}' exists`);
+});
+
+["dragon_red_ornate", "dragon_green_ornate"].forEach((id) => {
+  assert(
+    fs.existsSync(path.join(ROOT, "public/textures/tiles", `${id}.png`)) &&
+      fs.existsSync(path.join(ROOT, "public/textures/tiles_onirica", `${id}.png`)) &&
+      fs.existsSync(path.join(ROOT, "public/textures/tiles_normal", `${id}_normal.png`)) &&
+      fs.existsSync(path.join(ROOT, "public/textures/tiles_depth", `${id}_depth.png`)),
+    `Ornate "Tarchiato" Hover/Select Dragon texture & 3D maps exist for '${id}'`
+  );
 });
 
 assert(
@@ -136,19 +151,24 @@ cyclesRenders.forEach((f) => {
   assert(fs.existsSync(p) && fs.statSync(p).size > 50000, `Cycles Master Render '${f}' exists`);
 });
 
-// 5. Playable App, Dragon Power-Up Overlay & Progress Gallery
+// 5. Playable App, Dragon & Family Power-Up Overlays & Progress Gallery
 assert(fs.existsSync(path.join(ROOT, "index.html")), "index.html exists");
 const indexHtml = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
 assert(
-  indexHtml.includes("dragon-powerup-overlay") && indexHtml.includes("dragon-powerup-canvas"),
-  "index.html includes transparent 2D-over-3D '#dragon-powerup-overlay' and '#dragon-powerup-canvas'"
+  indexHtml.includes("dragon-powerup-overlay") &&
+    indexHtml.includes("dragon-powerup-canvas") &&
+    indexHtml.includes("family-powerup-video"),
+  "index.html includes transparent 2D-over-3D '#dragon-powerup-overlay', '#dragon-powerup-canvas', and '#family-powerup-video'"
 );
 const mainJs = fs.readFileSync(path.join(ROOT, "src/main.js"), "utf8");
 assert(
   mainJs.includes("triggerDragonPowerUpEffect") &&
-    mainJs.includes("unpremultiplyWhiteVideoFrame") &&
-    mainJs.includes("powerup_frame2_dragon_emerge_rgba.png"),
-  "src/main.js wires 'triggerDragonPowerUpEffect', white un-premultiplication, and hero 'powerup_frame2_dragon_emerge_rgba.png'"
+    mainJs.includes("triggerFamilyPowerUpEffect") &&
+    mainJs.includes("isRedOrGreenDragonPair") &&
+    mainJs.includes("isCarlessoFamilyPair") &&
+    mainJs.includes("setDragonOrnateState") &&
+    mainJs.includes("unpremultiplyWhiteVideoFrame"),
+  "src/main.js wires 'setDragonOrnateState' hover/selection morphing, 'isRedOrGreenDragonPair' -> Dragon Video, 'isCarlessoFamilyPair' -> Family Video, and zero video for all other suits"
 );
 assert(fs.existsSync(path.join(ROOT, "public/progress.html")), "public/progress.html exists");
 assert(fs.existsSync(path.join(ROOT, "docs/LOG.md")), "docs/LOG.md exists");

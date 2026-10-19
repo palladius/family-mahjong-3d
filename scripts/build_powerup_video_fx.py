@@ -257,6 +257,74 @@ def build_white_bg_video_and_audit(
     print(f"✅ Saved 3-Panel Adversarial VFX Audit: {audit_path}")
 
 
+def build_family_white_bg_video(
+    f1_white: Image.Image,
+    f2_white: Image.Image,
+    f3_white: Image.Image,
+):
+    """
+    Builds a 45-frame 30fps animation on pure #FFFFFF white background (`family_powerup_white.mp4`)
+    for the Carlesso Family Power-Up (Cloud Puff -> Family Crest Emerge -> Celebration Burst)!
+    """
+    S = 720
+    f1_s = f1_white.resize((S, S), Image.Resampling.LANCZOS)
+    f2_s = f2_white.resize((S, S), Image.Resampling.LANCZOS)
+    f3_s = f3_white.resize((S, S), Image.Resampling.LANCZOS)
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmp = Path(tmpdir)
+        total_frames = 45
+        for i in range(total_frames):
+            t = i / (total_frames - 1)
+            canvas = Image.new("RGB", (S, S), (255, 255, 255))
+            if t < 0.24:
+                u = t / 0.24
+                scale = 0.28 + 0.82 * math.sin(u * math.pi * 0.5)
+                sz = max(32, int(S * scale))
+                puff = f1_s.resize((sz, sz), Image.Resampling.LANCZOS).rotate(
+                    u * 14.0, resample=Image.Resampling.BICUBIC, fillcolor=(255, 255, 255)
+                )
+                ox = (S - sz) // 2
+                oy = (S - sz) // 2
+                canvas.paste(puff, (ox, oy))
+            elif t < 0.78:
+                u = (t - 0.24) / 0.54
+                bob_y = int(math.sin(u * math.pi * 2.5) * 10)
+                scale = 0.94 + 0.10 * math.sin(u * math.pi)
+                sz = int(S * scale)
+                crest = f2_s.resize((sz, sz), Image.Resampling.LANCZOS)
+                ox = (S - sz) // 2
+                oy = (S - sz) // 2 + bob_y
+                canvas.paste(crest, (ox, oy))
+                if u < 0.22:
+                    alpha_puff = 1.0 - (u / 0.22)
+                    canvas = Image.blend(canvas, f1_s, alpha_puff * 0.65)
+            else:
+                u = (t - 0.78) / 0.22
+                blend = Image.blend(f2_s, f3_s, min(1.0, u * 1.4))
+                if u > 0.55:
+                    fade = (u - 0.55) / 0.45
+                    white_im = Image.new("RGB", (S, S), (255, 255, 255))
+                    blend = Image.blend(blend, white_im, fade)
+                canvas.paste(blend, (0, 0))
+
+            canvas.save(tmp / f"frame_{i:03d}.png", "PNG")
+
+        mp4_out = FX_DIR / "family_powerup_white.mp4"
+        subprocess.run(
+            [
+                "ffmpeg", "-y", "-framerate", "30",
+                "-i", str(tmp / "frame_%03d.png"),
+                "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "18",
+                str(mp4_out),
+            ],
+            check=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        print(f"🎬 Built Carlesso Family White-Background Video: {mp4_out} ({mp4_out.stat().st_size // 1024} KB)")
+
+
 def main():
     frames = [
         ("powerup_frame1_cloud_puff_white.png", "powerup_frame1_cloud_puff_rgba.png"),
@@ -286,6 +354,32 @@ def main():
         loaded_clean["powerup_frame2_dragon_emerge_white.png"],
     )
 
+    # Process Carlesso Family Power-Up Keyframes
+    family_frames = [
+        ("family_powerup_frame2_crest_white.png", "family_powerup_frame2_crest_rgba.png"),
+        ("family_powerup_frame3_celebrate_white.png", "family_powerup_frame3_celebrate_rgba.png"),
+    ]
+    fam_white = {}
+    for src_name, dst_name in family_frames:
+        src_path = FX_DIR / src_name
+        if src_path.exists():
+            im_w = Image.open(src_path).convert("RGB")
+            clean_rgba, _ = remove_white_bg_adversarial(im_w)
+            clean_768 = clean_rgba.resize((768, 768), Image.Resampling.LANCZOS)
+            clean_768.save(FX_DIR / dst_name, "PNG")
+            if ARTIFACT_DIR.exists():
+                shutil.copy2(FX_DIR / dst_name, ARTIFACT_DIR / dst_name)
+            fam_white[src_name] = im_w
+            print(f"✨ Extracted Carlesso Family Zero-Halo Transparent RGBA: {dst_name}")
+
+    if "family_powerup_frame2_crest_white.png" in fam_white and "family_powerup_frame3_celebrate_white.png" in fam_white:
+        build_family_white_bg_video(
+            loaded_white["powerup_frame1_cloud_puff_white.png"],
+            fam_white["family_powerup_frame2_crest_white.png"],
+            fam_white["family_powerup_frame3_celebrate_white.png"],
+        )
+
 
 if __name__ == "__main__":
     main()
+
