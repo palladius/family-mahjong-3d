@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Carlesso Family 3D Mahjong Solitaire 🀄</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🀄</text></svg>" />
+  <script type="module" crossorigin src="./assets/index-BWi00rSv.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-Cy9kmLpT.css">
+</head>
+<body>
+  <div id="canvas-container"></div>
+
+  <!-- Top Navigation & Game HUD -->
+  <header id="game-hud">
+    <div class="hud-left">
+      <div class="brand-title">
+        <span class="brand-icon">🀄</span>
+        <div class="brand-text">
+          <h1>Family Mahjong 3D</h1>
+          <span class="brand-sub">Carlesso Temple Edition • Blender 5.0.1 & Three.js</span>
+        </div>
+      </div>
+
+      <div class="track-picker">
+        <label for="track-select">Track:</label>
+        <select id="track-select">
+          <option value="easy">Easy • Lotus Courtyard (36 Tiles)</option>
+          <option value="medium">Medium • Jade Pagoda (72 Tiles)</option>
+          <option value="hard">Hard • Twin Dragon Bridge (108 Tiles)</option>
+          <option value="master" selected>Master • Imperial Turtle (144 Tiles)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="hud-center">
+      <div class="stat-badge">
+        <span class="stat-label">REMAINING</span>
+        <span id="stat-remaining" class="stat-value">144</span>
+      </div>
+      <div class="stat-badge">
+        <span class="stat-label">MATCHABLE</span>
+        <span id="stat-free-pairs" class="stat-value">--</span>
+      </div>
+      <div class="stat-badge">
+        <span class="stat-label">SCORE</span>
+        <span id="stat-score" class="stat-value">0</span>
+      </div>
+      <div class="stat-badge">
+        <span class="stat-label">COMBO</span>
+        <span id="stat-combo" class="stat-value">x1</span>
+      </div>
+    </div>
+
+    <div class="hud-right">
+      <div class="btn-group">
+        <button id="btn-help-toggle" class="action-btn highlight-gold" title="Guida Visuale: Quale Tile va con Quale Tile (Premi Tasto H)">📖 Guida (H)</button>
+        <button id="btn-hint" class="action-btn" title="Highlight a free matching pair">💡 Hint</button>
+        <button id="btn-undo" class="action-btn" title="Undo last matched pair">↩ Undo</button>
+        <button id="btn-shuffle" class="action-btn" title="Reshuffle remaining tiles solvably">🔀 Shuffle</button>
+        <button id="btn-restart" class="action-btn" title="Restart current track">🔄 Restart</button>
+        <button id="btn-fullscreen" class="action-btn" title="Toggle Fullscreen Mode (Schermo Intero)">⛶ Fullscreen</button>
+        <button id="btn-demo" class="action-btn highlight" title="Toggle Auto-Play Demo Solver">▶ Demo Auto-Play</button>
+        <button id="btn-dragon-fx" class="action-btn highlight-dragon" title="Test Puff + Dragon Emerge Biribip Power-Up Effect (Key D)">🐉 Biribip FX (D)</button>
+      </div>
+
+      <div class="toggle-group">
+        <button id="btn-2d-toggle" class="toggle-btn" title="Toggle Flat 2D Top-Down View (Zero 3D Motion Sickness) vs. 3D Temple View">
+          📐 <span id="view-mode-name">2D / 3D</span>
+        </button>
+        <button id="btn-onirica-toggle" class="toggle-btn" title="A/B Test Toggle: Classic Gold-Rimmed Oval vs. Modalità Onirica (Dreamlike Whisper-Fade on White Marble — Less is More)">
+          🌙 <span id="onirica-name">Classica Ovale</span>
+        </button>
+        <button id="btn-surface-toggle" class="toggle-btn active" title="Toggle Surface: Table vs. Direct Temple Stone Pavement">
+          🏛️ <span id="surface-name">Rosewood Table</span>
+        </button>
+        <button id="btn-studio-toggle" class="toggle-btn" title="Toggle Studio Look-Dev Sliders">
+          🎛️ Look-Dev
+        </button>
+        <button id="btn-rig-toggle" class="toggle-btn" title="Toggle Frame-by-Frame Rig Inspector">
+          🦴 Rig
+        </button>
+        <a href="./progress.html" class="toggle-btn link-btn" target="_blank" title="Open Progress Gallery">
+          🖼️ Gallery
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Visual Icon Camera Dock (Less Words, Stylized Visual Icons) -->
+  <nav id="camera-bar" aria-label="Camera Presets">
+    <button class="cam-btn" data-cam="2d" title="2D Flat Top-Down View (Rotation Locked — Anti-Motion-Sickness)">
+      <svg class="cam-icon" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="4" y="4" width="8.5" height="8.5" rx="1.8" fill="currentColor" fill-opacity="0.18"/>
+        <rect x="15.5" y="4" width="8.5" height="8.5" rx="1.8" fill="currentColor" fill-opacity="0.18"/>
+        <rect x="4" y="15.5" width="8.5" height="8.5" rx="1.8" fill="currentColor" fill-opacity="0.18"/>
+        <rect x="15.5" y="15.5" width="8.5" height="8.5" rx="1.8" fill="currentColor" fill-opacity="0.18"/>
+      </svg>
+      <span class="cam-text">2D</span>
+    </button>
+
+    <button class="cam-btn active" data-cam="hero" title="3D Temple Hero Perspective (3/4 View)">
+      <svg class="cam-icon" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round">
+        <polygon points="14,3 25,9 14,15 3,9" fill="currentColor" fill-opacity="0.22"/>
+        <polyline points="3,9 3,19 14,25 25,19 25,9"/>
+        <line x1="14" y1="15" x2="14" y2="25"/>
+      </svg>
+      <span class="cam-text">3D</span>
+    </button>
+
+    <button class="cam-btn" data-cam="topdown" title="Zen High Angle (3D Top-Down)">
+      <svg class="cam-icon" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="14" cy="14" r="9.5" stroke-dasharray="3 2"/>
+        <circle cx="14" cy="14" r="4" fill="currentColor" fill-opacity="0.28"/>
+        <line x1="14" y1="2" x2="14" y2="6"/>
+        <line x1="14" y1="22" x2="14" y2="26"/>
+        <line x1="2" y1="14" x2="6" y2="14"/>
+        <line x1="22" y1="14" x2="26" y2="14"/>
+      </svg>
+      <span class="cam-text">Zen</span>
+    </button>
+
+    <button class="cam-btn" data-cam="pavement" title="Low Horizon Table View">
+      <svg class="cam-icon" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <path d="M2 21 H26"/>
+        <rect x="6" y="14" width="16" height="4" rx="1" fill="currentColor" fill-opacity="0.22"/>
+        <rect x="9.5" y="10" width="9" height="4" rx="1"/>
+        <line x1="8" y1="18" x2="8" y2="21"/>
+        <line x1="20" y1="18" x2="20" y2="21"/>
+      </svg>
+      <span class="cam-text">Basso</span>
+    </button>
+
+    <button class="cam-btn" data-cam="macro" title="Close-Up Tile Macro View">
+      <svg class="cam-icon" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <circle cx="12.5" cy="12.5" r="7.5" fill="currentColor" fill-opacity="0.16"/>
+        <ellipse cx="12.5" cy="12.5" rx="3.5" ry="4.8"/>
+        <line x1="18" y1="18" x2="24.5" y2="24.5" stroke-width="2.6"/>
+      </svg>
+      <span class="cam-text">Macro</span>
+    </button>
+
+    <button class="cam-btn" data-cam="orbit" title="360° Panoramic Orbit">
+      <svg class="cam-icon" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <ellipse cx="14" cy="14" rx="11" ry="5.5" transform="rotate(-20 14 14)"/>
+        <circle cx="14" cy="14" r="2.8" fill="currentColor"/>
+        <polyline points="21,6 24,8 21,11"/>
+      </svg>
+      <span class="cam-text">360°</span>
+    </button>
+
+    <button id="btn-dock-help" class="cam-btn help-dock-btn" title="Guida Accoppiamenti: Quale Tile va con Quale Tile (Premi Tasto H)">
+      <svg class="cam-icon" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="14" cy="14" r="10.5" fill="currentColor" fill-opacity="0.18"/>
+        <path d="M11.2 10.5a3 3 0 0 1 5.6 1.5c0 2-2.8 2.6-2.8 4.2"/>
+        <circle cx="14" cy="20.2" r="1" fill="currentColor"/>
+      </svg>
+      <span class="cam-text">Guida (H)</span>
+    </button>
+  </nav>
+
+  <!-- Interactive Studio Look-Dev Control Panel -->
+  <aside id="studio-panel" class="panel hidden">
+    <div class="panel-header">
+      <h2>🎛️ Studio Look-Dev Controls</h2>
+      <div class="panel-actions">
+        <button id="btn-copy-json" class="tool-btn" title="Copy current settings as JSON">📋 Copy Settings as JSON</button>
+        <button id="btn-paste-json" class="tool-btn" title="Paste / Load JSON settings">📥 Paste JSON</button>
+        <button id="btn-close-studio" class="tool-btn close-btn">✕</button>
+      </div>
+    </div>
+
+    <div class="panel-body">
+      <!-- Section: Lighting -->
+      <section class="slider-section">
+        <h3>☀️ Lighting & Atmosphere</h3>
+        <div class="slider-row">
+          <label>Sun Intensity: <span id="val-sun-intensity">3.8</span></label>
+          <input type="range" id="sl-sun-intensity" min="0.5" max="8.0" step="0.1" value="3.8" />
+        </div>
+        <div class="slider-row">
+          <label>Sun Elevation (°): <span id="val-sun-elevation">46</span></label>
+          <input type="range" id="sl-sun-elevation" min="5" max="85" step="1" value="46" />
+        </div>
+        <div class="slider-row">
+          <label>Sun Azimuth (°): <span id="val-sun-azimuth">32</span></label>
+          <input type="range" id="sl-sun-azimuth" min="0" max="360" step="1" value="32" />
+        </div>
+        <div class="slider-row">
+          <label>Silk Lantern Warmth: <span id="val-lantern-glow">2.4</span></label>
+          <input type="range" id="sl-lantern-glow" min="0.2" max="6.0" step="0.1" value="2.4" />
+        </div>
+        <div class="slider-row">
+          <label>Ambient Fill: <span id="val-ambient">0.75</span></label>
+          <input type="range" id="sl-ambient" min="0.1" max="2.0" step="0.05" value="0.75" />
+        </div>
+        <div class="slider-row">
+          <label>Tone Mapping Exposure: <span id="val-exposure">1.10</span></label>
+          <input type="range" id="sl-exposure" min="0.4" max="2.5" step="0.05" value="1.10" />
+        </div>
+      </section>
+
+      <!-- Section: Textures & Materials -->
+      <section class="slider-section">
+        <h3>💎 Textures & PBR Materials</h3>
+        <div class="slider-row">
+          <label>White Marble Roughness: <span id="val-marble-roughness">0.14</span></label>
+          <input type="range" id="sl-marble-roughness" min="0.02" max="0.80" step="0.02" value="0.14" />
+        </div>
+        <div class="slider-row">
+          <label>Marble Clearcoat: <span id="val-marble-clearcoat">0.35</span></label>
+          <input type="range" id="sl-marble-clearcoat" min="0.0" max="1.0" step="0.05" value="0.35" />
+        </div>
+        <div class="slider-row">
+          <label>Obsidian Backing Metallic: <span id="val-obsidian-metallic">0.22</span></label>
+          <input type="range" id="sl-obsidian-metallic" min="0.0" max="1.0" step="0.05" value="0.22" />
+        </div>
+        <div class="slider-row highlight-slider">
+          <label>🔥 3D Incandescent Carving (Bassorilievo): <span id="val-bassorilievo">1.15</span></label>
+          <input type="range" id="sl-bassorilievo" min="0.0" max="2.0" step="0.05" value="1.15" />
+          <small class="slider-hint">0.0 = Flat 2D • 1.15 = Deep 3D Incandescent-Pen Carved Groove • 2.0 = Extreme Excavation</small>
+        </div>
+        <div class="slider-row">
+          <label>PBR Normal Map Scale: <span id="val-normal-scale">1.0</span></label>
+          <input type="range" id="sl-normal-scale" min="0.1" max="2.5" step="0.1" value="1.0" />
+        </div>
+      </section>
+
+      <!-- Section: Camera & Viewport -->
+      <section class="slider-section">
+        <h3>🎥 Camera & Viewport</h3>
+        <div class="slider-row">
+          <label>Field of View (FOV): <span id="val-fov">38</span>°</label>
+          <input type="range" id="sl-fov" min="20" max="75" step="1" value="38" />
+        </div>
+        <div class="slider-row">
+          <label>Camera Distance: <span id="val-cam-distance">11.5</span></label>
+          <input type="range" id="sl-cam-distance" min="4.0" max="24.0" step="0.5" value="11.5" />
+        </div>
+        <div class="checkbox-row">
+          <label><input type="checkbox" id="chk-auto-rotate" /> Auto-Rotate Viewport</label>
+          <label><input type="checkbox" id="chk-shadows" checked /> Cast PBR Soft Shadows</label>
+        </div>
+      </section>
+
+      <div class="panel-footer">
+        <button id="btn-reset-settings" class="secondary-btn">Reset to Default Settings</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Frame-by-Frame Rig & Animation Inspector Modal -->
+  <aside id="rig-inspector" class="panel hidden">
+    <div class="panel-header">
+      <h2>🦴 Rig & Animation Inspector</h2>
+      <button id="btn-close-rig" class="tool-btn close-btn">✕</button>
+    </div>
+    <div class="panel-body">
+      <div class="rig-actions">
+        <label>Active Animation:</label>
+        <div class="btn-group">
+          <button class="anim-btn active" data-anim="Idle">Idle</button>
+          <button class="anim-btn" data-anim="Select">Select</button>
+          <button class="anim-btn" data-anim="Pair">Pair</button>
+          <button class="anim-btn" data-anim="Disappear">Disappear</button>
+        </div>
+      </div>
+
+      <div class="scrubber-box">
+        <div class="scrubber-header">
+          <span>Timeline Scrubber:</span>
+          <span id="rig-frame-display">Frame 0 / 60</span>
+        </div>
+        <input type="range" id="rig-scrubber" min="0" max="60" step="1" value="0" />
+        <div class="scrubber-controls">
+          <button id="btn-rig-play">▶ Play</button>
+          <button id="btn-rig-pause">⏸ Pause</button>
+          <button id="btn-rig-reset">⏮ Reset Frame</button>
+        </div>
+      </div>
+
+      <div class="bone-tree">
+        <h3>Hierarchical Armature Bones:</h3>
+        <ul>
+          <li><strong>Root_Bone</strong> (Origin & Board Positioning)
+            <ul>
+              <li><strong>Tile_Body_Bone</strong> (Imperial White Marble Body & Black Obsidian Backing)
+                <ul>
+                  <li><strong>Face_Overlay_Bone</strong> (2D Oval Cameo / Card Face &amp; Bassorilievo Normal)</li>
+                  <li><strong>Alphabet_Glyph_Bone</strong> (Raised 3D Top-Center Golden Crown Inlay Bar)</li>
+                </ul>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </aside>
+
+  <!-- WOW Effect (Top-Left Minimal): Live 3D ±30° Oscillating Tile Showcase when a Tile is Clicked -->
+  <div id="wow-3d-popup" class="hidden">
+    <div class="wow-3d-header">
+      <span id="wow-3d-badge" class="sel-badge">S1</span>
+      <span id="wow-3d-label">3D TILE</span>
+    </div>
+    <canvas id="wow-3d-canvas" width="124" height="124"></canvas>
+    <div id="wow-3d-subtitle" class="wow-3d-subtitle">Imperial Marble &amp; Obsidian</div>
+  </div>
+
+  <!-- Transparent 2D-over-3D "Puff of Cloud -> Frame 2 Dragon Emerge Biribip Power-Up" Video/Canvas FX (Triggered on Ale, Sebi, or Dragon Match) -->
+  <div id="dragon-powerup-overlay" class="hidden" aria-hidden="true">
+    <video id="dragon-powerup-video" src="./fx/dragon_powerup_white.mp4" muted playsinline preload="auto" crossorigin="anonymous" class="hidden"></video>
+    <canvas id="dragon-powerup-canvas" width="680" height="680"></canvas>
+    <div id="dragon-powerup-banner" class="dragon-powerup-banner">
+      <span class="dragon-powerup-badge">🐉 BIRIBIP POWER-UP!</span>
+      <span id="dragon-powerup-caption" class="dragon-powerup-caption">紅中 • Il Drago Imperiale Emerge dalla Nuvola!</span>
+    </div>
+  </div>
+
+  <!-- Selected Tile / Matched Pair Preview Cartouche (Bottom: Yellow-Purple Highlight + "VA CON" Partner Preview + "Did you know?") -->
+  <div id="selection-card" class="hidden">
+    <div class="sel-inner">
+      <img id="sel-thumb" class="sel-thumb-img" src="./textures/tiles/coupled_A1.png" alt="Selected Tile 1" />
+      <span id="sel-pair-plus" class="sel-pair-plus hidden">⚡</span>
+      <img id="sel-thumb-2" class="sel-thumb-img hidden" src="./textures/tiles/coupled_A2.png" alt="Selected Tile 2" />
+      <span id="sel-badge" class="sel-badge">S1</span>
+      <div class="sel-info">
+        <span id="sel-title" class="sel-title">S1 • Solo Papà Riccardo (Family Quartet)</span>
+        <span id="sel-status" class="sel-status">Cardinality 4 Quartet — match with ANY of S1, S2, S3, S4!</span>
+        <span id="sel-did-you-know" class="sel-did-you-know">💡 <strong>Did you know?</strong> Spring (春, Chūn) is the first of the Four Seasons Quartet — any 2 of the 4 Carlesso family members can unite as a harmonious Mahjong pair!</span>
+      </div>
+      <!-- Live "VA CON:" Partner Thumbnail Strip -->
+      <div id="sel-partners-box" class="sel-partners-box">
+        <span id="sel-partners-label" class="sel-partners-label">🔗 VA CON (Premi H per Guida):</span>
+        <div id="sel-partners-list" class="sel-partners-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Visual Tile Matching Cheat-Sheet & Instructions Modal (Triggered by Key "H" or "📖 Guida (H)") -->
+  <div id="help-modal" class="modal-overlay hidden">
+    <div class="modal-card help-card">
+      <div class="help-header">
+        <div>
+          <h2>📖 Guida Accoppiamenti: Quale Tile va con Quale Tile? <span class="kbd-pill">Tasto H</span></h2>
+          <p class="help-sub">Nel Solitario Mahjong puoi selezionare solo tessere <strong>libere</strong> (non coperte dall'alto e con almeno il lato sinistro o destro libero). Ecco come si accoppiano tutte le 50 tessere:</p>
+        </div>
+        <button id="btn-close-help" class="tool-btn close-btn" title="Chiudi Guida (H / Esc)">✕</button>
+      </div>
+
+      <div class="help-body">
+        <!-- Rule 1: Quartet Family S1..S4 -->
+        <section class="help-section quartet-gold">
+          <div class="help-sec-header">
+            <span class="help-badge">1. JOLLY FAMIGLIA (Cardinalità 4)</span>
+            <h3>👑 Quartetto Stagioni Carlesso (`S1, S2, S3, S4`) — <em>Qualsiasi 2 su 4 fanno coppia!</em></h3>
+          </div>
+          <p class="help-desc">Non serve trovare due tessere identiche! <strong>Qualsiasi membro della famiglia (`S1..S4`) si accoppia con QUALSIASI altro membro della famiglia</strong> (es. Papà `S1` + Mamma `S2`, oppure Papà `S1` + Ale `S3`, oppure Mamma `S2` + Sebi `S4`).</p>
+          <div class="help-tile-row">
+            <div class="help-tile-item">
+              <img src="./textures/tiles/coupled_A1.png" alt="S1 Papà Riccardo" />
+              <span><strong>S1 春</strong> • Papà Riccardo</span>
+            </div>
+            <span class="help-op">↔</span>
+            <div class="help-tile-item">
+              <img src="./textures/tiles/coupled_A2.png" alt="S2 Mamma Kate" />
+              <span><strong>S2 夏</strong> • Mamma Kate</span>
+            </div>
+            <span class="help-op">↔</span>
+            <div class="help-tile-item">
+              <img src="./textures/tiles/coupled_B1.png" alt="S3 Alessandro" />
+              <span><strong>S3 秋</strong> • Solo Ale</span>
+            </div>
+            <span class="help-op">↔</span>
+            <div class="help-tile-item">
+              <img src="./textures/tiles/coupled_B2.png" alt="S4 Sebastian" />
+              <span><strong>S4 冬</strong> • Solo Sebi</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Rule 2: Quartet Magic M1..M4 -->
+        <section class="help-section quartet-purple">
+          <div class="help-sec-header">
+            <span class="help-badge purple">2. JOLLY COMPAGNI MAGICI (Cardinalità 4)</span>
+            <h3>🐹👾 Quartetto Fiori Magici (`M1, M2, M3, M4`) — <em>Qualsiasi 2 su 4 fanno coppia!</em></h3>
+          </div>
+          <p class="help-desc">Anche qui: <strong>qualsiasi 2 tessere tra `M1, M2, M3, M4` fanno coppia tra loro</strong> in qualunque combinazione (es. `M1` Ale+Ghigna con `M4` Solo Pupurabbu, oppure `M2` Sebi+Pupurabbu con `M3` Solo Ghigna)!</p>
+          <div class="help-tile-row">
+            <div class="help-tile-item">
+              <img src="./textures/tiles/coupled_C1.png" alt="M1 Ale & Ghigna" />
+              <span><strong>M1 梅</strong> • Ale &amp; Ghigna 🐹</span>
+            </div>
+            <span class="help-op">↔</span>
+            <div class="help-tile-item">
+              <img src="./textures/tiles/coupled_C2.png" alt="M2 Sebi & Pupurabbu" />
+              <span><strong>M2 蘭</strong> • Sebi &amp; Pupurabbu 👾</span>
+            </div>
+            <span class="help-op">↔</span>
+            <div class="help-tile-item">
+              <img src="./textures/tiles/coupled_D1.png" alt="M3 Solo Ghigna" />
+              <span><strong>M3 菊</strong> • Solo Ghigna 🐹</span>
+            </div>
+            <span class="help-op">↔</span>
+            <div class="help-tile-item">
+              <img src="./textures/tiles/coupled_D2.png" alt="M4 Solo Pupurabbu" />
+              <span><strong>M4 竹</strong> • Solo Pupurabbu 👾</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Rule 3: Diptyque Split-Pairs E1..H2 -->
+        <section class="help-section diptyque-jade">
+          <div class="help-sec-header">
+            <span class="help-badge jade">3. DITTICI DIVISI A METÀ (Cardinalità 2: X1 ↔ X2)</span>
+            <h3>🖼️ 4 Quadri "Split-Pair" Ale (Sinistra `1`) ↔ Sebi (Destra `2`)</h3>
+          </div>
+          <p class="help-desc">Ogni coppia `E`, `F`, `G`, `H` è <strong>un'unica illustrazione divisa a metà</strong>! La metà sinistra con <strong>Ale (`X1`)</strong> si unisce con la metà destra con <strong>Sebi (`X2`)</strong> dello <strong>stesso tema/lettera</strong> (attento: `H1` è Panda Ale e va con `H2` Panda Sebi!):</p>
+          <div class="help-diptyque-grid">
+            <div class="help-pair-box">
+              <div class="help-pair-title">🏯 <strong>E1 ↔ E2</strong> • Grande Muraglia (春)</div>
+              <div class="help-pair-thumbs">
+                <div class="help-tile-item"><img src="./textures/tiles/coupled_E1.png" alt="E1" /><span><strong>E1</strong> Ale (Sx)</span></div>
+                <span class="help-op">⚡</span>
+                <div class="help-tile-item"><img src="./textures/tiles/coupled_E2.png" alt="E2" /><span><strong>E2</strong> Sebi (Dx)</span></div>
+              </div>
+            </div>
+            <div class="help-pair-box">
+              <div class="help-pair-title">🍚 <strong>F1 ↔ F2</strong> • Riso Cantonese (夏)</div>
+              <div class="help-pair-thumbs">
+                <div class="help-tile-item"><img src="./textures/tiles/coupled_F1.png" alt="F1" /><span><strong>F1</strong> Ale (Sx)</span></div>
+                <span class="help-op">⚡</span>
+                <div class="help-tile-item"><img src="./textures/tiles/coupled_F2.png" alt="F2" /><span><strong>F2</strong> Sebi (Dx)</span></div>
+              </div>
+            </div>
+            <div class="help-pair-box">
+              <div class="help-pair-title">🥋 <strong>G1 ↔ G2</strong> • Shaolin Kung Fu (秋)</div>
+              <div class="help-pair-thumbs">
+                <div class="help-tile-item"><img src="./textures/tiles/coupled_G1.png" alt="G1" /><span><strong>G1</strong> Ale (Sx)</span></div>
+                <span class="help-op">⚡</span>
+                <div class="help-tile-item"><img src="./textures/tiles/coupled_G2.png" alt="G2" /><span><strong>G2</strong> Sebi (Dx)</span></div>
+              </div>
+            </div>
+            <div class="help-pair-box">
+              <div class="help-pair-title">🐼 <strong>H1 ↔ H2</strong> • Panda di Chengdu (冬)</div>
+              <div class="help-pair-thumbs">
+                <div class="help-tile-item"><img src="./textures/tiles/coupled_H1.png" alt="H1" /><span><strong>H1</strong> Ale (Sx)</span></div>
+                <span class="help-op">⚡</span>
+                <div class="help-tile-item"><img src="./textures/tiles/coupled_H2.png" alt="H2" /><span><strong>H2</strong> Sebi (Dx)</span></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Rule 4: Traditional Suits & Special Comic Bamboos -->
+        <section class="help-section trad-crimson">
+          <div class="help-sec-header">
+            <span class="help-badge crimson">4. TESSERE IDENTICHE (34 Semi Classici &amp; Comici)</span>
+            <h3>🀄 Bambù Comici (`1索..4索`), Cerchi (`1..9筒`), Caratteri (`1..9萬`), Venti &amp; Draghi</h3>
+          </div>
+          <p class="help-desc">Tutte le altre tessere si accoppiano solo con una <strong>tessera IDENTICA</strong> (stesso disegno e stesso simbolo/numero in alto):</p>
+          <div class="help-tile-row compact">
+            <div class="help-tile-item">
+              <img src="./textures/tiles/bamboo_1.png" alt="1 Bamboo Sparrow" />
+              <span><strong>1索</strong> Pavone = <strong>1索</strong></span>
+            </div>
+            <div class="help-tile-item">
+              <img src="./textures/tiles/bamboo_2.png" alt="2 Bamboo Hot Wheels" />
+              <span><strong>2索</strong> Hot Wheels = <strong>2索</strong></span>
+            </div>
+            <div class="help-tile-item">
+              <img src="./textures/tiles/bamboo_3.png" alt="3 Bamboo Shiryu" />
+              <span><strong>3索</strong> Sirio Dragone = <strong>3索</strong></span>
+            </div>
+            <div class="help-tile-item">
+              <img src="./textures/tiles/bamboo_4.png" alt="4 Bamboo Gems" />
+              <span><strong>4索</strong> Gemme Ale = <strong>4索</strong></span>
+            </div>
+            <div class="help-tile-item">
+              <img src="./textures/tiles/dots_2.png" alt="2 Dots" />
+              <span><strong>2筒</strong> Due Cerchi = <strong>2筒</strong></span>
+            </div>
+            <div class="help-tile-item">
+              <img src="./textures/tiles/dots_4.png" alt="4 Dots" />
+              <span><strong>4筒</strong> Quattro Cerchi = <strong>4筒</strong></span>
+            </div>
+            <div class="help-tile-item">
+              <img src="./textures/tiles/char_8.png" alt="8 Characters" />
+              <span><strong>8萬</strong> Otto Wan = <strong>8萬</strong></span>
+            </div>
+            <div class="help-tile-item">
+              <img src="./textures/tiles/dragon_red.png" alt="Red Dragon" />
+              <span><strong>中</strong> Drago Rosso = <strong>中</strong></span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Keyboard Shortcuts Footer -->
+        <div class="help-shortcuts">
+          <span><kbd>H</kbd> / <kbd>?</kbd> Apri/Chiudi questa Guida</span>
+          <span><kbd>I</kbd> / <kbd>Spazio</kbd> 💡 Hint (Suggerisci Coppia)</span>
+          <span><kbd>2</kbd> Toggle Vista 2D / 3D</span>
+          <span><kbd>O</kbd> Toggle Modalità Onirica</span>
+          <span><kbd>Z</kbd> ↩ Undo</span>
+        </div>
+      </div>
+
+      <div class="modal-buttons">
+        <button id="btn-close-help-bottom" class="action-btn highlight">Ho Capito! Torna al Gioco (H / Esc)</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Victory Overlay Modal -->
+  <div id="victory-modal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-badge">🀄</div>
+      <h2>Temple Cleared! Solitaire Victory!</h2>
+      <p>All pairs harmoniously united in the sacred Chinese temple courtyard.</p>
+      <div class="modal-stats">
+        <div>Score: <strong id="vic-score">0</strong></div>
+        <div>Total Moves: <strong id="vic-moves">0</strong></div>
+        <div>Max Combo: <strong id="vic-combo">x1</strong></div>
+      </div>
+      <div class="modal-buttons">
+        <button id="btn-play-again" class="action-btn highlight">Play Next Layout</button>
+        <button id="btn-close-vic" class="secondary-btn">Review Board</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Game Over Modal (Deadlock & Early Unsolvable Detector) -->
+  <div id="gameover-modal" class="modal-overlay hidden">
+    <div class="modal-card gameover-card">
+      <div class="modal-badge" id="gameover-badge">🀄</div>
+      <h2 id="gameover-title">Game Over • Stallo!</h2>
+      <p id="gameover-desc">Nessuna mossa rimasta o nessun percorso di risoluzione possibile da questa configurazione.</p>
+      <div class="modal-stats">
+        <div>Tessere Rimanenti: <strong id="gameover-remaining">0</strong></div>
+        <div>Punteggio: <strong id="gameover-score">0</strong></div>
+        <div>Mosse: <strong id="gameover-moves">0</strong></div>
+        <div>Max Combo: <strong id="gameover-combo">x1</strong></div>
+      </div>
+      <div class="modal-buttons">
+        <button id="btn-gameover-shuffle" class="action-btn highlight" title="Rimescola le tessere rimaste in modo matematicamente risolvibile">🔄 Rimescola Risolvibile</button>
+        <button id="btn-gameover-restart" class="action-btn" title="Ricomincia questo livello">🔁 Ricomincia Livello</button>
+        <button id="btn-gameover-review" class="secondary-btn" title="Esamina le tessere rimaste sulla scacchiera">👁️ Rivedi Scacchiera</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JSON Settings Modal -->
+  <div id="json-modal" class="modal-overlay hidden">
+    <div class="modal-card json-card">
+      <h2>📋 Look-Dev Settings JSON</h2>
+      <textarea id="json-textarea" rows="12"></textarea>
+      <div class="modal-buttons">
+        <button id="btn-apply-json" class="action-btn">Apply Settings</button>
+        <button id="btn-copy-json-clip" class="action-btn highlight">Copy to Clipboard</button>
+        <button id="btn-close-json" class="secondary-btn">Close</button>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>
