@@ -19,7 +19,7 @@ const ROOT = path.resolve(__dirname, "..");
 
 const TILE_W = 0.68;
 const TILE_H = 0.92;
-const TILE_D = 0.38;
+const TILE_D = 0.19;
 
 let failed = false;
 function assert(cond, msg) {
@@ -42,8 +42,8 @@ assert(mainJs.includes("550") && mainJs.includes("showPairMatchCard"), "550ms ('
 assert(mainJs.includes('"2d":') && mainJs.includes("toggle2DMode"), "Dedicated 2D flat top-down camera preset & toggle are wired in src/main.js");
 assert(mainJs.includes("getDidYouKnowLore") && mainJs.includes("updateWow3DPreview"), "WOW rotating 3D tile inspector & 'Did you know?' cultural lore are wired in src/main.js");
 assert(
-  mainJs.includes("TILE_W = 0.68") && mainJs.includes("TILE_H = 0.92") && mainJs.includes("TILE_D = 0.38"),
-  "src/main.js enforces authentic real Mahjong proportions (22mm x 30mm x 13mm ratio)"
+  mainJs.includes("TILE_W = 0.68") && mainJs.includes("TILE_H = 0.92") && mainJs.includes("TILE_D = 0.19"),
+  "src/main.js enforces half-thickness beveled parallelepiped Mahjong proportions (TILE_D = 0.19)"
 );
 assert(
   mainJs.includes("MahjongSolvabilityEngine") &&
@@ -91,6 +91,16 @@ assert(
     mainJs.includes("isCarlessoFamilyPair") &&
     mainJs.includes("triggerFamilyPowerUpEffect"),
   "Milestone 13 (v1.8.0): 1x1 mobile face geometry (6,900x fewer triangles), shared body materials, hover/select 'tarchiato' Dragon morphing, and exclusive Dragon vs Carlesso Family Power-Up video triggers are wired"
+);
+const pyScript = fs.readFileSync(path.join(ROOT, "scripts/build_all_tile_textures.py"), "utf8");
+assert(
+  !pyScript.includes("draw_imperial_cloud_flourishes") &&
+    mainJs.includes("makeBeveledParallelepipedGeometry") &&
+    !mainJs.includes("kintsugiMesh") &&
+    mainJs.includes('this.debugSymbols = urlParams.get("symbols") === "1"') &&
+    mainJs.includes("toggleDebugSymbols") &&
+    indexHtml.includes('id="btn-debug-symbols"'),
+  "Milestone 14 (v1.8.1): Octagonal circles removed ('Less is More'), half-thickness 8-bevel white/ivory parallelepiped without middle red band, and toggleable 'Debug Simboli' (OFF by default) are wired"
 );
 
 // 2. Parse actual binary public/models/temple_environment.glb & build Three.js bounding meshes

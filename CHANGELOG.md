@@ -1,5 +1,17 @@
 # Changelog - Carlesso Family Mahjong 3D 🀄🐉
 
+## [1.8.1] - 2026-10-19
+### Changed & Added
+- **✨ "Less is More" Ultra-Clean Tile Faces (No Octagonal Circles, More Breathing Room)**:
+  - Completely removed `draw_imperial_cloud_flourishes` (the 8-bead octagonal circles around `char_1..9`, `wind_E/S/W/N`, and `dragon_red/green/white`), removed the diagonal marble vein scratches, removed the red inner border, and removed the bottom text cartouche on `coupled_*` tiles in `scripts/build_all_tile_textures.py`.
+  - Kept only a clean, subtle outer border (`ok il bordo esterno`) on pure warm ivory (`#FAF6EE`) so every tile has maximum breathing room.
+- **🏷️ Toggleable Top-Left & Top-Right Corner Symbols (`Debug Simboli: OFF` by Default)**:
+  - Removed baked-in top-left (`C`, `S1..S4`, `1..9`) and top-right (`中`, `春`, `一..九`) corner symbols from all 50 tile PNGs (`public/textures/tiles/*.png` and `public/textures/tiles_onirica/*.png`).
+  - Exported `"cornerLeft"`, `"cornerRight"`, and `"cornerColor"` in `public/textures/manifest.json` and wired a runtime Three.js overlay plane (`debugCornerMesh`) controlled by `#btn-debug-symbols` (`🏷️ Debug Simboli: OFF`), `#chk-debug-symbols` in the Studio Panel, key **`S`**, or `?symbols=1` — **disabled (`OFF`) by default**!
+- **🧱 Half-Thickness White/Ivory 8-Bevel Parallelepiped (`TILE_D = 0.19`, Zero Middle Red/Gold Waist Band)**:
+  - Halved tile thickness from `TILE_D = 0.38` to **`TILE_D = 0.19`**.
+  - Replaced the multi-part tile body (`kintsugiMesh` middle band + `collarMesh` + `badgeMesh` + black obsidian back) with a single uniform **white/ivory 3D parallelepiped with 8 chamfered/beveled edges** (`makeBeveledParallelepipedGeometry`).
+
 ## [1.8.0] - 2026-10-19
 ### Added & Changed
 - **📱 Ultra-Clean Single-Row Mobile HUD ("Zero tastini idioti sopra la scacchiera")**:

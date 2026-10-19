@@ -435,3 +435,24 @@
 - **Ultra-Clean Single-Row Mobile HUD & 60 FPS Lightweight 3D Overhaul (`src/style.css`, `index.html`, `src/main.js`)**:
   - **Mobile HUD**: Collapsed `#game-hud` to a single 38px horizontal bar (`flex-wrap: nowrap`), hid `#camera-bar`, `#wow-3d-popup`, and `.btn-label` text on mobile, keeping only 5 compact 30×30px icon buttons (`📖`, `💡`, `🔀`, `📐`, `⛶`) and turning `#selection-card` into a 36px bottom micro-pill.
   - **3D Performance**: Reduced tile face geometry from `72x96` (1,990,656 triangles across 144 tiles) to `1x1` on mobile (288 triangles total — **6,900x reduction**) and `24x32` on desktop; shared 4 body material sets across all 144 tiles; cached `child.userData.cachedCenter` to eliminate per-frame `THREE.Box3().setFromObject()` allocations; and disabled shadow maps, 4 dynamic lantern `PointLight`s, and the secondary `wowRenderer` on mobile.
+
+---
+
+## 2026-10-19T18:36:00+02:00 — Milestone 14 (`v1.8.1`): "Less is More" Clean Tiles (Zero Octagonal Circles), Half-Thickness 8-Bevel White/Ivory Parallelepiped (`TILE_D = 0.19`), & Toggleable `Debug Simboli` (OFF by Default)
+
+### 1. Verbatim User Request
+> "ah e togli quegli ORRIBILI cerchi ottagonali che hai messo, TOGLILI, LESS IS MORE. voglio i pezxzi piu' "vuoti" troppo pieni.
+>
+> E gia avevo chiesto tempo fa i pezzi dovrebbero avere spessore dimezzat e non avere quella cosa rossa in mezzo, un banalissimo parallelepipedo bianco/avorio con 8 bordi smussati, niente piu. ok il bordo esterno. La C/S2/S3 mettiamola togglabile, che se metti "sdebug simboli" li abilita se no li disablita secondo me a dflt dovrebbero essere disabilitati questi 2 in alto"
+
+### 2. Engineering Execution & Artifacts
+- **Removed Octagonal Circles & Visual Clutter (`scripts/build_all_tile_textures.py`)**:
+  - Removed `draw_imperial_cloud_flourishes` (which drew an octagonal 8-bead circle around `char_1..9`, `wind_E/S/W/N`, and `dragon_red/green/white`).
+  - Removed diagonal marble vein lines, inner red borders, and bottom text cartouches on `coupled_*` tiles, keeping only a subtle outer border (`ok il bordo esterno`) on pure warm ivory (`#FAF6EE`).
+- **Top-Left & Top-Right Symbols Toggleable via `🏷️ Debug Simboli` — `OFF` by Default (`scripts/build_all_tile_textures.py`, `public/textures/manifest.json`, `src/main.js`, `index.html`)**:
+  - Regenerated all 50 tile textures (`public/textures/tiles/*.png`, `public/textures/tiles_onirica/*.png`) without baked-in top-left (`C`, `S1..S4`, `1..9`) and top-right (`中`, `春`) corner symbols.
+  - Exported `cornerLeft`, `cornerRight`, and `cornerColor` in `public/textures/manifest.json`.
+  - Added `debugCornerMesh` + `getDebugCornerMaterial()` + `toggleDebugSymbols()` in `src/main.js`, defaulting to **`this.debugSymbols = false`** (`OFF`), toggleable anytime via `#btn-debug-symbols` (`🏷️ Debug Simboli: OFF`), `#chk-debug-symbols` in the Studio Panel, key **`S`**, or `?symbols=1`.
+- **Half-Thickness White/Ivory 8-Bevel Parallelepiped (`TILE_D = 0.19`, `src/main.js`)**:
+  - Halved `TILE_D` from `0.38` to **`0.19`**.
+  - Replaced the multi-part tile body (`kintsugiMesh` middle band + `collarMesh` + `badgeMesh` + obsidian back) with a single uniform white/ivory beveled parallelepiped (`makeBeveledParallelepipedGeometry(TILE_W, TILE_D, TILE_H, 0.042, 0.015)`).

@@ -171,24 +171,20 @@ def generate_2k_pbr_maps():
         Image.fromarray(np.stack([jr, jg, jb], axis=-1)).save(jade_p, "PNG")
 
 
-def make_marble_face_canvas(W=768, H=1024, accent_rgb=(195, 155, 65)) -> tuple[Image.Image, ImageDraw.ImageDraw]:
-    canvas = Image.new("RGB", (W, H), (247, 243, 234))
+def make_marble_face_canvas(W=768, H=1024, accent_rgb=(204, 168, 88)) -> tuple[Image.Image, ImageDraw.ImageDraw]:
+    """
+    Pure, clean 'Less is More' warm ivory/white canvas with ONLY a subtle outer border ('ok il bordo esterno').
+    No diagonal scratch lines, no red inner frame, no octagonal rings!
+    """
+    canvas = Image.new("RGB", (W, H), (250, 246, 238))
     draw = ImageDraw.Draw(canvas)
     for y in range(H):
         t = y / (H - 1)
-        c = (int(248 - 7 * t), int(244 - 8 * t), int(235 - 10 * t))
+        c = (int(251 - 4 * t), int(247 - 5 * t), int(239 - 6 * t))
         draw.line([(0, y), (W, y)], fill=c)
 
-    vein_coords = [
-        [(60, 140), (240, 310), (410, 420), (680, 640)],
-        [(120, 780), (350, 690), (590, 820)],
-    ]
-    for pts in vein_coords:
-        draw.line(pts, fill=(236, 230, 218), width=3)
-
-    # Outer Obsidian hairline + Recessed Gold/Accent Frame
-    draw.rounded_rectangle([14, 14, W - 15, H - 15], radius=38, outline=(32, 32, 40), width=6)
-    draw.rounded_rectangle([26, 26, W - 27, H - 27], radius=30, outline=accent_rgb, width=5)
+    # Subtle, clean single outer border ('ok il bordo esterno')
+    draw.rounded_rectangle([18, 18, W - 19, H - 19], radius=38, outline=(206, 178, 112), width=4)
     return canvas, draw
 
 
@@ -427,31 +423,10 @@ def build_onirica_tile(
 
     canvas.paste(pastel_im, (wx0, wy0), alpha_im)
 
-    soft_col = (
-        int(col_rgb[0] * 0.72 + 55),
-        int(col_rgb[1] * 0.72 + 50),
-        int(col_rgb[2] * 0.72 + 50),
-    )
-    draw.text((52, 40), glyph_left, font=latin_font(62, bold=True), fill=soft_col)
-    draw.text((W - 122, 42), glyph_right, font=cjk_font(62, glyph_right), fill=soft_col)
-
     out_path = ONIRICA_DIR / f"{tile_id}.png"
     canvas.save(out_path, "PNG")
     if ARTIFACT_DIR.exists():
         shutil.copy2(out_path, ARTIFACT_DIR / f"onirica_{tile_id}.png")
-
-
-def draw_imperial_cloud_flourishes(draw: ImageDraw.ImageDraw, cx: float, cy: float, rx: float, ry: float, col: tuple[int, int, int], gold: tuple[int, int, int]):
-    """Draws curved Imperial cloud-scroll & scalloped guilloché arcs around calligraphy so 3D normal/depth maps have 360° curved grooves."""
-    draw.ellipse([cx - rx, cy - ry, cx + rx, cy + ry], outline=gold, width=4)
-    draw.ellipse([cx - rx * 0.93, cy - ry * 0.93, cx + rx * 0.93, cy + ry * 0.93], outline=col, width=3)
-    # 8 scalloped cloud-scroll petals along the ring perimeter
-    for k in range(8):
-        ang = k * (math.pi / 4.0)
-        px = cx + math.cos(ang) * (rx * 0.965)
-        py = cy + math.sin(ang) * (ry * 0.965)
-        draw.ellipse([px - 14, py - 14, px + 14, py + 14], fill=(244, 238, 225), outline=gold, width=4)
-        draw.ellipse([px - 6, py - 6, px + 6, py + 6], fill=col)
 
 
 def composite_ornate_dragon_emblem(canvas: Image.Image, emblem_path: Path, box: tuple[int, int, int, int]):
@@ -487,7 +462,7 @@ def composite_ornate_dragon_emblem(canvas: Image.Image, emblem_path: Path, box: 
 
 
 def generate_original_mahjong_suits() -> list[dict]:
-    print("[MahjongArt] Generating 34 Original Suit & Honour Tiles (Ornate 3D Carved Dragons, MaShanZheng Brush Calligraphy, V-Groove Carving)...")
+    print("[MahjongArt] Generating 34 Original Suit & Honour Tiles ('Less is More': ZERO octagonal rings, ZERO default corner text, pure Calligraphy)...")
     W, H = 768, 1024
     RED = (196, 30, 30)
     GREEN = (20, 132, 58)
@@ -497,62 +472,77 @@ def generate_original_mahjong_suits() -> list[dict]:
 
     manifest = []
 
-    # 1. Characters / Wan (一萬 .. 九萬) — Brush Calligraphy + Curved Cloud-Scroll Seals
+    # 1. Characters / Wan (一萬 .. 九萬) — Pure Brush Calligraphy (NO octagonal rings, NO corner labels baked in!)
     cn_nums = ["一", "二", "三", "四", "五", "六", "七", "八", "九"]
     for idx, cn in enumerate(cn_nums, start=1):
         tid = f"char_{idx}"
         canvas, draw = make_marble_face_canvas(W, H, accent_rgb=GOLD)
-        draw.text((48, 38), str(idx), font=latin_font(72, bold=True), fill=INK)
-        draw.text((W - 124, 40), cn, font=cjk_font(64, cn), fill=BLUE)
-        # Curved cloud-scroll seal rings around top numeral & bottom Wan
-        draw_imperial_cloud_flourishes(draw, W * 0.5, H * 0.34, 178, 142, BLUE, GOLD)
-        draw_imperial_cloud_flourishes(draw, W * 0.5, H * 0.72, 196, 168, RED, GOLD)
-        draw_centered_text(draw, (W / 2, H * 0.34), cn, font=cjk_font(272, cn), fill=BLUE, stroke_fill=GOLD, stroke_width=3)
-        draw_centered_text(draw, (W / 2, H * 0.71), "萬", font=cjk_font(278, "萬"), fill=RED, stroke_fill=GOLD, stroke_width=3)
+        draw_centered_text(draw, (W / 2, H * 0.34), cn, font=cjk_font(276, cn), fill=BLUE, stroke_fill=GOLD, stroke_width=3)
+        draw_centered_text(draw, (W / 2, H * 0.70), "萬", font=cjk_font(284, "萬"), fill=RED, stroke_fill=GOLD, stroke_width=3)
         apply_incandescent_pen_carving(canvas, tid)
         shutil.copy2(TILES_DIR / f"{tid}.png", ONIRICA_DIR / f"{tid}.png")
         if ARTIFACT_DIR.exists() and idx in (1, 8):
             shutil.copy2(TILES_DIR / f"{tid}.png", ARTIFACT_DIR / f"{tid}.png")
-        manifest.append({"id": tid, "suit": "characters", "matchGroup": tid, "cardinality": 2, "glyph": f"{idx}萬", "title": f"{idx} Characters ({cn}萬)", "coupled": False})
+        manifest.append({
+            "id": tid,
+            "suit": "characters",
+            "matchGroup": tid,
+            "cardinality": 2,
+            "glyph": f"{idx}萬",
+            "cornerLeft": str(idx),
+            "cornerRight": cn,
+            "cornerColor": "#1a46b2",
+            "title": f"{idx} Characters ({cn}萬)",
+            "coupled": False,
+        })
 
-    # 2. Circles / Dots (一筒 .. 九筒) — Significantly Larger 2-Circles (r=148) & 4-Circles (r=124) & Fuller Layouts!
+    # 2. Circles / Dots (一筒 .. 九筒)
     dot_layouts = {
-        1: [(0.50, 0.54, 192, RED)],
-        2: [(0.50, 0.34, 148, GREEN), (0.50, 0.72, 148, BLUE)],
-        3: [(0.27, 0.30, 108, BLUE), (0.50, 0.54, 108, RED), (0.73, 0.78, 108, GREEN)],
-        4: [(0.31, 0.36, 124, BLUE), (0.69, 0.36, 124, GREEN), (0.31, 0.72, 124, GREEN), (0.69, 0.72, 124, BLUE)],
-        5: [(0.28, 0.32, 102, BLUE), (0.72, 0.32, 102, GREEN), (0.50, 0.54, 102, RED), (0.28, 0.76, 102, GREEN), (0.72, 0.76, 102, BLUE)],
-        6: [(0.31, 0.30, 96, GREEN), (0.69, 0.30, 96, GREEN), (0.31, 0.55, 96, RED), (0.69, 0.55, 96, RED), (0.31, 0.79, 96, RED), (0.69, 0.79, 96, RED)],
-        7: [(0.24, 0.27, 78, GREEN), (0.50, 0.35, 78, GREEN), (0.76, 0.43, 78, GREEN), (0.32, 0.61, 86, RED), (0.68, 0.61, 86, RED), (0.32, 0.81, 86, RED), (0.68, 0.81, 86, RED)],
-        8: [(0.32, y, 74, BLUE) for y in [0.25, 0.44, 0.63, 0.82]] + [(0.68, y, 74, BLUE) for y in [0.25, 0.44, 0.63, 0.82]],
-        9: [(x, 0.28, 78, GREEN) for x in [0.24, 0.50, 0.76]] + [(x, 0.54, 78, RED) for x in [0.24, 0.50, 0.76]] + [(x, 0.80, 78, BLUE) for x in [0.24, 0.50, 0.76]],
+        1: [(0.50, 0.52, 192, RED)],
+        2: [(0.50, 0.32, 148, GREEN), (0.50, 0.70, 148, BLUE)],
+        3: [(0.27, 0.28, 108, BLUE), (0.50, 0.52, 108, RED), (0.73, 0.76, 108, GREEN)],
+        4: [(0.31, 0.34, 124, BLUE), (0.69, 0.34, 124, GREEN), (0.31, 0.70, 124, GREEN), (0.69, 0.70, 124, BLUE)],
+        5: [(0.28, 0.30, 102, BLUE), (0.72, 0.30, 102, GREEN), (0.50, 0.52, 102, RED), (0.28, 0.74, 102, GREEN), (0.72, 0.74, 102, BLUE)],
+        6: [(0.31, 0.28, 96, GREEN), (0.69, 0.28, 96, GREEN), (0.31, 0.53, 96, RED), (0.69, 0.53, 96, RED), (0.31, 0.77, 96, RED), (0.69, 0.77, 96, RED)],
+        7: [(0.24, 0.25, 78, GREEN), (0.50, 0.33, 78, GREEN), (0.76, 0.41, 78, GREEN), (0.32, 0.59, 86, RED), (0.68, 0.59, 86, RED), (0.32, 0.79, 86, RED), (0.68, 0.79, 86, RED)],
+        8: [(0.32, y, 74, BLUE) for y in [0.23, 0.42, 0.61, 0.80]] + [(0.68, y, 74, BLUE) for y in [0.23, 0.42, 0.61, 0.80]],
+        9: [(x, 0.26, 78, GREEN) for x in [0.24, 0.50, 0.76]] + [(x, 0.52, 78, RED) for x in [0.24, 0.50, 0.76]] + [(x, 0.78, 78, BLUE) for x in [0.24, 0.50, 0.76]],
     }
     for idx in range(1, 10):
         tid = f"dots_{idx}"
         canvas, draw = make_marble_face_canvas(W, H, accent_rgb=GOLD)
-        draw.text((48, 38), str(idx), font=latin_font(72, bold=True), fill=INK)
-        draw.text((W - 124, 40), "筒", font=cjk_font(62, "筒"), fill=RED)
         if idx == 1:
-            cx, cy = W * 0.5, H * 0.54
+            cx, cy = W * 0.5, H * 0.52
             draw.ellipse([cx - 236, cy - 236, cx + 236, cy + 236], fill=GREEN, outline=GOLD, width=8)
         for nx, ny, rad, col in dot_layouts[idx]:
             draw_mahjong_circle(draw, W * nx, H * ny, rad, col)
         apply_incandescent_pen_carving(canvas, tid)
         shutil.copy2(TILES_DIR / f"{tid}.png", ONIRICA_DIR / f"{tid}.png")
-        manifest.append({"id": tid, "suit": "dots", "matchGroup": tid, "cardinality": 2, "glyph": f"{idx}筒", "title": f"{idx} Circles ({cn_nums[idx-1]}筒)", "coupled": False})
+        manifest.append({
+            "id": tid,
+            "suit": "dots",
+            "matchGroup": tid,
+            "cardinality": 2,
+            "glyph": f"{idx}筒",
+            "cornerLeft": str(idx),
+            "cornerRight": "筒",
+            "cornerColor": "#c41e1e",
+            "title": f"{idx} Circles ({cn_nums[idx-1]}筒)",
+            "coupled": False,
+        })
 
-    # 3. Bamboos / Tiao (一索 .. 九索) — Larger Stalks on 5..9 & Special Comedic Carved Bamboo & Gold Emblems on 1..4!
+    # 3. Bamboos / Tiao (一索 .. 九索)
     bam_layouts = {
-        2: [(0.50, 0.36, 275, BLUE), (0.50, 0.72, 275, GREEN)],
-        3: [(0.50, 0.34, 250, BLUE), (0.31, 0.72, 250, GREEN), (0.69, 0.72, 250, GREEN)],
-        4: [(0.32, 0.36, 250, BLUE), (0.68, 0.36, 250, GREEN), (0.32, 0.72, 250, GREEN), (0.68, 0.72, 250, BLUE)],
-        5: [(0.26, 0.36, 238, GREEN), (0.74, 0.36, 238, BLUE), (0.50, 0.54, 238, RED), (0.26, 0.72, 238, BLUE), (0.74, 0.72, 238, GREEN)],
-        6: [(x, 0.36, 244, GREEN) for x in [0.25, 0.50, 0.75]] + [(x, 0.72, 244, BLUE) for x in [0.25, 0.50, 0.75]],
-        7: [(0.50, 0.26, 190, RED)] + [(x, 0.52, 190, GREEN) for x in [0.25, 0.50, 0.75]] + [(x, 0.78, 190, BLUE) for x in [0.25, 0.50, 0.75]],
-        8: [(x, 0.36, 218, GREEN) for x in [0.21, 0.40, 0.60, 0.79]] + [(x, 0.72, 218, BLUE) for x in [0.21, 0.40, 0.60, 0.79]],
-        9: [(x, 0.28, 192, RED if x == 0.50 else GREEN) for x in [0.25, 0.50, 0.75]]
-        + [(x, 0.54, 192, RED if x == 0.50 else BLUE) for x in [0.25, 0.50, 0.75]]
-        + [(x, 0.80, 192, RED if x == 0.50 else GREEN) for x in [0.25, 0.50, 0.75]],
+        2: [(0.50, 0.34, 275, BLUE), (0.50, 0.70, 275, GREEN)],
+        3: [(0.50, 0.32, 250, BLUE), (0.31, 0.70, 250, GREEN), (0.69, 0.70, 250, GREEN)],
+        4: [(0.32, 0.34, 250, BLUE), (0.68, 0.34, 250, GREEN), (0.32, 0.70, 250, GREEN), (0.68, 0.70, 250, BLUE)],
+        5: [(0.26, 0.34, 238, GREEN), (0.74, 0.34, 238, BLUE), (0.50, 0.52, 238, RED), (0.26, 0.70, 238, BLUE), (0.74, 0.70, 238, GREEN)],
+        6: [(x, 0.34, 244, GREEN) for x in [0.25, 0.50, 0.75]] + [(x, 0.70, 244, BLUE) for x in [0.25, 0.50, 0.75]],
+        7: [(0.50, 0.24, 190, RED)] + [(x, 0.50, 190, GREEN) for x in [0.25, 0.50, 0.75]] + [(x, 0.76, 190, BLUE) for x in [0.25, 0.50, 0.75]],
+        8: [(x, 0.34, 218, GREEN) for x in [0.21, 0.40, 0.60, 0.79]] + [(x, 0.70, 218, BLUE) for x in [0.21, 0.40, 0.60, 0.79]],
+        9: [(x, 0.26, 192, RED if x == 0.50 else GREEN) for x in [0.25, 0.50, 0.75]]
+        + [(x, 0.52, 192, RED if x == 0.50 else BLUE) for x in [0.25, 0.50, 0.75]]
+        + [(x, 0.78, 192, RED if x == 0.50 else GREEN) for x in [0.25, 0.50, 0.75]],
     }
     special_bamboos = {
         1: (PORTRAITS_DIR / "bamboo_1_sparrow_emblem.png", (0.235, 0.215, 0.785, 0.765), "1 Bamboo • Imperial Sparrow (一索)"),
@@ -563,12 +553,10 @@ def generate_original_mahjong_suits() -> list[dict]:
     for idx in range(1, 10):
         tid = f"bamboo_{idx}"
         canvas, draw = make_marble_face_canvas(W, H, accent_rgb=GOLD)
-        draw.text((48, 38), str(idx), font=latin_font(72, bold=True), fill=INK)
-        draw.text((W - 124, 40), "索", font=cjk_font(62, "索"), fill=GREEN)
         if idx in special_bamboos and special_bamboos[idx][0].exists():
             emb_path, cbox, custom_title = special_bamboos[idx]
-            oval_w, oval_h = int(W * 0.82), int(H * 0.73)
-            ox0, oy0 = (W - oval_w) // 2, int(H * 0.15)
+            oval_w, oval_h = int(W * 0.80), int(H * 0.74)
+            ox0, oy0 = (W - oval_w) // 2, (H - oval_h) // 2
             ox1, oy1 = ox0 + oval_w, oy0 + oval_h
             sp_im = Image.open(emb_path).convert("RGB")
             sw, sh = sp_im.size
@@ -578,21 +566,43 @@ def generate_original_mahjong_suits() -> list[dict]:
             ImageDraw.Draw(mask).ellipse([4, 4, oval_w - 5, oval_h - 5], fill=255)
             mask = mask.filter(ImageFilter.GaussianBlur(radius=1.5))
             canvas.paste(sp_resized, (ox0, oy0), mask)
-            draw.ellipse([ox0 - 7, oy0 - 7, ox1 + 7, oy1 + 7], outline=GREEN, width=6)
-            draw.ellipse([ox0, oy0, ox1, oy1], outline=GOLD, width=5)
+            draw.ellipse([ox0 - 5, oy0 - 5, ox1 + 5, oy1 + 5], outline=GREEN, width=5)
+            draw.ellipse([ox0, oy0, ox1, oy1], outline=GOLD, width=4)
             apply_incandescent_pen_carving(canvas, tid, is_oval=True, oval_box=(ox0, oy0, ox1, oy1))
             build_onirica_tile(W, H, sp_crop, str(idx), "索", GREEN, tid, max_opacity=0.42)
             if ARTIFACT_DIR.exists():
                 shutil.copy2(TILES_DIR / f"{tid}.png", ARTIFACT_DIR / f"{tid}.png")
-            manifest.append({"id": tid, "suit": "bamboo", "matchGroup": tid, "cardinality": 2, "glyph": f"{idx}索", "title": custom_title, "coupled": False})
+            manifest.append({
+                "id": tid,
+                "suit": "bamboo",
+                "matchGroup": tid,
+                "cardinality": 2,
+                "glyph": f"{idx}索",
+                "cornerLeft": str(idx),
+                "cornerRight": "索",
+                "cornerColor": "#14843a",
+                "title": custom_title,
+                "coupled": False,
+            })
         else:
             for nx, ny, bh, col in bam_layouts.get(idx, bam_layouts[2]):
                 draw_bamboo_stalk(draw, W * nx, H * ny, bh, col)
             apply_incandescent_pen_carving(canvas, tid)
             shutil.copy2(TILES_DIR / f"{tid}.png", ONIRICA_DIR / f"{tid}.png")
-            manifest.append({"id": tid, "suit": "bamboo", "matchGroup": tid, "cardinality": 2, "glyph": f"{idx}索", "title": f"{idx} Bamboo ({cn_nums[idx-1]}索)", "coupled": False})
+            manifest.append({
+                "id": tid,
+                "suit": "bamboo",
+                "matchGroup": tid,
+                "cardinality": 2,
+                "glyph": f"{idx}索",
+                "cornerLeft": str(idx),
+                "cornerRight": "索",
+                "cornerColor": "#14843a",
+                "title": f"{idx} Bamboo ({cn_nums[idx-1]}索)",
+                "coupled": False,
+            })
 
-    # 4. Four Winds (東 南 西 北) — Brush Calligraphy + Curved Guilloché Wind Medallion
+    # 4. Four Winds (東 南 西 北) — Pure Brush Calligraphy (ZERO octagonal circles, ZERO baked-in corner symbols!)
     winds = [
         ("wind_E", "東", "E", "East Wind (東)"),
         ("wind_S", "南", "S", "South Wind (南)"),
@@ -601,42 +611,44 @@ def generate_original_mahjong_suits() -> list[dict]:
     ]
     for tid, hanzi, let, label in winds:
         canvas, draw = make_marble_face_canvas(W, H, accent_rgb=GOLD)
-        draw.text((48, 38), let, font=latin_font(72, bold=True), fill=BLUE)
-        draw.text((W - 124, 40), "風", font=cjk_font(62, "風"), fill=INK)
-        draw_imperial_cloud_flourishes(draw, W * 0.5, H * 0.54, 248, 268, BLUE, GOLD)
-        draw_centered_text(draw, (W / 2, H * 0.54), hanzi, font=cjk_font(425, hanzi), fill=INK, stroke_fill=GOLD, stroke_width=4)
+        draw_centered_text(draw, (W / 2, H * 0.52), hanzi, font=cjk_font(440, hanzi), fill=INK, stroke_fill=GOLD, stroke_width=4)
         apply_incandescent_pen_carving(canvas, tid)
         shutil.copy2(TILES_DIR / f"{tid}.png", ONIRICA_DIR / f"{tid}.png")
-        manifest.append({"id": tid, "suit": "winds", "matchGroup": tid, "cardinality": 2, "glyph": hanzi, "title": label, "coupled": False})
+        manifest.append({
+            "id": tid,
+            "suit": "winds",
+            "matchGroup": tid,
+            "cardinality": 2,
+            "glyph": hanzi,
+            "cornerLeft": let,
+            "cornerRight": "風",
+            "cornerColor": "#1a46b2",
+            "title": label,
+            "coupled": False,
+        })
 
-    # 5. Three Dragons (中 發 白) — Default tiles have ONLY the Chinese Calligraphic Symbol (harmonious with the board),
+    # 5. Three Dragons (中 發 白) — Pure Chinese Calligraphic Symbol on clean ivory ('Less is More', ZERO octagonal rings, ZERO corner labels!),
     #    while `dragon_red_ornate` and `dragon_green_ornate` store the ornate "tarchiato" carved dragon for Hover/Selection!
     dragons = [
-        ("dragon_red", "中", "C", RED, "Drago Rosso • Red Dragon (紅中)", PORTRAITS_DIR / "dragon_red_ornate_emblem.png"),
-        ("dragon_green", "發", "F", GREEN, "Drago Verde • Green Dragon (發財)", PORTRAITS_DIR / "dragon_green_ornate_emblem.png"),
-        ("dragon_white", "白", "P", BLUE, "Drago Bianco • White Dragon (白板)", None),
+        ("dragon_red", "中", "C", RED, "#c41e1e", "Drago Rosso • Red Dragon (紅中)", PORTRAITS_DIR / "dragon_red_ornate_emblem.png"),
+        ("dragon_green", "發", "F", GREEN, "#14843a", "Drago Verde • Green Dragon (發財)", PORTRAITS_DIR / "dragon_green_ornate_emblem.png"),
+        ("dragon_white", "白", "P", BLUE, "#1a46b2", "Drago Bianco • White Dragon (白板)", None),
     ]
-    for tid, hanzi, let, col, label, emb_path in dragons:
-        # 5a. Default Board Tile: Clean Chinese Brush Calligraphy + Imperial Cloud Seal (100% consistent with Winds & Characters)
-        canvas, draw = make_marble_face_canvas(W, H, accent_rgb=col)
-        draw.text((48, 38), let, font=latin_font(72, bold=True), fill=col)
-        draw.text((W - 124, 40), hanzi, font=cjk_font(62, hanzi), fill=col)
-        draw_imperial_cloud_flourishes(draw, W * 0.5, H * 0.54, 248, 268, col, GOLD)
+    for tid, hanzi, let, col, hex_col, label, emb_path in dragons:
+        # 5a. Default Board Tile: Pure Calligraphic Character on clean ivory (ZERO octagonal circle, ZERO corner symbols!)
+        canvas, draw = make_marble_face_canvas(W, H, accent_rgb=GOLD)
         if tid == "dragon_white":
-            # Traditional White Dragon (Bai Ban) carved sapphire-blue & gold rectangular frame around 白
-            draw.rounded_rectangle([128, 210, W - 128, H - 150], radius=36, outline=BLUE, width=14)
-            draw.rounded_rectangle([148, 230, W - 148, H - 170], radius=24, outline=GOLD, width=6)
-        draw_centered_text(draw, (W / 2, H * 0.54), hanzi, font=cjk_font(445, hanzi), fill=col, stroke_fill=GOLD, stroke_width=4)
+            # Traditional White Dragon (Bai Ban) carved sapphire-blue rectangular frame around 白
+            draw.rounded_rectangle([140, 190, W - 140, H - 190], radius=36, outline=BLUE, width=12)
+        draw_centered_text(draw, (W / 2, H * 0.52), hanzi, font=cjk_font(455, hanzi), fill=col, stroke_fill=GOLD, stroke_width=4)
         apply_incandescent_pen_carving(canvas, tid, is_oval=False)
         shutil.copy2(TILES_DIR / f"{tid}.png", ONIRICA_DIR / f"{tid}.png")
 
         # 5b. Ornate "Tarchiato" Hover/Select Dragon Texture (`dragon_red_ornate`, `dragon_green_ornate`)
         if emb_path is not None and emb_path.exists():
             ornate_id = f"{tid}_ornate"
-            ocanvas, odraw = make_marble_face_canvas(W, H, accent_rgb=col)
-            odraw.text((48, 38), let, font=latin_font(72, bold=True), fill=col)
-            odraw.text((W - 124, 40), hanzi, font=cjk_font(62, hanzi), fill=col)
-            composite_ornate_dragon_emblem(ocanvas, emb_path, (48, 122, W - 48, H - 56))
+            ocanvas, _ = make_marble_face_canvas(W, H, accent_rgb=GOLD)
+            composite_ornate_dragon_emblem(ocanvas, emb_path, (48, 84, W - 48, H - 84))
             apply_incandescent_pen_carving(ocanvas, ornate_id, is_oval=False)
             shutil.copy2(TILES_DIR / f"{ornate_id}.png", ONIRICA_DIR / f"{ornate_id}.png")
             if ARTIFACT_DIR.exists():
@@ -651,6 +663,9 @@ def generate_original_mahjong_suits() -> list[dict]:
             "matchGroup": tid,
             "cardinality": 2,
             "glyph": hanzi,
+            "cornerLeft": let,
+            "cornerRight": hanzi,
+            "cornerColor": hex_col,
             "title": label,
             "coupled": False,
             "hoverOrnateId": f"{tid}_ornate" if (emb_path is not None and emb_path.exists()) else None,
@@ -673,7 +688,7 @@ def slice_diptyque_half(scene_path: Path, side: str | tuple[float, float, float,
 
 
 def generate_coupled_family_oval_tiles() -> list[dict]:
-    print("[OvalCameo] Building 16 Non-Identical Family Tiles (Larger Oval Cameo + 3D Carved Moat + Modalità Onirica A/B Set)...")
+    print("[OvalCameo] Building 16 Non-Identical Family Tiles ('Less is More': Clean Oval Cameo, ZERO default top corner text)...")
 
     specs = [
         # QUARTET 1: CARLESSO FAMILY SEASONS (Cardinality 4 — ANY 2 MATCH!)
@@ -864,17 +879,12 @@ def generate_coupled_family_oval_tiles() -> list[dict]:
     manifest = []
 
     for tid, mgroup, cardinality, glyph, hanzi, subtitle, col_rgb, src_path, slice_mode in specs:
-        canvas, draw = make_marble_face_canvas(W, H, accent_rgb=col_rgb)
+        canvas, draw = make_marble_face_canvas(W, H, accent_rgb=(204, 168, 88))
 
-        # Top-Left: Coupled/Quartet Code (+8% larger: 66px)
-        draw.text((46, 36), glyph, font=latin_font(66, bold=True), fill=col_rgb)
-        # Top-Right: Authentic Mahjong Season/Flower Hanzi (+8% larger: 68px)
-        draw.text((W - 124, 38), hanzi, font=cjk_font(68, hanzi), fill=col_rgb)
-
-        # Enlarged Center Gold-Rimmed OVAL Cameo Medallion (0.83 x 0.71 — less empty white margin!)
-        oval_w, oval_h = int(W * 0.83), int(H * 0.71)
+        # Centered Gold-Rimmed OVAL Cameo Medallion ('Less is More': no top corner text, no bottom box!)
+        oval_w, oval_h = int(W * 0.80), int(H * 0.74)
         ox0 = (W - oval_w) // 2
-        oy0 = int(H * 0.145)
+        oy0 = (H - oval_h) // 2
         ox1 = ox0 + oval_w
         oy1 = oy0 + oval_h
 
@@ -901,20 +911,16 @@ def generate_coupled_family_oval_tiles() -> list[dict]:
 
         canvas.paste(im_crop, (ox0, oy0), mask)
 
-        # Concentric Obsidian, Theme-Colored & Gold Kintsugi Oval Cameo Frame
-        draw.ellipse([ox0 - 10, oy0 - 10, ox1 + 10, oy1 + 10], outline=(26, 26, 34), width=8)
-        draw.ellipse([ox0 - 4, oy0 - 4, ox1 + 4, oy1 + 4], outline=col_rgb, width=7)
-        draw.ellipse([ox0 + 4, oy0 + 4, ox1 - 4, oy1 - 4], outline=(245, 212, 112), width=3)
-
-        # Bottom cartouche with clear pair/quartet subtitle
-        draw.rounded_rectangle([42, H - 114, W - 42, H - 44], radius=18, fill=(240, 234, 220), outline=col_rgb, width=3)
-        draw_centered_text(draw, (W / 2, H - 79), subtitle, font=latin_font(24, bold=True), fill=(32, 28, 36))
+        # Clean Gold & Theme Oval Cameo Frame
+        draw.ellipse([ox0 - 5, oy0 - 5, ox1 + 5, oy1 + 5], outline=col_rgb, width=5)
+        draw.ellipse([ox0, oy0, ox1, oy1], outline=(232, 198, 102), width=4)
 
         apply_incandescent_pen_carving(canvas, tid, is_oval=True, oval_box=(ox0, oy0, ox1, oy1))
         build_onirica_tile(W, H, im_crop, glyph, hanzi, col_rgb, tid, max_opacity=0.50)
         if ARTIFACT_DIR.exists():
             shutil.copy2(TILES_DIR / f"{tid}.png", ARTIFACT_DIR / f"{tid}.png")
 
+        hex_col = f"#{col_rgb[0]:02x}{col_rgb[1]:02x}{col_rgb[2]:02x}"
         manifest.append({
             "id": tid,
             "suit": "coupled_family",
@@ -923,6 +929,9 @@ def generate_coupled_family_oval_tiles() -> list[dict]:
             "glyph": f"{hanzi}{glyph}",
             "code": glyph,
             "hanzi": hanzi,
+            "cornerLeft": glyph,
+            "cornerRight": hanzi,
+            "cornerColor": hex_col,
             "title": subtitle,
             "coupled": True,
             "sliceMode": "custom_crop" if isinstance(slice_mode, tuple) else slice_mode,
