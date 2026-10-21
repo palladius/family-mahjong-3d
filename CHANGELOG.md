@@ -1,5 +1,12 @@
 # Changelog - Carlesso Family Mahjong 3D 🀄🐉
 
+## [1.8.3] - 2026-10-21
+### Changed
+- **🖐️ Left-Click / 1-Finger Drag = Horizontal Board Translation (`PAN` by Default, Preserving Left/Right Mahjong Rules)**:
+  - Configured `OrbitControls` in `src/main.js` with `screenSpacePanning = false`, `mouseButtons = { LEFT: THREE.MOUSE.PAN, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.ROTATE }`, and `touches = { ONE: THREE.TOUCH.PAN, TWO: THREE.TOUCH.DOLLY_ROTATE }`.
+  - Dragging with the left mouse button (or 1 finger on mobile) now **translates (pans)** the board horizontally along the table plane (`XZ`) with **0.00° rotation**, keeping the Left and Right edges of every tile strictly aligned Left-to-Right for Mahjong Solitaire rules!
+  - 3D Rotation remains available on **Right-Click Drag**, **`Shift / Cmd / Ctrl + Left-Click Drag`**, or **2-Finger Touch Twist**.
+
 ## [1.8.2] - 2026-10-21
 ### Fixed & Added
 - **🐛 Fix Washed-Out / Buried Tile Faces on Half-Thickness Beveled Parallelepiped (`src/main.js`)**:

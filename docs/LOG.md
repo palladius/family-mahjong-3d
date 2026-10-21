@@ -477,3 +477,19 @@
     - Casts 1,296 vertical rays and 1,296 Hero-3D camera rays across all 144 tiles on the initial chessboard to prove `100%` hit `faceMesh` before `bodyMesh`.
     - Decodes PNG IDAT scanlines of tile textures to verify strong RGB luminance contrast (`lumRange = 188..253.8`).
     - Simulates pointer drag events on `OrbitControls` to verify the 3D board rotates (`11.5°` azimuth rotation on drag) without triggering tile clicks.
+
+---
+
+## 2026-10-21T11:46:00+02:00 — Milestone 16 (`v1.8.3`): Left-Click / 1-Finger Drag Bound to Horizontal Board Translation (`PAN`) to Preserve Left/Right Mahjong Alignment
+
+### 1. Verbatim User Request
+> "daomanda: ma e' normale che se clicco e muovo mouse cliccato (pinned) triggeri una rotazione? raramente voglio ruotare il mahjong, piu probabilmente voglio TRASLARLO - qui e' importnte tenere i bordi sempre a sx/dx per le regole del gioco. possiam cambiare quella funzionalita?"
+
+### 2. Engineering Execution & Verification
+- **Configured `OrbitControls` for Horizontal Table-Plane Translation (`PAN`) on Left-Click / 1-Finger Drag (`src/main.js`)**:
+  - `this.controls.screenSpacePanning = false;` (translates strictly parallel to the horizontal `XZ` table plane).
+  - `this.controls.mouseButtons = { LEFT: THREE.MOUSE.PAN, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.ROTATE };`
+  - `this.controls.touches = { ONE: THREE.TOUCH.PAN, TWO: THREE.TOUCH.DOLLY_ROTATE };`
+  - Left-click drag (and 1-finger touch drag) now translates the board horizontally with `0.00°` azimuth rotation so Left/Right tile edges always remain strictly Left/Right for Mahjong rules, while Right-click drag (or `Shift/Ctrl/Cmd + Left-click drag`, or 2-finger gesture) rotates the 3D view when desired.
+- **Updated Integration Test Suite (`scripts/test_board_integration.mjs`)**:
+  - Verifies that `button: 0` (Left-Click drag) translates `controls.target` (`> 1.1m`) with `0.00°` azimuth drift, and `button: 2` (Right-Click drag) rotates the 3D camera (`11.5°`).

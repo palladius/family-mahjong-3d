@@ -530,7 +530,20 @@ class MahjongSolitaireApp {
     this.controls.enableRotate = true;
     this.controls.enableZoom = true;
     this.controls.enablePan = true;
+    this.controls.panSpeed = 1.05;
     this.controls.rotateSpeed = 0.85;
+    // Keep horizontal XZ table plane panning so Left/Right tile edges ALWAYS stay strictly Left/Right for Mahjong rules!
+    this.controls.screenSpacePanning = false;
+    // Left-click drag (or 1-finger touch) = TRANSLATE/PAN board; Right-click drag (or Shift/Ctrl/Cmd + Left-click, or 2-finger touch) = ROTATE 3D!
+    this.controls.mouseButtons = {
+      LEFT: THREE.MOUSE.PAN,
+      MIDDLE: THREE.MOUSE.DOLLY,
+      RIGHT: THREE.MOUSE.ROTATE,
+    };
+    this.controls.touches = {
+      ONE: THREE.TOUCH.PAN,
+      TWO: THREE.TOUCH.DOLLY_ROTATE,
+    };
     this.controls.maxPolarAngle = Math.PI / 2 - 0.04;
     this.controls.minDistance = 3.0;
     this.controls.maxDistance = 28.0;

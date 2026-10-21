@@ -382,8 +382,26 @@ controls.dampingFactor = 0.06;
 controls.enableRotate = true;
 controls.enableZoom = true;
 controls.enablePan = true;
+controls.screenSpacePanning = false;
+controls.mouseButtons = {
+  LEFT: THREE.MOUSE.PAN,
+  MIDDLE: THREE.MOUSE.DOLLY,
+  RIGHT: THREE.MOUSE.ROTATE,
+};
+controls.touches = {
+  ONE: THREE.TOUCH.PAN,
+  TWO: THREE.TOUCH.DOLLY_ROTATE,
+};
 controls.target.set(0.0, 0.2, 0.0);
 controls.update();
+
+assert(
+  mainJs.includes("LEFT: THREE.MOUSE.PAN") &&
+    mainJs.includes("RIGHT: THREE.MOUSE.ROTATE") &&
+    mainJs.includes("ONE: THREE.TOUCH.PAN") &&
+    mainJs.includes("screenSpacePanning = false"),
+  "src/main.js binds Left-Click/1-Finger drag to horizontal XZ PAN (preserving Left/Right Mahjong rules) and Right-Click/Shift-Drag/2-Finger to 3D ROTATE"
+);
 
 // Wire the exact pointerdown / pointermove / pointerup drag-vs-click guard from src/main.js
 let pointerDownState = null;
@@ -406,33 +424,55 @@ domElem.addEventListener("pointerup", (e) => {
   }
 });
 
-// Test 3A: Simulate dragging across the chessboard to rotate in 3D Hero view
+// Test 3A: Left-Click Drag (button: 0) TRANSLATES (PANS) the board while keeping Left/Right azimuth orientation 100% locked!
 const startPos = testCam.position.clone();
-const startAzimuth = Math.atan2(startPos.x, startPos.z);
+const startTarget = controls.target.clone();
+const startRel = startPos.clone().sub(startTarget);
+const startRelAzimuth = Math.atan2(startRel.x, startRel.z);
 
-domElem.dispatchEvent(createDomEvent("pointerdown", { clientX: 640, clientY: 400, pageX: 640, pageY: 400 }));
-domElem.dispatchEvent(createDomEvent("pointermove", { clientX: 420, clientY: 310, pageX: 420, pageY: 310 }));
-domElem.dispatchEvent(createDomEvent("pointerup", { clientX: 420, clientY: 310, pageX: 420, pageY: 310 }));
-controls.update();
+domElem.dispatchEvent(createDomEvent("pointerdown", { button: 0, clientX: 640, clientY: 400, pageX: 640, pageY: 400 }));
+domElem.dispatchEvent(createDomEvent("pointermove", { button: 0, clientX: 420, clientY: 310, pageX: 420, pageY: 310 }));
+domElem.dispatchEvent(createDomEvent("pointerup", { button: 0, clientX: 420, clientY: 310, pageX: 420, pageY: 310 }));
+for (let f = 0; f < 5; f++) controls.update();
 
-const rotatedPos = testCam.position.clone();
-const rotatedAzimuth = Math.atan2(rotatedPos.x, rotatedPos.z);
-const deltaDist = rotatedPos.distanceTo(startPos);
-const deltaAzimuthDeg = (Math.abs(rotatedAzimuth - startAzimuth) * 180) / Math.PI;
+const pannedPos = testCam.position.clone();
+const pannedTarget = controls.target.clone();
+const pannedRel = pannedPos.clone().sub(pannedTarget);
+const pannedRelAzimuth = Math.atan2(pannedRel.x, pannedRel.z);
+const panTargetShift = pannedTarget.distanceTo(startTarget);
+const panAzimuthDriftDeg = (Math.abs(pannedRelAzimuth - startRelAzimuth) * 180) / Math.PI;
 
 assert(
-  deltaDist > 0.8 && deltaAzimuthDeg > 4.0,
-  `3D Chessboard is rotatable via mouse/touch drag (camera moved ${deltaDist.toFixed(2)}m, azimuth rotated ${deltaAzimuthDeg.toFixed(1)}°)`
+  panTargetShift > 0.4 && panAzimuthDriftDeg < 0.05,
+  `Left-click drag TRANSLATES (pans) the board horizontally (target shifted ${panTargetShift.toFixed(2)}m) with 0.00° rotation so Left/Right tile edges stay strictly Left/Right!`
 );
 assert(
   tileClickCount === 0,
-  "Dragging to rotate the 3D chessboard does NOT accidentally click/error on tiles under the cursor"
+  "Dragging to translate/pan the chessboard does NOT accidentally click/error on tiles under the cursor"
 );
 
-// Test 3B: Simulate a clean click/tap (< 6px movement) and verify it DOES trigger tile selection
-domElem.dispatchEvent(createDomEvent("pointerdown", { clientX: 640, clientY: 400, pageX: 640, pageY: 400 }));
-domElem.dispatchEvent(createDomEvent("pointermove", { clientX: 642, clientY: 401, pageX: 642, pageY: 401 }));
-domElem.dispatchEvent(createDomEvent("pointerup", { clientX: 642, clientY: 401, pageX: 642, pageY: 401 }));
+// Test 3B: Right-Click Drag (button: 2) or Shift + Left-Click Drag ROTATES the 3D chessboard!
+const preRotRel = testCam.position.clone().sub(controls.target);
+const preRotAzimuth = Math.atan2(preRotRel.x, preRotRel.z);
+
+domElem.dispatchEvent(createDomEvent("pointerdown", { button: 2, clientX: 640, clientY: 400, pageX: 640, pageY: 400 }));
+domElem.dispatchEvent(createDomEvent("pointermove", { button: 2, clientX: 420, clientY: 310, pageX: 420, pageY: 310 }));
+domElem.dispatchEvent(createDomEvent("pointerup", { button: 2, clientX: 420, clientY: 310, pageX: 420, pageY: 310 }));
+controls.update();
+
+const postRotRel = testCam.position.clone().sub(controls.target);
+const postRotAzimuth = Math.atan2(postRotRel.x, postRotRel.z);
+const deltaAzimuthDeg = (Math.abs(postRotAzimuth - preRotAzimuth) * 180) / Math.PI;
+
+assert(
+  deltaAzimuthDeg > 4.0,
+  `Right-click / Shift+Left-click drag ROTATES the 3D chessboard cleanly (azimuth rotated ${deltaAzimuthDeg.toFixed(1)}°)`
+);
+
+// Test 3C: Simulate a clean click/tap (< 6px movement) and verify it DOES trigger tile selection
+domElem.dispatchEvent(createDomEvent("pointerdown", { button: 0, clientX: 640, clientY: 400, pageX: 640, pageY: 400 }));
+domElem.dispatchEvent(createDomEvent("pointermove", { button: 0, clientX: 642, clientY: 401, pageX: 642, pageY: 401 }));
+domElem.dispatchEvent(createDomEvent("pointerup", { button: 0, clientX: 642, clientY: 401, pageX: 642, pageY: 401 }));
 
 assert(tileClickCount === 1, "Clean click/tap (< 6px movement) triggers tile selection cleanly");
 
