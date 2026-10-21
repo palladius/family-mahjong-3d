@@ -521,19 +521,30 @@ class MahjongSolitaireApp {
     this.renderer.toneMappingExposure = this.settings.exposure;
     this.renderer.shadowMap.enabled = this.settings.shadows;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.renderer.domElement.style.touchAction = "none";
     this.container.appendChild(this.renderer.domElement);
 
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
     this.controls.enableDamping = true;
-    this.controls.dampingFactor = 0.05;
+    this.controls.dampingFactor = 0.06;
+    this.controls.enableRotate = true;
+    this.controls.enableZoom = true;
+    this.controls.enablePan = true;
+    this.controls.rotateSpeed = 0.85;
     this.controls.maxPolarAngle = Math.PI / 2 - 0.04;
     this.controls.minDistance = 3.0;
     this.controls.maxDistance = 28.0;
+
+    // When the player starts rotating/orbiting manually, cancel any active camera preset tweens so rotation is never fought!
+    this.controls.addEventListener("start", () => {
+      this.tweens = this.tweens.filter((t) => !t.isCameraTween);
+    });
 
     this.setCameraPreset(this.activeCameraPreset);
 
     this.raycaster = new THREE.Raycaster();
     this.mouse = new THREE.Vector2();
+    this._pointerDownState = null;
 
     window.addEventListener("resize", () => {
       this.camera.aspect = window.innerWidth / window.innerHeight;
@@ -544,10 +555,33 @@ class MahjongSolitaireApp {
       this.renderer.setSize(window.innerWidth, window.innerHeight);
     });
 
-    this.renderer.domElement.addEventListener("pointerdown", (e) => this.onPointerDown(e));
-    if (!this.isMobile) {
-      this.renderer.domElement.addEventListener("pointermove", (e) => this.onPointerMove(e));
-    }
+    this.renderer.domElement.addEventListener("pointerdown", (e) => {
+      this._pointerDownState = {
+        x: e.clientX,
+        y: e.clientY,
+        moved: false,
+        button: e.button,
+        pointerType: e.pointerType,
+      };
+    });
+    this.renderer.domElement.addEventListener("pointermove", (e) => {
+      if (this._pointerDownState) {
+        const dist = Math.hypot(e.clientX - this._pointerDownState.x, e.clientY - this._pointerDownState.y);
+        if (dist > 6) {
+          this._pointerDownState.moved = true;
+        }
+      }
+      if (!this.isMobile) {
+        this.onPointerMove(e);
+      }
+    });
+    this.renderer.domElement.addEventListener("pointerup", (e) => {
+      const st = this._pointerDownState;
+      this._pointerDownState = null;
+      if (st && !st.moved && (st.button === 0 || st.button === undefined || st.pointerType === "touch")) {
+        this.onPointerDown(e);
+      }
+    });
   }
 
   initLights() {
@@ -887,8 +921,8 @@ class MahjongSolitaireApp {
 
     this.sharedGeo = {
       body: this.makeBeveledParallelepipedGeometry(TILE_W, TILE_D, TILE_H, 0.042, 0.015),
-      face: new THREE.PlaneGeometry(TILE_W * 0.93, TILE_H * 0.94, boardSegX, boardSegY),
-      wowFace: new THREE.PlaneGeometry(TILE_W * 0.93, TILE_H * 0.94, this.isMobile ? 1 : 48, this.isMobile ? 1 : 64),
+      face: new THREE.PlaneGeometry(TILE_W * 0.91, TILE_H * 0.92, 1, 1),
+      wowFace: new THREE.PlaneGeometry(TILE_W * 0.91, TILE_H * 0.92, 1, 1),
       debugCornerPlane: new THREE.PlaneGeometry(TILE_W * 0.88, TILE_H * 0.22, 1, 1),
       selOuterPurple: this.makeHollowRectGeometry(TILE_W * 1.12, TILE_H * 1.10, TILE_W * 1.01, TILE_H * 1.00),
       selInnerYellow: this.makeHollowRectGeometry(TILE_W * 1.01, TILE_H * 1.00, TILE_W * 0.90, TILE_H * 0.91),
@@ -899,6 +933,7 @@ class MahjongSolitaireApp {
         return new THREE.MeshStandardMaterial({
           color: hexColor,
           emissive: new THREE.Color(emissiveHex),
+          map: this.pbrTextures?.marbleBase || null,
           roughness: this.settings.marbleRoughness,
           metalness: 0.03,
         });
@@ -906,7 +941,8 @@ class MahjongSolitaireApp {
       return new THREE.MeshPhysicalMaterial({
         color: hexColor,
         emissive: new THREE.Color(emissiveHex),
-        normalMap: this.pbrTextures.marbleNorm,
+        map: this.pbrTextures?.marbleBase || null,
+        normalMap: this.pbrTextures?.marbleNorm || null,
         normalScale: new THREE.Vector2(0.10 * this.settings.normalScale, 0.10 * this.settings.normalScale),
         roughness: this.settings.marbleRoughness,
         clearcoat: this.settings.marbleClearcoat,
@@ -983,9 +1019,6 @@ class MahjongSolitaireApp {
     if (mat && cached) {
       mat.map = this.oniricaMode ? cached.oniricaTex : cached.faceTex;
       mat.normalMap = cached.normTex;
-      if (!this.isMobile && cached.depthTex) {
-        mat.displacementMap = cached.depthTex;
-      }
       mat.needsUpdate = true;
     }
     // Chunky "tarchiato" muscular scale when ornate dragon is active on hover/select!
@@ -1124,16 +1157,15 @@ class MahjongSolitaireApp {
     bodyMesh.receiveShadow = castShad;
     root.add(bodyMesh);
 
-    // 2. Top Artwork Face:
+    // 2. Top Artwork Face (strictly above bodyMesh top cap at y = TILE_D * 0.5 + 0.003 with zero negative displacement bias!)
     const initialTexId = isWowPreview ? this.getDisplayTextureId(tileData, true) : tileData.id;
-    const { faceTex, oniricaTex, normTex, depthTex } = this.ensureFaceTexturesLoaded(initialTexId, texLoader);
+    const { faceTex, oniricaTex, normTex } = this.ensureFaceTexturesLoaded(initialTexId, texLoader);
     if (this.isMorphingDragonTile(tileData)) {
       this.ensureFaceTexturesLoaded(`${tileData.id}_ornate`, texLoader);
     }
 
     const activeMap = this.oniricaMode ? oniricaTex : faceTex;
     const activeRelief = this.oniricaMode ? 0.12 : this.settings.bassorilievo;
-    const dispScale = this.isMobile ? 0.0 : 0.032 * activeRelief;
 
     const faceMatCfg = {
       map: activeMap,
@@ -1141,18 +1173,16 @@ class MahjongSolitaireApp {
       normalScale: new THREE.Vector2(1.45 * activeRelief, 1.45 * activeRelief),
       roughness: this.oniricaMode ? 0.11 : 0.17,
       metalness: 0.06,
+      polygonOffset: true,
+      polygonOffsetFactor: -2,
+      polygonOffsetUnits: -2,
     };
-    if (!this.isMobile && depthTex) {
-      faceMatCfg.displacementMap = depthTex;
-      faceMatCfg.displacementScale = dispScale;
-      faceMatCfg.displacementBias = -0.88 * dispScale;
-    }
 
     const faceMat = new THREE.MeshStandardMaterial(faceMatCfg);
     const faceGeo = isWowPreview && this.sharedGeo.wowFace ? this.sharedGeo.wowFace : this.sharedGeo.face;
     const faceMesh = new THREE.Mesh(faceGeo, faceMat);
     faceMesh.rotation.x = -Math.PI / 2;
-    faceMesh.position.y = TILE_D * 0.5 + 0.0015;
+    faceMesh.position.y = TILE_D * 0.5 + 0.003;
     faceMesh.castShadow = castShad;
     faceMesh.receiveShadow = castShad;
     root.add(faceMesh);
@@ -1163,7 +1193,7 @@ class MahjongSolitaireApp {
       this.getDebugCornerMaterial(tileData)
     );
     debugCornerMesh.rotation.x = -Math.PI / 2;
-    debugCornerMesh.position.set(0.0, TILE_D * 0.5 + 0.0032, -TILE_H * 0.34);
+    debugCornerMesh.position.set(0.0, TILE_D * 0.5 + 0.005, -TILE_H * 0.34);
     debugCornerMesh.visible = Boolean(this.debugSymbols);
     root.add(debugCornerMesh);
 
@@ -1176,7 +1206,7 @@ class MahjongSolitaireApp {
     innerYellowMesh.position.y = 0.002;
     selectionBorder.add(outerPurpleMesh);
     selectionBorder.add(innerYellowMesh);
-    selectionBorder.position.y = TILE_D * 0.5 + 0.005;
+    selectionBorder.position.y = TILE_D * 0.5 + 0.007;
     selectionBorder.visible = false;
     root.add(selectionBorder);
 
@@ -2336,16 +2366,13 @@ class MahjongSolitaireApp {
     remainingTiles.forEach((tile, i) => {
       tile.data = datas[i] || pool[i];
       tile.ornateActive = false;
-      const { faceTex, oniricaTex, normTex, depthTex } = this.ensureFaceTexturesLoaded(tile.data.id, texLoader);
+      const { faceTex, oniricaTex, normTex } = this.ensureFaceTexturesLoaded(tile.data.id, texLoader);
       if (this.isMorphingDragonTile(tile.data)) {
         this.ensureFaceTexturesLoaded(`${tile.data.id}_ornate`, texLoader);
       }
       const faceMat = tile.root.userData.faceMesh.material;
       faceMat.map = this.oniricaMode ? oniricaTex : faceTex;
       faceMat.normalMap = normTex;
-      if (faceMat.displacementMap !== undefined) {
-        faceMat.displacementMap = depthTex;
-      }
       faceMat.needsUpdate = true;
       if (tile.root.userData.debugCornerMesh) {
         tile.root.userData.debugCornerMesh.material = this.getDebugCornerMaterial(tile.data);
@@ -2452,7 +2479,6 @@ class MahjongSolitaireApp {
     }
 
     const activeRelief = this.oniricaMode ? 0.12 : this.settings.bassorilievo;
-    const dispScale = 0.076 * activeRelief;
     this.tiles.forEach((t) => {
       const texId = this.getDisplayTextureId(t.data, t.ornateActive);
       const cached = this.faceTextureCache[texId] || this.faceTextureCache[t.data.id];
@@ -2460,10 +2486,6 @@ class MahjongSolitaireApp {
       const mat = t.root.userData.faceMesh.material;
       mat.map = this.oniricaMode ? cached.oniricaTex : cached.faceTex;
       mat.normalScale.set(1.45 * activeRelief, 1.45 * activeRelief);
-      if (mat.displacementMap !== undefined) {
-        mat.displacementScale = dispScale;
-        mat.displacementBias = -0.88 * dispScale;
-      }
       mat.roughness = this.oniricaMode ? 0.11 : 0.17;
       mat.needsUpdate = true;
       if (t.data.coupled && !t.removed) {
@@ -2496,13 +2518,14 @@ class MahjongSolitaireApp {
 
     this.activeCameraPreset = presets[presetKey] ? presetKey : "hero";
     const cfg = presets[this.activeCameraPreset];
-    this.addTween(this.camera.position, "x", cfg.pos[0], 0.38);
-    this.addTween(this.camera.position, "y", cfg.pos[1], 0.38);
-    this.addTween(this.camera.position, "z", cfg.pos[2], 0.38);
+    this.addTween(this.camera.position, "x", cfg.pos[0], 0.38, true);
+    this.addTween(this.camera.position, "y", cfg.pos[1], 0.38, true);
+    this.addTween(this.camera.position, "z", cfg.pos[2], 0.38, true);
 
     if (this.controls) {
       this.controls.target.set(cfg.target[0], cfg.target[1], cfg.target[2]);
-      this.controls.enableRotate = this.activeCameraPreset !== "2d";
+      // Always keep 3D rotation enabled so the player can freely rotate from any view (including 2D/mobile)!
+      this.controls.enableRotate = true;
     }
 
     const computedFov = this.computeResponsiveFov(cfg.fov, this.activeCameraPreset);
@@ -2554,11 +2577,12 @@ class MahjongSolitaireApp {
     }
   }
 
-  addTween(obj, prop, targetVal, durationSec = 0.2) {
+  addTween(obj, prop, targetVal, durationSec = 0.2, isCameraTween = false) {
     const startVal = obj[prop];
     const t0 = performance.now();
     const durMs = durationSec * 1000;
     this.tweens.push({
+      isCameraTween,
       update(now) {
         const dt = (now - t0) / durMs;
         if (dt < 1.0) {
@@ -2761,14 +2785,9 @@ class MahjongSolitaireApp {
       if (this.sharedMat) this.sharedMat.obsidian.metalness = val;
     });
     bindSlider("sl-bassorilievo", "bassorilievo", (val) => {
-      const dispScale = 0.076 * val;
       this.tiles.forEach((t) => {
         const mat = t.root.userData.faceMesh.material;
         mat.normalScale.set(1.45 * val, 1.45 * val);
-        if (mat.displacementMap !== undefined) {
-          mat.displacementScale = dispScale;
-          mat.displacementBias = -0.88 * dispScale;
-        }
       });
     });
     bindSlider("sl-normal-scale", "normalScale", (val) => {
@@ -2952,7 +2971,6 @@ class MahjongSolitaireApp {
     setVal("sl-normal-scale", this.settings.normalScale);
     setVal("sl-fov", this.settings.fov);
     setVal("sl-cam-distance", this.settings.camDistance);
-    const dispScale = 0.076 * this.settings.bassorilievo;
     if (this.sharedMat) {
       [this.sharedMat.marbleFree, this.sharedMat.marbleBlocked, this.sharedMat.marbleSelected].forEach((m) => {
         if (!m) return;
@@ -2963,10 +2981,6 @@ class MahjongSolitaireApp {
     this.tiles.forEach((t) => {
       const mat = t.root.userData.faceMesh.material;
       mat.normalScale.set(1.45 * this.settings.bassorilievo, 1.45 * this.settings.bassorilievo);
-      if (mat.displacementMap !== undefined) {
-        mat.displacementScale = dispScale;
-        mat.displacementBias = -0.88 * dispScale;
-      }
     });
   }
 

@@ -1,5 +1,20 @@
 # Changelog - Carlesso Family Mahjong 3D 🀄🐉
 
+## [1.8.2] - 2026-10-21
+### Fixed & Added
+- **🐛 Fix Washed-Out / Buried Tile Faces on Half-Thickness Beveled Parallelepiped (`src/main.js`)**:
+  - **Root Cause**: When `bodyMesh` was replaced in `v1.8.1` with a solid beveled parallelepiped (`makeBeveledParallelepipedGeometry`, top surface at `y = +TILE_D * 0.5 = +0.0950`), `faceMesh` (`y = +0.0965`) still had `displacementBias = -0.88 * dispScale` (`-0.0324`). That negative displacement bias pushed 98.5% of `faceMesh` vertices (`depth < 0.88`) down to `y = +0.064..+0.094`, burying the entire tile face **underneath the opaque beige top cap of `bodyMesh` (`y = +0.0950`)** so only tiny specks (`depth > 0.86`) poked through!
+  - **Fix**: Removed negative `displacementBias` from `faceMesh` across `createTileMesh`, `toggleOniricaMode`, `sl-bassorilievo`, and `syncSliderUI`, and positioned `faceMesh` strictly at `y = TILE_D * 0.5 + 0.003` (`+0.0980`, `+3.0mm` above `bodyMesh`) with `polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2` while preserving full 1024×1024 `normalMap` 3D relief lighting.
+- **🔄 Smooth 3D Board Rotation & Drag-vs-Click Disambiguation (`src/main.js`)**:
+  - Kept `this.controls.enableRotate = true` in all camera presets (including `2d` / mobile) and cancelled active camera preset tweens on `OrbitControls` `"start"` so manual rotation never fights camera transitions.
+  - Added a 6px pointer movement guard between `pointerdown` and `pointerup` so dragging across the chessboard to rotate the 3D view **never** accidentally clicks or triggers error buzzers on tiles under the cursor.
+- **🧪 Pre-Deploy & Post-Deploy Initial Chessboard & 3D Rotation Integration Test (`scripts/test_board_integration.mjs`, `justfile`)**:
+  - Added `scripts/test_board_integration.mjs` to `just test` (pre-deploy) and `just test-post-deploy` (live URL verification):
+    1. Raycasts **1,296 rays (`144 tiles × 9 points`)** from both vertical `-Y` and the Hero 3D camera against `[bodyMesh, faceMesh]` to guarantee `100%` of rays hit `faceMesh` before `bodyMesh` (zero self-occlusion).
+    2. Decodes PNG scanlines of tile textures to verify strong RGB luminance contrast (`lumRange > 85`, non-blank, non-washed-out).
+    3. Simulates real `pointerdown` $\rightarrow$ `pointermove` $\rightarrow$ `pointerup` drag events on `OrbitControls` to verify the 3D board rotates (`deltaAzimuth > 4°`) without triggering tile clicks, while stationary clicks (`< 6px`) select tiles cleanly.
+    4. Verifies compiled `dist/` bundle pre-deploy and live GitHub Pages bundle post-deploy (`--post-deploy`).
+
 ## [1.8.1] - 2026-10-19
 ### Changed & Added
 - **✨ "Less is More" Ultra-Clean Tile Faces (No Octagonal Circles, More Breathing Room)**:

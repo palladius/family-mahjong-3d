@@ -10,10 +10,15 @@ setup:
     npm install
     node node_modules/esbuild/install.js || true
 
-# Run verification tests (3D topology, 3D line-of-sight visibility, textures, build, QA rounds)
+# Run verification tests (3D topology, 3D line-of-sight visibility, initial chessboard self-occlusion & 3D rotation integration, textures, build)
 test:
     node scripts/verify_build.mjs
     node scripts/test_3d_visibility.mjs
+    node scripts/test_board_integration.mjs
+
+# Run post-deploy live verification against GitHub Pages (https://palladius.github.io/family-mahjong-3d/)
+test-post-deploy:
+    node scripts/test_board_integration.mjs --post-deploy
 
 # Start the local Vite development server
 dev:

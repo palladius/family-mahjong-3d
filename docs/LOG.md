@@ -456,3 +456,24 @@
 - **Half-Thickness White/Ivory 8-Bevel Parallelepiped (`TILE_D = 0.19`, `src/main.js`)**:
   - Halved `TILE_D` from `0.38` to **`0.19`**.
   - Replaced the multi-part tile body (`kintsugiMesh` middle band + `collarMesh` + `badgeMesh` + obsidian back) with a single uniform white/ivory beveled parallelepiped (`makeBeveledParallelepipedGeometry(TILE_W, TILE_D, TILE_H, 0.042, 0.015)`).
+
+---
+
+## 2026-10-21T08:24:00+02:00 — Milestone 15 (`v1.8.2`): Fix `faceMesh` Buried Under `bodyMesh` Self-Occlusion Bug, Smooth 3D Rotation Drag-vs-Click Guard, & Pre/Post-Deploy Board Integration Test (`scripts/test_board_integration.mjs`)
+
+### 1. Verbatim User Request & Screenshot (`media_1792563128539_3f33301b.png`)
+> "mahjong is broken! Lets add an integration test which post deploy, or before deploy checks the initial chessboard and checks it looks all good! and tries to rotate and ensures its rotateable , look how awful"
+
+### 2. Root-Cause Diagnosis & Engineering Fix
+- **Root Cause 1 (`faceMesh` Buried Underneath `bodyMesh` Top Cap)**:
+  - In `v1.8.1`, `bodyMesh` became a solid beveled parallelepiped (`makeBeveledParallelepipedGeometry(TILE_W, TILE_D, TILE_H)`) whose flat top surface sits at `y = +TILE_D * 0.5 = +0.0950`.
+  - Meanwhile, `faceMesh` (`y = +0.0965`) had `displacementScale = 0.032 * 1.15 = 0.0368` and `displacementBias = -0.88 * dispScale = -0.0324`. For every pixel with `depth < 0.88` (98.5% of every tile face, including the marble background at `depth = 0.855` and all carved artwork at `depth = 0.15..0.75`), vertex displacement pushed `faceMesh` **downward** to `y = +0.064..+0.094 < +0.0950` — burying the artwork underneath the opaque beige top cap of `bodyMesh`!
+  - **Fix**: Removed negative `displacementBias` from `faceMesh` (`createTileMesh`, `toggleOniricaMode`, `sl-bassorilievo`, `syncSliderUI`) and placed `faceMesh` strictly at `y = TILE_D * 0.5 + 0.003` (`+0.0980`) with `polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2`, using the 1024×1024 `normalMap` (`normTex`) for crisp 3D relief lighting.
+- **Root Cause 2 (3D Rotation & Pointer Drag-vs-Click Conflict)**:
+  - Previously, `onPointerDown` fired immediately on `pointerdown` (selecting or error-buzzing tiles the moment the user pressed down on the board to drag-rotate), and `this.controls.enableRotate` was disabled in `"2d"` mode.
+  - **Fix**: Enabled `this.controls.enableRotate = true` across all presets, cancelled camera preset tweens on `OrbitControls` `"start"`, and added a 6px pointer movement guard between `pointerdown` and `pointerup` so dragging rotates the 3D board cleanly while stationary clicks (`< 6px`) select tiles.
+- **Automated Pre-Deploy & Post-Deploy Integration Test (`scripts/test_board_integration.mjs`)**:
+  - Wired into `just test` (pre-deploy) and `just test-post-deploy` (`--post-deploy`):
+    - Casts 1,296 vertical rays and 1,296 Hero-3D camera rays across all 144 tiles on the initial chessboard to prove `100%` hit `faceMesh` before `bodyMesh`.
+    - Decodes PNG IDAT scanlines of tile textures to verify strong RGB luminance contrast (`lumRange = 188..253.8`).
+    - Simulates pointer drag events on `OrbitControls` to verify the 3D board rotates (`11.5°` azimuth rotation on drag) without triggering tile clicks.
