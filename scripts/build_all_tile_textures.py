@@ -627,28 +627,57 @@ def generate_original_mahjong_suits() -> list[dict]:
             "coupled": False,
         })
 
-    # 5. Three Dragons (中 發 白) — Pure Chinese Calligraphic Symbol on clean ivory ('Less is More', ZERO octagonal rings, ZERO corner labels!),
-    #    while `dragon_red_ornate` and `dragon_green_ornate` store the ornate "tarchiato" carved dragon for Hover/Selection!
+    # 5. Three Dragons (中 發 白) — Pure Chinese Calligraphic Symbol on clean ivory ('Less is More', ZERO octagonal rings, ZERO corner labels, ZERO rectangular box on dragon_white!),
+    #    while `dragon_red_ornate`, `dragon_green_ornate`, and `dragon_white_ornate` store the ornate "tarchiato" carved dragon for Hover/Selection!
+    SILVER_PEARL = (238, 241, 247)
+    ANTIQUE_GOLD_DARK = (86, 62, 18)
+    BRIGHT_GOLD = (214, 168, 48)
     dragons = [
         ("dragon_red", "中", "C", RED, "#c41e1e", "Drago Rosso • Red Dragon (紅中)", PORTRAITS_DIR / "dragon_red_ornate_emblem.png"),
         ("dragon_green", "發", "F", GREEN, "#14843a", "Drago Verde • Green Dragon (發財)", PORTRAITS_DIR / "dragon_green_ornate_emblem.png"),
-        ("dragon_white", "白", "P", BLUE, "#1a46b2", "Drago Bianco • White Dragon (白板)", None),
+        ("dragon_white", "白", "B", SILVER_PEARL, "#d6a830", "Drago Bianco • White Dragon (白板)", PORTRAITS_DIR / "dragon_white_ornate_emblem.png"),
     ]
     for tid, hanzi, let, col, hex_col, label, emb_path in dragons:
-        # 5a. Default Board Tile: Pure Calligraphic Character on clean ivory (ZERO octagonal circle, ZERO corner symbols!)
+        # 5a. Default Board Tile: Pure Calligraphic Character on clean ivory (ZERO octagonal circle, ZERO corner symbols, ZERO box!)
         canvas, draw = make_marble_face_canvas(W, H, accent_rgb=GOLD)
         if tid == "dragon_white":
-            # Traditional White Dragon (Bai Ban) carved sapphire-blue rectangular frame around 白
-            draw.rounded_rectangle([140, 190, W - 140, H - 190], radius=36, outline=BLUE, width=12)
-        draw_centered_text(draw, (W / 2, H * 0.52), hanzi, font=cjk_font(455, hanzi), fill=col, stroke_fill=GOLD, stroke_width=4)
+            # White-Silver Pearl character with rich double Gold + Antique-Bronze border (NO blue ink, NO rectangular box!)
+            draw_centered_text(draw, (W / 2, H * 0.52), hanzi, font=cjk_font(455, hanzi), fill=BRIGHT_GOLD, stroke_fill=ANTIQUE_GOLD_DARK, stroke_width=14)
+            draw_centered_text(draw, (W / 2, H * 0.52), hanzi, font=cjk_font(455, hanzi), fill=SILVER_PEARL, stroke_fill=BRIGHT_GOLD, stroke_width=6)
+        else:
+            draw_centered_text(draw, (W / 2, H * 0.52), hanzi, font=cjk_font(455, hanzi), fill=col, stroke_fill=GOLD, stroke_width=4)
         apply_incandescent_pen_carving(canvas, tid, is_oval=False)
         shutil.copy2(TILES_DIR / f"{tid}.png", ONIRICA_DIR / f"{tid}.png")
 
-        # 5b. Ornate "Tarchiato" Hover/Select Dragon Texture (`dragon_red_ornate`, `dragon_green_ornate`)
+        # 5b. Ornate "Tarchiato" Hover/Select Dragon Texture (`dragon_red_ornate`, `dragon_green_ornate`, `dragon_white_ornate`)
         if emb_path is not None and emb_path.exists():
             ornate_id = f"{tid}_ornate"
-            ocanvas, _ = make_marble_face_canvas(W, H, accent_rgb=GOLD)
-            composite_ornate_dragon_emblem(ocanvas, emb_path, (48, 84, W - 48, H - 84))
+            ocanvas, odraw = make_marble_face_canvas(W, H, accent_rgb=GOLD)
+            if tid == "dragon_white":
+                # Recolor cobalt-blue lines in dragon_white_ornate_emblem.png into White-Silver Platinum & 24k Gold!
+                raw_emb = Image.open(emb_path).convert("RGB")
+                arr = np.asarray(raw_emb, dtype=np.float32).copy()
+                r_ch, g_ch, b_ch = arr[:, :, 0], arr[:, :, 1], arr[:, :, 2]
+                blue_mask = (b_ch - r_ch) > 18.0
+                lum = 0.299 * r_ch + 0.587 * g_ch + 0.114 * b_ch
+                # Map dark blue outlines to warm antique silver-gold/platinum, mid-blues to bright silver-pearl
+                t_norm = np.clip(lum / 220.0, 0.0, 1.0)
+                new_r = 78.0 + t_norm * 165.0
+                new_g = 72.0 + t_norm * 168.0
+                new_b = 64.0 + t_norm * 176.0
+                arr[:, :, 0] = np.where(blue_mask, new_r, r_ch)
+                arr[:, :, 1] = np.where(blue_mask, new_g, g_ch)
+                arr[:, :, 2] = np.where(blue_mask, new_b, b_ch)
+                silver_gold_path = PORTRAITS_DIR / "_tmp_dragon_white_silver_gold.png"
+                Image.fromarray(np.clip(arr, 0, 255).astype(np.uint8), mode="RGB").save(silver_gold_path)
+                composite_ornate_dragon_emblem(ocanvas, silver_gold_path, (48, 84, W - 48, H - 84))
+                silver_gold_path.unlink(missing_ok=True)
+                # Overdraw center 白 in crisp Silver-Pearl & 24k Gold!
+                odraw.ellipse([W * 0.31, H * 0.34, W * 0.69, H * 0.68], fill=(250, 246, 238))
+                draw_centered_text(odraw, (W / 2, H * 0.51), "白", font=cjk_font(280, "白"), fill=BRIGHT_GOLD, stroke_fill=ANTIQUE_GOLD_DARK, stroke_width=11)
+                draw_centered_text(odraw, (W / 2, H * 0.51), "白", font=cjk_font(280, "白"), fill=SILVER_PEARL, stroke_fill=BRIGHT_GOLD, stroke_width=5)
+            else:
+                composite_ornate_dragon_emblem(ocanvas, emb_path, (48, 84, W - 48, H - 84))
             apply_incandescent_pen_carving(ocanvas, ornate_id, is_oval=False)
             shutil.copy2(TILES_DIR / f"{ornate_id}.png", ONIRICA_DIR / f"{ornate_id}.png")
             if ARTIFACT_DIR.exists():

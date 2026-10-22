@@ -997,9 +997,12 @@ class MahjongSolitaireApp {
   }
 
   isMorphingDragonTile(tileData) {
-    // ONLY Drago Rosso (`dragon_red`) and Drago Verde (`dragon_green`) morph into the ornate "tarchiato" dragon on hover/select!
-    // Never `bamboo_3` ("Sirio il Dragone") and never `dragon_white`!
-    return Boolean(tileData && (tileData.id === "dragon_red" || tileData.id === "dragon_green"));
+    // Drago Rosso (`dragon_red`), Drago Verde (`dragon_green`), and Drago Bianco (`dragon_white`) morph into their ornate "tarchiato" dragon on hover/select!
+    // Never `bamboo_3` ("Sirio il Dragone")!
+    return Boolean(
+      tileData &&
+        (tileData.id === "dragon_red" || tileData.id === "dragon_green" || tileData.id === "dragon_white")
+    );
   }
 
   getDisplayTextureId(tileData, useOrnateForDragons = true) {

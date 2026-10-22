@@ -112,7 +112,7 @@ requiredFX.forEach((f) => {
   assert(fs.existsSync(p) && fs.statSync(p).size > 20000, `Power-Up FX asset '${f}' exists`);
 });
 
-["dragon_red_ornate", "dragon_green_ornate"].forEach((id) => {
+["dragon_red_ornate", "dragon_green_ornate", "dragon_white_ornate"].forEach((id) => {
   assert(
     fs.existsSync(path.join(ROOT, "public/textures/tiles", `${id}.png`)) &&
       fs.existsSync(path.join(ROOT, "public/textures/tiles_onirica", `${id}.png`)) &&

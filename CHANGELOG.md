@@ -1,5 +1,12 @@
 # Changelog - Carlesso Family Mahjong 3D 🀄🐉
 
+## [1.8.4] - 2026-10-22
+### Changed & Added
+- **🐉✨ White Dragon (`dragon_white` / `白板`) Redesigned in White-Silver Pearl & 24k Gold + Ornate "Tarchiato" Hover/Selection Morphing**:
+  - Removed the rectangular box (`rounded_rectangle`) and cobalt-blue ink from `dragon_white.png`.
+  - Rendered the calligraphic **`白`** character in luminous **White-Silver Pearl (`#EEF1F7`)** with a rich double **24k Gold (`#D6A830`) & Antique Bronze (`#563E12`)** border so it looks unmistakably like the **White Dragon**!
+  - Generated **`dragon_white_ornate.png`** (plus `_normal.png`, `_depth.png`, and `tiles_onirica/`) in **White-Silver Platinum & 24k Gold** and enabled `isMorphingDragonTile` in `src/main.js` for `dragon_white`, so hovering or selecting **Drago Bianco (`白`)** morphs it into its chunky "tarchiato" ornate White-Silver & Gold Dragon just like Drago Rosso (`中`) and Drago Verde (`發`)!
+
 ## [1.8.3] - 2026-10-21
 ### Changed
 - **🖐️ Left-Click / 1-Finger Drag = Horizontal Board Translation (`PAN` by Default, Preserving Left/Right Mahjong Rules)**:

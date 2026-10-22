@@ -493,3 +493,20 @@
   - Left-click drag (and 1-finger touch drag) now translates the board horizontally with `0.00°` azimuth rotation so Left/Right tile edges always remain strictly Left/Right for Mahjong rules, while Right-click drag (or `Shift/Ctrl/Cmd + Left-click drag`, or 2-finger gesture) rotates the 3D view when desired.
 - **Updated Integration Test Suite (`scripts/test_board_integration.mjs`)**:
   - Verifies that `button: 0` (Left-Click drag) translates `controls.target` (`> 1.1m`) with `0.00°` azimuth drift, and `button: 2` (Right-Click drag) rotates the 3D camera (`11.5°`).
+
+---
+
+## 2026-10-22T14:35:00+02:00 — Milestone 17 (`v1.8.4`): White Dragon (`dragon_white` / `白`) Redesigned in White-Silver Pearl & 24k Gold (No Box, No Blue) + Ornate "Tarchiato" Hover/Selection Morphing
+
+### 1. Verbatim User Request & Feedback
+> "che diavolo e sto pezzo, e perche e blu?!?"
+> "il click funziona BENISSIMO grazie"
+> Selected Option: "(Recommended) Togli il rettangolo e fai il carattere 白 in Bianco-Argento/Perla bordato d'Oro (e mostra il Drago Bianco tarchiato in hover come gli altri 2 draghi)"
+
+### 2. Engineering Execution & Artifacts
+- **Redesigned `dragon_white.png` (`scripts/build_all_tile_textures.py`)**:
+  - Removed the rectangular frame and blue fill from `dragon_white`.
+  - Rendered the brush calligraphy character **`白`** in luminous **White-Silver Pearl (`(238, 241, 247)`)** bordered by **24k Imperial Gold (`(214, 168, 48)`)** and **Antique Bronze (`(86, 62, 18)`)** with 3D V-groove carving.
+- **Built `dragon_white_ornate.png` in White-Silver Platinum & 24k Gold & Wired Hover/Select Morphing (`scripts/build_all_tile_textures.py`, `src/main.js`)**:
+  - Recolored the cobalt-blue lines of `dragon_white_ornate_emblem.png` into warm **Silver-Platinum & 24k Gold** around the White-Silver Pearl `白`, exporting `public/textures/tiles/dragon_white_ornate.png`, `tiles_onirica/dragon_white_ornate.png`, `tiles_normal/dragon_white_ornate_normal.png`, and `tiles_depth/dragon_white_ornate_depth.png`.
+  - Updated `isMorphingDragonTile(tileData)` in `src/main.js` so all 3 real Mahjong Dragons (`dragon_red`, `dragon_green`, and `dragon_white` — never `bamboo_3` *"Sirio il Dragone"*) morph into their chunky "tarchiato" ornate dragon on hover and selection!
