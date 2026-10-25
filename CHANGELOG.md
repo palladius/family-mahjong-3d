@@ -1,5 +1,13 @@
 # Changelog - Carlesso Family Mahjong 3D 🀄🐉
 
+## [1.8.5] - 2026-10-25
+### Changed & Added
+- **🐉✨ White Dragon (`dragon_white` / `白板` *Bái Bǎn*): Classical "Quasi Vuoto" Black China Ink Frame at Rest $\rightarrow$ Magical "Dragonlance White Dragon in 24k Golden Filigree" on Hover/Select**:
+  - **At Rest (`public/textures/tiles/dragon_white.png`)**: Matches the authentic traditional Mahjong *Bái Bǎn* (`白板` — "Tavoletta Bianca / Specchio") reference photos with a classical **Black China Ink (`#181A24`) Double Frame + Greek-Key Corner Squares** and a whisper-faint (`14%` opacity) watermark in the nearly empty ("quasi vuoto") warm ivory center.
+  - **On Hover / Selection (`public/textures/tiles/dragon_white_ornate.png`)**: Hovering over or clicking `dragon_white` magically reveals a **Dragonlance-inspired Winged White Dragon in 24k Golden Filigree (`filigrana dorata`)** with the `白` seal medallion at the bottom (`public/portraits/dragon_white_dragonlance_emblem.png`).
+- **🖌️ Authentic Mahjong Ink Colors (Zero Gold Outlines on `char_1..9`, `wind_E/S/W/N`, `dragon_red`, `dragon_green`)**:
+  - Removed `incandescent_gold` tinting from `apply_incandescent_pen_carving()` in `scripts/build_all_tile_textures.py` and set `stroke_width=0` across `char_1..9` (`一..九` in Pure Black China Ink `#181A24` + `萬` in Cinnabar Red `#C41E1E`), Four Winds (`東 南 西 北` in Pure Black China Ink `#181A24`), Red Dragon (`中` in Pure Cinnabar Red `#C41E1E`), and Green Dragon (`發` in Pure Imperial Jade Green `#14843A`).
+
 ## [1.8.4] - 2026-10-22
 ### Changed & Added
 - **🐉✨ White Dragon (`dragon_white` / `白板`) Redesigned in White-Silver Pearl & 24k Gold + Ornate "Tarchiato" Hover/Selection Morphing**:

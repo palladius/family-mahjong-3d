@@ -11,7 +11,7 @@
       "glyph": "1萬",
       "cornerLeft": "1",
       "cornerRight": "一",
-      "cornerColor": "#1a46b2",
+      "cornerColor": "#181a24",
       "title": "1 Characters (一萬)",
       "coupled": false
     },
@@ -23,7 +23,7 @@
       "glyph": "2萬",
       "cornerLeft": "2",
       "cornerRight": "二",
-      "cornerColor": "#1a46b2",
+      "cornerColor": "#181a24",
       "title": "2 Characters (二萬)",
       "coupled": false
     },
@@ -35,7 +35,7 @@
       "glyph": "3萬",
       "cornerLeft": "3",
       "cornerRight": "三",
-      "cornerColor": "#1a46b2",
+      "cornerColor": "#181a24",
       "title": "3 Characters (三萬)",
       "coupled": false
     },
@@ -47,7 +47,7 @@
       "glyph": "4萬",
       "cornerLeft": "4",
       "cornerRight": "四",
-      "cornerColor": "#1a46b2",
+      "cornerColor": "#181a24",
       "title": "4 Characters (四萬)",
       "coupled": false
     },
@@ -59,7 +59,7 @@
       "glyph": "5萬",
       "cornerLeft": "5",
       "cornerRight": "五",
-      "cornerColor": "#1a46b2",
+      "cornerColor": "#181a24",
       "title": "5 Characters (五萬)",
       "coupled": false
     },
@@ -71,7 +71,7 @@
       "glyph": "6萬",
       "cornerLeft": "6",
       "cornerRight": "六",
-      "cornerColor": "#1a46b2",
+      "cornerColor": "#181a24",
       "title": "6 Characters (六萬)",
       "coupled": false
     },
@@ -83,7 +83,7 @@
       "glyph": "7萬",
       "cornerLeft": "7",
       "cornerRight": "七",
-      "cornerColor": "#1a46b2",
+      "cornerColor": "#181a24",
       "title": "7 Characters (七萬)",
       "coupled": false
     },
@@ -95,7 +95,7 @@
       "glyph": "8萬",
       "cornerLeft": "8",
       "cornerRight": "八",
-      "cornerColor": "#1a46b2",
+      "cornerColor": "#181a24",
       "title": "8 Characters (八萬)",
       "coupled": false
     },
@@ -107,7 +107,7 @@
       "glyph": "9萬",
       "cornerLeft": "9",
       "cornerRight": "九",
-      "cornerColor": "#1a46b2",
+      "cornerColor": "#181a24",
       "title": "9 Characters (九萬)",
       "coupled": false
     },
@@ -335,7 +335,7 @@
       "glyph": "東",
       "cornerLeft": "E",
       "cornerRight": "風",
-      "cornerColor": "#1a46b2",
+      "cornerColor": "#181a24",
       "title": "East Wind (東)",
       "coupled": false
     },
@@ -347,7 +347,7 @@
       "glyph": "南",
       "cornerLeft": "S",
       "cornerRight": "風",
-      "cornerColor": "#1a46b2",
+      "cornerColor": "#181a24",
       "title": "South Wind (南)",
       "coupled": false
     },
@@ -359,7 +359,7 @@
       "glyph": "西",
       "cornerLeft": "W",
       "cornerRight": "風",
-      "cornerColor": "#1a46b2",
+      "cornerColor": "#181a24",
       "title": "West Wind (西)",
       "coupled": false
     },
@@ -371,7 +371,7 @@
       "glyph": "北",
       "cornerLeft": "N",
       "cornerRight": "風",
-      "cornerColor": "#1a46b2",
+      "cornerColor": "#181a24",
       "title": "North Wind (北)",
       "coupled": false
     },
@@ -409,7 +409,7 @@
       "glyph": "白",
       "cornerLeft": "B",
       "cornerRight": "白",
-      "cornerColor": "#d6a830",
+      "cornerColor": "#181a24",
       "title": "Drago Bianco • White Dragon (白板)",
       "coupled": false,
       "hoverOrnateId": "dragon_white_ornate"

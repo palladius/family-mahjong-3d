@@ -299,16 +299,16 @@ def apply_incandescent_pen_carving(
         highlight_mask = np.clip(slope_light, 0.0, 1.0) * np.clip(dilated * 1.4, 0.0, 1.0)
         cavity_ao = np.clip(v_trough * 0.24, 0.0, 0.26)
 
-        # Apply scorched-umber inner trench shadow + cavity AO + warm incandescent gold rim & medial-spine glow
+        # Apply subtle carved trench wall shadow + neutral ivory rim highlight (ZERO artificial yellow-gold tint on ink!)
         shaded = arr.copy()
-        for c_i, umber_tint in enumerate([28.0, 16.0, 10.0]):
-            shaded[:, :, c_i] = shaded[:, :, c_i] * (1.0 - cavity_ao)
-            shaded[:, :, c_i] = shaded[:, :, c_i] * (1.0 - shadow_mask * 0.64) + umber_tint * (shadow_mask * 0.64)
+        for c_i, umber_tint in enumerate([18.0, 18.0, 22.0]):
+            shaded[:, :, c_i] = shaded[:, :, c_i] * (1.0 - cavity_ao * 0.5)
+            shaded[:, :, c_i] = shaded[:, :, c_i] * (1.0 - shadow_mask * 0.38) + umber_tint * (shadow_mask * 0.38)
 
-        incandescent_gold = np.array([255.0, 214.0, 118.0], dtype=np.float32)
-        glow_strength = np.clip(highlight_mask * 0.60 + rim_ring * 0.30 + medial_spine * 0.34, 0.0, 0.78)
+        ivory_highlight = np.array([253.0, 251.0, 247.0], dtype=np.float32)
+        glow_strength = np.clip(highlight_mask * 0.22 + rim_ring * 0.16, 0.0, 0.32)
         for c_i in range(3):
-            shaded[:, :, c_i] = shaded[:, :, c_i] * (1.0 - glow_strength) + incandescent_gold[c_i] * glow_strength
+            shaded[:, :, c_i] = shaded[:, :, c_i] * (1.0 - glow_strength) + ivory_highlight[c_i] * glow_strength
 
         out_canvas = Image.fromarray(np.clip(shaded, 0, 255).astype(np.uint8))
     else:
@@ -472,13 +472,14 @@ def generate_original_mahjong_suits() -> list[dict]:
 
     manifest = []
 
-    # 1. Characters / Wan (一萬 .. 九萬) — Pure Brush Calligraphy (NO octagonal rings, NO corner labels baked in!)
+    # 1. Characters / Wan (一萬 .. 九萬) — Authentic Traditional Mahjong Colors:
+    #    Top number (一..九) in BLACK China Ink, bottom 萬 in Cinnabar RED, ZERO gold outline!
     cn_nums = ["一", "二", "三", "四", "五", "六", "七", "八", "九"]
     for idx, cn in enumerate(cn_nums, start=1):
         tid = f"char_{idx}"
         canvas, draw = make_marble_face_canvas(W, H, accent_rgb=GOLD)
-        draw_centered_text(draw, (W / 2, H * 0.34), cn, font=cjk_font(276, cn), fill=BLUE, stroke_fill=GOLD, stroke_width=3)
-        draw_centered_text(draw, (W / 2, H * 0.70), "萬", font=cjk_font(284, "萬"), fill=RED, stroke_fill=GOLD, stroke_width=3)
+        draw_centered_text(draw, (W / 2, H * 0.34), cn, font=cjk_font(276, cn), fill=INK, stroke_width=0)
+        draw_centered_text(draw, (W / 2, H * 0.70), "萬", font=cjk_font(284, "萬"), fill=RED, stroke_width=0)
         apply_incandescent_pen_carving(canvas, tid)
         shutil.copy2(TILES_DIR / f"{tid}.png", ONIRICA_DIR / f"{tid}.png")
         if ARTIFACT_DIR.exists() and idx in (1, 8):
@@ -491,7 +492,7 @@ def generate_original_mahjong_suits() -> list[dict]:
             "glyph": f"{idx}萬",
             "cornerLeft": str(idx),
             "cornerRight": cn,
-            "cornerColor": "#1a46b2",
+            "cornerColor": "#181a24",
             "title": f"{idx} Characters ({cn}萬)",
             "coupled": False,
         })
@@ -602,7 +603,7 @@ def generate_original_mahjong_suits() -> list[dict]:
                 "coupled": False,
             })
 
-    # 4. Four Winds (東 南 西 北) — Pure Brush Calligraphy (ZERO octagonal circles, ZERO baked-in corner symbols!)
+    # 4. Four Winds (東 南 西 北) — Pure Black China Ink Brush Calligraphy (ZERO gold outline, ZERO octagonal circles!)
     winds = [
         ("wind_E", "東", "E", "East Wind (東)"),
         ("wind_S", "南", "S", "South Wind (南)"),
@@ -611,7 +612,7 @@ def generate_original_mahjong_suits() -> list[dict]:
     ]
     for tid, hanzi, let, label in winds:
         canvas, draw = make_marble_face_canvas(W, H, accent_rgb=GOLD)
-        draw_centered_text(draw, (W / 2, H * 0.52), hanzi, font=cjk_font(440, hanzi), fill=INK, stroke_fill=GOLD, stroke_width=4)
+        draw_centered_text(draw, (W / 2, H * 0.52), hanzi, font=cjk_font(440, hanzi), fill=INK, stroke_width=0)
         apply_incandescent_pen_carving(canvas, tid)
         shutil.copy2(TILES_DIR / f"{tid}.png", ONIRICA_DIR / f"{tid}.png")
         manifest.append({
@@ -622,62 +623,79 @@ def generate_original_mahjong_suits() -> list[dict]:
             "glyph": hanzi,
             "cornerLeft": let,
             "cornerRight": "風",
-            "cornerColor": "#1a46b2",
+            "cornerColor": "#181a24",
             "title": label,
             "coupled": False,
         })
 
-    # 5. Three Dragons (中 發 白) — Pure Chinese Calligraphic Symbol on clean ivory ('Less is More', ZERO octagonal rings, ZERO corner labels, ZERO rectangular box on dragon_white!),
-    #    while `dragon_red_ornate`, `dragon_green_ornate`, and `dragon_white_ornate` store the ornate "tarchiato" carved dragon for Hover/Selection!
-    SILVER_PEARL = (238, 241, 247)
-    ANTIQUE_GOLD_DARK = (86, 62, 18)
-    BRIGHT_GOLD = (214, 168, 48)
+    # 5. Three Dragons (中 發 白) — Authentic Traditional Mahjong Ink Colors (ZERO gold outline on Red/Green!):
+    #    - Red Dragon (中): Pure Cinnabar RED at rest -> Ornate Red Dragon on hover
+    #    - Green Dragon (發): Pure Imperial Jade GREEN at rest -> Ornate Green Dragon on hover
+    #    - White Dragon (白板 Bái Bǎn): Classical "Quasi Vuoto" Black China Ink Double Frame + Whisper Filigree at rest
+    #      -> Magical Dragonlance Winged White Dragon in 24k Golden Filigree (`filigrana dorata`) on hover/select!
+    dragonlance_src = ARTIFACT_DIR / "dragon_white_dragonlance_emblem_1792956661605.jpg"
+    dragonlance_dst = PORTRAITS_DIR / "dragon_white_dragonlance_emblem.png"
+    if dragonlance_src.exists():
+        Image.open(dragonlance_src).convert("RGB").save(dragonlance_dst, "PNG")
+
     dragons = [
         ("dragon_red", "中", "C", RED, "#c41e1e", "Drago Rosso • Red Dragon (紅中)", PORTRAITS_DIR / "dragon_red_ornate_emblem.png"),
         ("dragon_green", "發", "F", GREEN, "#14843a", "Drago Verde • Green Dragon (發財)", PORTRAITS_DIR / "dragon_green_ornate_emblem.png"),
-        ("dragon_white", "白", "B", SILVER_PEARL, "#d6a830", "Drago Bianco • White Dragon (白板)", PORTRAITS_DIR / "dragon_white_ornate_emblem.png"),
+        (
+            "dragon_white",
+            "白",
+            "B",
+            INK,
+            "#181a24",
+            "Drago Bianco • White Dragon (白板)",
+            dragonlance_dst if dragonlance_dst.exists() else (PORTRAITS_DIR / "dragon_white_ornate_emblem.png"),
+        ),
     ]
     for tid, hanzi, let, col, hex_col, label, emb_path in dragons:
-        # 5a. Default Board Tile: Pure Calligraphic Character on clean ivory (ZERO octagonal circle, ZERO corner symbols, ZERO box!)
+        # 5a. Default Board Tile
         canvas, draw = make_marble_face_canvas(W, H, accent_rgb=GOLD)
         if tid == "dragon_white":
-            # White-Silver Pearl character with rich double Gold + Antique-Bronze border (NO blue ink, NO rectangular box!)
-            draw_centered_text(draw, (W / 2, H * 0.52), hanzi, font=cjk_font(455, hanzi), fill=BRIGHT_GOLD, stroke_fill=ANTIQUE_GOLD_DARK, stroke_width=14)
-            draw_centered_text(draw, (W / 2, H * 0.52), hanzi, font=cjk_font(455, hanzi), fill=SILVER_PEARL, stroke_fill=BRIGHT_GOLD, stroke_width=6)
+            # Classical "Quasi Vuoto" Bai Ban (白板) White Tablet / Mirror:
+            # 1) Subtle, whisper-faint golden filigree watermark in the center hinting at the hidden Dragonlance White Dragon
+            if emb_path is not None and emb_path.exists():
+                faint_canvas = canvas.copy()
+                composite_ornate_dragon_emblem(faint_canvas, emb_path, (156, 200, W - 156, H - 200))
+                canvas = Image.blend(canvas, faint_canvas, alpha=0.14)
+                draw = ImageDraw.Draw(canvas)
+            # 2) Crisp Classical Black China Ink Double Frame with Corner Meander / Lotus Keys (matching traditional Bai Ban reference)
+            ox0, oy0, ox1, oy1 = 132, 178, W - 132, H - 178
+            ix0, iy0, ix1, iy1 = 162, 208, W - 162, H - 208
+            draw.rounded_rectangle([ox0, oy0, ox1, oy1], radius=22, outline=INK, width=9)
+            draw.rounded_rectangle([ox0 + 14, oy0 + 14, ox1 - 14, oy1 - 14], radius=14, outline=GOLD, width=3)
+            draw.rounded_rectangle([ix0, iy0, ix1, iy1], radius=10, outline=INK, width=5)
+            # Traditional corner Greek-key / lotus bracket flourishes in Black China Ink + Gold Filigree dot
+            csz = 46
+            for cx_corner, cy_corner, sx, sy in [
+                (ix0, iy0, 1, 1),
+                (ix1, iy0, -1, 1),
+                (ix0, iy1, 1, -1),
+                (ix1, iy1, -1, -1),
+            ]:
+                bx0 = min(cx_corner, cx_corner + sx * csz)
+                by0 = min(cy_corner, cy_corner + sy * csz)
+                bx1 = max(cx_corner, cx_corner + sx * csz)
+                by1 = max(cy_corner, cy_corner + sy * csz)
+                draw.rectangle([bx0, by0, bx1, by1], outline=INK, width=4)
+                ibx0 = min(cx_corner + sx * 12, cx_corner + sx * (csz - 12))
+                iby0 = min(cy_corner + sy * 12, cy_corner + sy * (csz - 12))
+                ibx1 = max(cx_corner + sx * 12, cx_corner + sx * (csz - 12))
+                iby1 = max(cy_corner + sy * 12, cy_corner + sy * (csz - 12))
+                draw.rectangle([ibx0, iby0, ibx1, iby1], fill=GOLD, outline=INK, width=3)
         else:
-            draw_centered_text(draw, (W / 2, H * 0.52), hanzi, font=cjk_font(455, hanzi), fill=col, stroke_fill=GOLD, stroke_width=4)
+            draw_centered_text(draw, (W / 2, H * 0.52), hanzi, font=cjk_font(455, hanzi), fill=col, stroke_width=0)
         apply_incandescent_pen_carving(canvas, tid, is_oval=False)
         shutil.copy2(TILES_DIR / f"{tid}.png", ONIRICA_DIR / f"{tid}.png")
 
-        # 5b. Ornate "Tarchiato" Hover/Select Dragon Texture (`dragon_red_ornate`, `dragon_green_ornate`, `dragon_white_ornate`)
+        # 5b. Ornate Hover/Select Dragon Texture (`dragon_red_ornate`, `dragon_green_ornate`, `dragon_white_ornate`)
         if emb_path is not None and emb_path.exists():
             ornate_id = f"{tid}_ornate"
             ocanvas, odraw = make_marble_face_canvas(W, H, accent_rgb=GOLD)
-            if tid == "dragon_white":
-                # Recolor cobalt-blue lines in dragon_white_ornate_emblem.png into White-Silver Platinum & 24k Gold!
-                raw_emb = Image.open(emb_path).convert("RGB")
-                arr = np.asarray(raw_emb, dtype=np.float32).copy()
-                r_ch, g_ch, b_ch = arr[:, :, 0], arr[:, :, 1], arr[:, :, 2]
-                blue_mask = (b_ch - r_ch) > 18.0
-                lum = 0.299 * r_ch + 0.587 * g_ch + 0.114 * b_ch
-                # Map dark blue outlines to warm antique silver-gold/platinum, mid-blues to bright silver-pearl
-                t_norm = np.clip(lum / 220.0, 0.0, 1.0)
-                new_r = 78.0 + t_norm * 165.0
-                new_g = 72.0 + t_norm * 168.0
-                new_b = 64.0 + t_norm * 176.0
-                arr[:, :, 0] = np.where(blue_mask, new_r, r_ch)
-                arr[:, :, 1] = np.where(blue_mask, new_g, g_ch)
-                arr[:, :, 2] = np.where(blue_mask, new_b, b_ch)
-                silver_gold_path = PORTRAITS_DIR / "_tmp_dragon_white_silver_gold.png"
-                Image.fromarray(np.clip(arr, 0, 255).astype(np.uint8), mode="RGB").save(silver_gold_path)
-                composite_ornate_dragon_emblem(ocanvas, silver_gold_path, (48, 84, W - 48, H - 84))
-                silver_gold_path.unlink(missing_ok=True)
-                # Overdraw center 白 in crisp Silver-Pearl & 24k Gold!
-                odraw.ellipse([W * 0.31, H * 0.34, W * 0.69, H * 0.68], fill=(250, 246, 238))
-                draw_centered_text(odraw, (W / 2, H * 0.51), "白", font=cjk_font(280, "白"), fill=BRIGHT_GOLD, stroke_fill=ANTIQUE_GOLD_DARK, stroke_width=11)
-                draw_centered_text(odraw, (W / 2, H * 0.51), "白", font=cjk_font(280, "白"), fill=SILVER_PEARL, stroke_fill=BRIGHT_GOLD, stroke_width=5)
-            else:
-                composite_ornate_dragon_emblem(ocanvas, emb_path, (48, 84, W - 48, H - 84))
+            composite_ornate_dragon_emblem(ocanvas, emb_path, (44, 80, W - 44, H - 80))
             apply_incandescent_pen_carving(ocanvas, ornate_id, is_oval=False)
             shutil.copy2(TILES_DIR / f"{ornate_id}.png", ONIRICA_DIR / f"{ornate_id}.png")
             if ARTIFACT_DIR.exists():

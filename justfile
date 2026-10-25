@@ -38,4 +38,4 @@ blender-build:
 
 # Clean temporary build caches
 clean:
-    rm -rf dist/
+    rm -rf dist/ node_modules/

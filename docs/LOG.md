@@ -510,3 +510,22 @@
 - **Built `dragon_white_ornate.png` in White-Silver Platinum & 24k Gold & Wired Hover/Select Morphing (`scripts/build_all_tile_textures.py`, `src/main.js`)**:
   - Recolored the cobalt-blue lines of `dragon_white_ornate_emblem.png` into warm **Silver-Platinum & 24k Gold** around the White-Silver Pearl `白`, exporting `public/textures/tiles/dragon_white_ornate.png`, `tiles_onirica/dragon_white_ornate.png`, `tiles_normal/dragon_white_ornate_normal.png`, and `tiles_depth/dragon_white_ornate_depth.png`.
   - Updated `isMorphingDragonTile(tileData)` in `src/main.js` so all 3 real Mahjong Dragons (`dragon_red`, `dragon_green`, and `dragon_white` — never `bamboo_3` *"Sirio il Dragone"*) morph into their chunky "tarchiato" ornate dragon on hover and selection!
+
+---
+
+## 2026-10-25T20:35:00+01:00 — Milestone 18 (`v1.8.5`): Classical "Quasi Vuoto" Bai Ban (`白板`) + Magical Dragonlance White Dragon in 24k Golden Filigree on Hover + Authentic Black & Red Mahjong Ink Colors
+
+### 1. Verbatim User Request & Feedback
+> "ma sei sicuro quello sia un drago bianco? sono quasi sicuro che in majohng queloo sia rosso o nero non oro..."
+> "sembra che il drago bianco sia un simbolo moolto particolare quindi ci potremmo sbizzarrire con un hover magico, tipo quasi vuoi ma una filigrana dorata arriva se ci vai sopra col mouse? magari un drago bianco alla Dragonlance.?"
+> Reference images uploaded: `media_1792956504479_7bc93969.png` (`GammonVillage` classical Chinese Mahjong *Bái Bǎn* double black frame vs Japanese blank vs Western `P`) and `media_1792956595325_b6fe2a8b.png` (classical Chinese *Bái Bǎn* double black frame with corner flourishes).
+
+### 2. Agentic Loop & Subagent Orchestration
+- Dispatched `image-generator` subagent ([`Dragonlance White Dragon Filigree Artist`](conversation://7eaf24f8-2fd7-4ef9-b885-dff149608538)) to generate a 1:1 high-contrast **Dragonlance-inspired Winged White Dragon in 24k Golden Filigree (`filigrana dorata`)** with the `白` seal medallion at the bottom (`public/portraits/dragon_white_dragonlance_emblem.png`).
+
+### 3. Concrete Artifacts & Code Produced
+- **White Dragon (`dragon_white` / `白板` *Bái Bǎn*) Dual-State Design (`scripts/build_all_tile_textures.py`)**:
+  - **At Rest (`public/textures/tiles/dragon_white.png`)**: Matches the classical Chinese *Bái Bǎn* ("Tavoletta Bianca / Specchio") reference photos — a "quasi vuoto" ivory tablet framed by a crisp **Black China Ink (`#181A24`) Double Frame with Greek-Key Corner Squares** and a whisper-faint (`14%` opacity) filigree watermark in the center.
+  - **On Hover / Selection (`public/textures/tiles/dragon_white_ornate.png`)**: Magically reveals the full **Dragonlance Winged White Dragon in 24k Golden Filigree (`filigrana dorata`)** with 3D normal/depth carving!
+- **Authentic Traditional Mahjong Ink Colors (`scripts/build_all_tile_textures.py`)**:
+  - Replaced `incandescent_gold` highlight tinting in `apply_incandescent_pen_carving()` with neutral `ivory_highlight` (`[253.0, 251.0, 247.0]`) and set `stroke_width=0` on `char_1..9` (`一..九` in Pure Black China Ink + `萬` in Cinnabar Red), `wind_E/S/W/N` (`東 南 西 北` in Pure Black China Ink), `dragon_red` (`中` in Pure Cinnabar Red), and `dragon_green` (`發` in Pure Imperial Jade Green).
