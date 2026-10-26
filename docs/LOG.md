@@ -529,3 +529,9 @@
   - **On Hover / Selection (`public/textures/tiles/dragon_white_ornate.png`)**: Magically reveals the full **Dragonlance Winged White Dragon in 24k Golden Filigree (`filigrana dorata`)** with 3D normal/depth carving!
 - **Authentic Traditional Mahjong Ink Colors (`scripts/build_all_tile_textures.py`)**:
   - Replaced `incandescent_gold` highlight tinting in `apply_incandescent_pen_carving()` with neutral `ivory_highlight` (`[253.0, 251.0, 247.0]`) and set `stroke_width=0` on `char_1..9` (`一..九` in Pure Black China Ink + `萬` in Cinnabar Red), `wind_E/S/W/N` (`東 南 西 北` in Pure Black China Ink), `dragon_red` (`中` in Pure Cinnabar Red), and `dragon_green` (`發` in Pure Imperial Jade Green).
+
+### 4. User Sign-Off (`2026-10-26T07:46:50+01:00`)
+- **Verbatim User Feedback**:
+  > "Meraviglia"
+  > "commit push deploy"
+- **Status**: Milestone 18 (`v1.8.5`) approved by **RiccardinoCM26 🦖**, committed, pushed to `origin/main`, and deployed to `gh-pages`!
