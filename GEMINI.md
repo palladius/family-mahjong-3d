@@ -22,7 +22,9 @@
    - Use authentic **Traditional Chinese Mahjong calligraphy and motifs**:
      - Suits: **Characters (`一萬..九萬`)**, **Circles/Dots (`一筒..九筒`)**, **Bamboos (`一索..九索` with the iconic 1-Bamboo Sparrow/Peacock)**.
      - Honours: **Four Winds (`東 南 西 北`)**, **Three Dragons (`中 發 白`)**, and **Seasons/Flowers (`春 夏 秋 冬 梅 蘭 菊 竹`)** paired with corner glyphs (`A1/A2..H1/H2`, `1..9`, `E/S/W/N`).
-4. **Deliverables & Hygiene**:
+4. **3D Board Navigation & `OrbitControls` Ergonomics (`/learn` Rule)**:
+   - In 3D board games like Mahjong Solitaire where Left/Right orientation matters for game rules, bind `OrbitControls` **Left-Click / 1-Finger drag** to horizontal `XZ` plane translation (`THREE.MOUSE.PAN` with `screenSpacePanning = false` and a `6px` click-vs-drag guard so dragging never clicks tiles) and reserve 3D rotation for **Right-Click, `Shift+Drag`, or 2-Finger Twist**.
+5. **Deliverables & Hygiene**:
    - Maintain [`public/progress.html`](public/progress.html) with milestone camera screenshots and **auto-rotating 3D GLB previews**.
    - Provide the on-screen Studio Control Panel with **"Copy Settings as JSON"** (`?debug=1` querystring support).
    - Run `just test` and update `VERSION` and `CHANGELOG.md` after every milestone.
