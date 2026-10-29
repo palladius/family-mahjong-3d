@@ -36,6 +36,10 @@ textures-build:
 blender-build:
     uv run python scripts/blender/build_all_assets.py
 
+# Regenerate Raspberry Pi 400 (Sguisatazzo V3D 4.2) lightweight GLBs (*_rpi.glb) and 256px textures
+rpi-assets:
+    uv run --with pillow python scripts/build_rpi_assets.py
+
 # Clean temporary build caches
 clean:
     rm -rf dist/ node_modules/

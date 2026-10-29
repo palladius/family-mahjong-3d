@@ -29,6 +29,7 @@ import zlib from "node:zlib";
 import { fileURLToPath } from "node:url";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+import { detectHardwareProfile } from "../src/main.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
@@ -482,6 +483,86 @@ assert(
     !mainJs.includes('this.controls.enableRotate = this.activeCameraPreset !== "2d"'),
   "src/main.js keeps OrbitControls rotation enabled in all camera presets (including 2D/mobile)"
 );
+
+// ============================================================================
+// 4. SGUISATAZZO (RASPBERRY PI 400 V3D 4.2) AUTO-DETECTION HEURISTICS TEST
+// ============================================================================
+
+// 4A. Exact Sguisatazzo profile from Obsidian (Raspberry Pi 400 Rev 1.0, Broadcom BCM2711 Cortex-A72, V3D 4.2, 4GB RAM, 1920x1080 monitor)
+const sguisatazzoProfile = detectHardwareProfile(new URLSearchParams(""), {
+  userAgent: "Mozilla/5.0 (X11; Linux aarch64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
+  platform: "Linux aarch64",
+  deviceMemory: 4,
+  hardwareConcurrency: 4,
+  maxTouchPoints: 0,
+  innerWidth: 1920,
+  innerHeight: 1080,
+  gpuRenderer: "V3D 4.2",
+  gpuVendor: "Broadcom",
+  maxTextureSize: 4096,
+});
+assert(
+  sguisatazzoProfile.isRpi === true && sguisatazzoProfile.tier === "rpi" && sguisatazzoProfile.reason.includes("V3D 4.2"),
+  `Sguisatazzo Raspberry Pi 400 (Broadcom V3D 4.2, 1920x1080 non-touch HDMI) auto-detected at startup: isRpi=true (${sguisatazzoProfile.reason})`
+);
+
+// 4B. Linux ARM64 desktop with masked WebGL renderer string still triggers Sguisatazzo mode
+const maskedArmLinuxProfile = detectHardwareProfile(new URLSearchParams(""), {
+  userAgent: "Mozilla/5.0 (X11; Linux aarch64) AppleWebKit/537.36",
+  platform: "Linux aarch64",
+  deviceMemory: 4,
+  hardwareConcurrency: 4,
+  maxTouchPoints: 0,
+  innerWidth: 1920,
+  innerHeight: 1080,
+  gpuRenderer: "WebKit WebGL",
+  gpuVendor: "WebKit",
+  maxTextureSize: 4096,
+});
+assert(
+  maskedArmLinuxProfile.isRpi === true,
+  `Linux aarch64 + MAX_TEXTURE_SIZE=4096 auto-detects Sguisatazzo mode even if UNMASKED_RENDERER_WEBGL is masked (${maskedArmLinuxProfile.reason})`
+);
+
+// 4C. URL override ?sguisatazzo=1 forces Sguisatazzo mode on any desktop machine for testing
+const urlForcedRpi = detectHardwareProfile(new URLSearchParams("sguisatazzo=1"), {
+  userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)",
+  platform: "MacIntel",
+  deviceMemory: 8,
+  hardwareConcurrency: 12,
+  gpuRenderer: "Apple M3 Max",
+  gpuVendor: "Apple",
+  maxTextureSize: 16384,
+});
+assert(urlForcedRpi.isRpi === true, "URL parameter '?sguisatazzo=1' forces Sguisatazzo RPi mode on any machine");
+
+// 4D. High-end Mac Desktop defaults to full high quality (isRpi === false)
+const macDesktopProfile = detectHardwareProfile(new URLSearchParams(""), {
+  userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
+  platform: "MacIntel",
+  deviceMemory: 8,
+  hardwareConcurrency: 12,
+  maxTouchPoints: 0,
+  innerWidth: 2560,
+  innerHeight: 1440,
+  gpuRenderer: "ANGLE (Apple, ANGLE Metal Renderer: Apple M3 Max, Unspecified Version)",
+  gpuVendor: "Google Inc. (Apple)",
+  maxTextureSize: 16384,
+});
+assert(
+  macDesktopProfile.isRpi === false && macDesktopProfile.tier === "high",
+  "Apple M3 Max desktop keeps full High-Quality mode (isRpi=false)"
+);
+
+// 4E. Verify RPi 256x342 tile textures retain full Mahjong ink contrast
+for (const tileId of ["dragon_red", "dragon_green", "dragon_white", "coupled_A1", "dots_4"]) {
+  const rpiPath = path.join(ROOT, `public/textures/tiles_rpi/${tileId}.png`);
+  const rpiStats = parsePngRgbStats(rpiPath);
+  assert(
+    rpiStats.width === 256 && rpiStats.height === 342 && rpiStats.lumRange > 85,
+    `RPi texture 'tiles_rpi/${tileId}.png' (${rpiStats.width}x${rpiStats.height}) is 9x smaller in pixels while preserving sharp contrast (lumRange=${rpiStats.lumRange.toFixed(1)})`
+  );
+}
 
 // ============================================================================
 // 4. PRE-DEPLOY PRODUCTION BUNDLE (`dist/`) & POST-DEPLOY LIVE URL CHECK

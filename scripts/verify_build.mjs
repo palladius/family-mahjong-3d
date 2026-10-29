@@ -31,6 +31,28 @@ assert(fs.existsSync(envGlb) && fs.statSync(envGlb).size > 50000, "Temple Enviro
 const carvedGlb = path.join(ROOT, "public/models/tile_carved_intaglio_showcase.glb");
 assert(fs.existsSync(carvedGlb) && fs.statSync(carvedGlb).size > 100000, "3D Carved Intaglio Showcase GLB exists and is non-empty");
 
+// 1b. Check Raspberry Pi 400 ("Sguisatazzo" V3D 4.2) Lightweight GLB assets
+const rpiTileGlb = path.join(ROOT, "public/models/tile_generic_white_marble_obsidian_rpi.glb");
+assert(
+  fs.existsSync(rpiTileGlb) && fs.statSync(rpiTileGlb).size > 10000 && fs.statSync(rpiTileGlb).size < 100000,
+  `Sguisatazzo RPi Generic Tile GLB exists and is ultra-lightweight (<100KB, actual: ${(fs.statSync(rpiTileGlb).size / 1024).toFixed(1)}KB)`
+);
+const rpiEnvGlb = path.join(ROOT, "public/models/temple_environment_rpi.glb");
+assert(
+  fs.existsSync(rpiEnvGlb) && fs.statSync(rpiEnvGlb).size > 20000 && fs.statSync(rpiEnvGlb).size < 250000,
+  `Sguisatazzo RPi Temple Environment GLB exists and is ultra-lightweight (<250KB, actual: ${(fs.statSync(rpiEnvGlb).size / 1024).toFixed(1)}KB)`
+);
+const rpiShowcaseGlb = path.join(ROOT, "public/models/tile_coupled_showcase_rpi.glb");
+assert(
+  fs.existsSync(rpiShowcaseGlb) && fs.statSync(rpiShowcaseGlb).size > 20000 && fs.statSync(rpiShowcaseGlb).size < 500000,
+  `Sguisatazzo RPi Coupled Showcase GLB exists and is lightweight (<500KB, actual: ${(fs.statSync(rpiShowcaseGlb).size / 1024).toFixed(1)}KB)`
+);
+const rpiCarvedGlb = path.join(ROOT, "public/models/tile_carved_intaglio_showcase_rpi.glb");
+assert(
+  fs.existsSync(rpiCarvedGlb) && fs.statSync(rpiCarvedGlb).size > 50000,
+  `Sguisatazzo RPi Carved Intaglio Showcase GLB exists`
+);
+
 // 2. Topology audit
 const auditFile = path.join(ROOT, "public/models/topology_audit.json");
 assert(fs.existsSync(auditFile), "Topology audit report exists");
@@ -59,7 +81,18 @@ if (fs.existsSync(manifestFile)) {
     fs.existsSync(path.join(ROOT, "public/textures/tiles_depth", `${t.id}_depth.png`))
   );
   assert(depthExist, "All 50 3D Incandescent-Pen Carved Depth/Displacement maps ('*_depth.png') exist");
+  const rpiTilesExist = manifest.tiles.every(
+    (t) =>
+      fs.existsSync(path.join(ROOT, "public/textures/tiles_rpi", `${t.id}.png`)) &&
+      fs.existsSync(path.join(ROOT, "public/textures/tiles_onirica_rpi", `${t.id}.png`))
+  );
+  assert(rpiTilesExist, "All 50 Sguisatazzo RPi 256x342 tile textures ('tiles_rpi/' & 'tiles_onirica_rpi/') exist");
 }
+assert(
+  fs.existsSync(path.join(ROOT, "public/textures/pbr_rpi/obsidian_basecolor_2k.png")) &&
+    fs.existsSync(path.join(ROOT, "public/textures/pbr_rpi/rosewood_basecolor_2k.png")),
+  "Sguisatazzo RPi 256x256 PBR textures ('public/textures/pbr_rpi/') exist"
+);
 
 const requiredPortraits = [
   "quartet_S1_papa_riccardo.png",

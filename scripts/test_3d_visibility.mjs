@@ -84,13 +84,13 @@ assert(
   "Mobile Viewport (Issue #2): #btn-fullscreen, 2D top-down default on mobile, forgiving touch hitboxes (probeOffsets), haptic feedback, and 100dvh clean HUD are wired"
 );
 assert(
-  mainJs.includes("boardSegX = this.isMobile ? 1 : 24") &&
+  mainJs.includes("boardSegX = (this.isMobile || this.isRpi) ? 1 : 24") &&
     mainJs.includes("bodyMatFree") &&
     mainJs.includes("setDragonOrnateState") &&
     mainJs.includes("isRedOrGreenDragonPair") &&
     mainJs.includes("isCarlessoFamilyPair") &&
     mainJs.includes("triggerFamilyPowerUpEffect"),
-  "Milestone 13 (v1.8.0): 1x1 mobile face geometry (6,900x fewer triangles), shared body materials, hover/select 'tarchiato' Dragon morphing, and exclusive Dragon vs Carlesso Family Power-Up video triggers are wired"
+  "Milestone 13 (v1.8.0): 1x1 mobile/RPi face geometry (6,900x fewer triangles), shared body materials, hover/select 'tarchiato' Dragon morphing, and exclusive Dragon vs Carlesso Family Power-Up video triggers are wired"
 );
 const pyScript = fs.readFileSync(path.join(ROOT, "scripts/build_all_tile_textures.py"), "utf8");
 assert(

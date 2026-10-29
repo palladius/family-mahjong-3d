@@ -435,6 +435,120 @@ class MahjongSolvabilityEngine {
   }
 }
 
+/**
+ * 🍓 Multi-Layer Hardware & Raspberry Pi 400 (`Sguisatazzo`) Heuristic Detector
+ * Calibrated against Alessandro's Raspberry Pi 400 Rev 1.0 (`Computers/sguisatazzo.md`):
+ * - CPU: Broadcom BCM2711 Quad-Core ARM Cortex-A72 @ 1.80 GHz (`aarch64`, 4 cores, 1 MiB shared L2 cache)
+ * - RAM: 4 GB LPDDR4-3200 (`3.7 GiB` OS visible, Chromium `--enable-low-end-device-mode`)
+ * - GPU: Broadcom V3D 4.2 (VideoCore VI @ 500 MHz), MAX_TEXTURE_SIZE = 4096
+ * - Monitor: GWD ARZOPA 1920x1080 @ 60Hz (no touchscreen -> previously false-positived as High-End Desktop!)
+ */
+export function detectHardwareProfile(urlParams, envOverrides = null) {
+  const qParam = (urlParams?.get("quality") || "").toLowerCase();
+  const rpiParam = urlParams?.get("sguisatazzo") || urlParams?.get("rpi");
+  let savedOverride = null;
+  try {
+    if (typeof window !== "undefined" && window.localStorage) {
+      savedOverride = window.localStorage.getItem("mahjong_quality_override");
+    }
+  } catch (_) {}
+
+  if (rpiParam === "1" || qParam === "rpi" || qParam === "sguisatazzo" || qParam === "low") {
+    return { tier: "rpi", isRpi: true, reason: "URL override (?sguisatazzo=1 / ?quality=rpi)", gpuRenderer: "override-rpi" };
+  }
+  if (rpiParam === "0" || qParam === "high" || qParam === "ultra") {
+    return { tier: "high", isRpi: false, reason: "URL override (?quality=high)", gpuRenderer: "override-high" };
+  }
+  if (savedOverride === "rpi") {
+    return { tier: "rpi", isRpi: true, reason: "Saved user preference (Sguisatazzo Mode)", gpuRenderer: "saved-rpi" };
+  }
+  if (savedOverride === "high") {
+    return { tier: "high", isRpi: false, reason: "Saved user preference (High Mode)", gpuRenderer: "saved-high" };
+  }
+
+  const ua = envOverrides?.userAgent ?? (typeof navigator !== "undefined" ? navigator.userAgent || "" : "");
+  const platform = envOverrides?.platform ?? (typeof navigator !== "undefined" ? navigator.platform || "" : "");
+  const cores = envOverrides?.hardwareConcurrency ?? (typeof navigator !== "undefined" ? navigator.hardwareConcurrency || 8 : 8);
+  const devMem = envOverrides?.deviceMemory ?? (typeof navigator !== "undefined" ? navigator.deviceMemory || 8 : 8);
+
+  let gpuRenderer = envOverrides?.gpuRenderer ?? "";
+  let gpuVendor = envOverrides?.gpuVendor ?? "";
+  let maxTexSize = envOverrides?.maxTextureSize ?? 16384;
+
+  if (!envOverrides && typeof document !== "undefined") {
+    try {
+      const probeCanvas = document.createElement("canvas");
+      probeCanvas.width = 1;
+      probeCanvas.height = 1;
+      const gl =
+        probeCanvas.getContext("webgl2", { powerPreference: "low-power" }) ||
+        probeCanvas.getContext("webgl", { powerPreference: "low-power" });
+      if (gl) {
+        const dbg = gl.getExtension("WEBGL_debug_renderer_info");
+        if (dbg) {
+          gpuRenderer = String(gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) || "");
+          gpuVendor = String(gl.getParameter(dbg.UNMASKED_VENDOR_WEBGL) || "");
+        } else {
+          gpuRenderer = String(gl.getParameter(gl.RENDERER) || "");
+          gpuVendor = String(gl.getParameter(gl.VENDOR) || "");
+        }
+        maxTexSize = Number(gl.getParameter(gl.MAX_TEXTURE_SIZE)) || 16384;
+      }
+    } catch (_) {}
+  }
+
+  const gpuCombo = `${gpuVendor} ${gpuRenderer}`;
+  // Layer 1: Direct Broadcom VideoCore VI/VII (`V3D 4.2`, `V3D 7.1`, `VC4`, `VideoCore`) or Mesa software/SBC GPU match
+  if (/\b(V3D|VC4|VideoCore|Broadcom|llvmpipe|softpipe|swrast|Panfrost|Lima|Mali-400|Mali-450)\b/i.test(gpuCombo)) {
+    return {
+      tier: "rpi",
+      isRpi: true,
+      reason: `GPU WebGL '${gpuRenderer || gpuVendor}' (VideoCore / SBC)`,
+      gpuRenderer: gpuCombo.trim(),
+    };
+  }
+
+  // Layer 2: Linux ARM (`aarch64` / `armv7l` / `armv8l` on non-Android desktop, or `Raspberry` / `Raspbian` / `sguisatazzo`)
+  const isAndroid = /Android/i.test(ua);
+  const isLinuxArmDesktop =
+    !isAndroid &&
+    (/Linux\s+(aarch64|armv7l|armv8l|arm64)/i.test(`${ua} ${platform}`) ||
+      /\b(Raspberry|Raspbian|sguisatazzo)\b/i.test(ua));
+  if (isLinuxArmDesktop) {
+    return {
+      tier: "rpi",
+      isRpi: true,
+      reason: `Linux ARM Desktop (${platform || ua.slice(0, 48)})`,
+      gpuRenderer: gpuCombo.trim() || "Linux-ARM",
+    };
+  }
+
+  // Layer 3: Hardware texture cap <= 4096 (Broadcom V3D 4.2 cap) or Linux low-RAM (`--enable-low-end-device-mode`, <= 4GB & <= 4 cores)
+  if (maxTexSize > 0 && maxTexSize <= 4096) {
+    return {
+      tier: "rpi",
+      isRpi: true,
+      reason: `WebGL MAX_TEXTURE_SIZE=${maxTexSize} (<= 4096)`,
+      gpuRenderer: gpuCombo.trim(),
+    };
+  }
+  if (/Linux/i.test(`${ua} ${platform}`) && !isAndroid && devMem <= 4 && cores <= 4) {
+    return {
+      tier: "rpi",
+      isRpi: true,
+      reason: `Linux Low-Spec (${cores} cores, ${devMem}GB RAM)`,
+      gpuRenderer: gpuCombo.trim(),
+    };
+  }
+
+  return {
+    tier: "high",
+    isRpi: false,
+    reason: "Standard Desktop / Mobile GPU",
+    gpuRenderer: gpuCombo.trim(),
+  };
+}
+
 class MahjongSolitaireApp {
   constructor() {
     this.container = document.getElementById("canvas-container");
@@ -448,40 +562,51 @@ class MahjongSolitaireApp {
     this.isDemoRunning = false;
     this.isPairPauseActive = false;
     this.activeSurface = "table"; // "table" or "pavement"
+    this._activeRootsBuffer = []; // Reusable array to avoid GC in 1 MiB L2 cache on Cortex-A72!
     const urlParams = new URLSearchParams(window.location.search);
     this.oniricaMode = urlParams.get("onirica") === "1";
     this.debugSymbols = urlParams.get("symbols") === "1"; // OFF by default ('secondo me a dflt dovrebbero essere disabilitati questi 2 in alto')
+
+    // Detect Sguisatazzo (Raspberry Pi 400 V3D 4.2) or Mobile viewport at startup
+    this.hwProfile = detectHardwareProfile(urlParams);
+    this.isRpi = this.hwProfile.isRpi;
+    this.qualityTier = this.hwProfile.tier;
+
     const isMobileViewport =
       typeof window !== "undefined" &&
       (window.innerWidth <= 768 || ("ontouchstart" in window && window.innerWidth <= 1024));
-    this.isMobile = isMobileViewport;
+    this.isMobile = isMobileViewport || this.isRpi;
+    this._fpsSamples = [];
+    this._lastFrameTime = 0;
+    this._fpsWatchdogDone = this.isRpi;
+
     if (urlParams.has("2d")) {
       this.activeCameraPreset = urlParams.get("2d") === "1" ? "2d" : "hero";
     } else if (urlParams.has("view")) {
       this.activeCameraPreset = urlParams.get("view");
-    } else if (isMobileViewport) {
+    } else if (isMobileViewport && !this.isRpi) {
       this.activeCameraPreset = "2d";
     } else {
       this.activeCameraPreset = "hero";
     }
 
-    // Look-Dev Settings with lightweight Mobile GPU profile (shadows off on mobile for 60fps!)
+    // Look-Dev Settings with lightweight Mobile / Sguisatazzo RPi GPU profile (shadows off for 60fps!)
     this.settings = {
       sunIntensity: 3.8,
       sunElevation: 46,
       sunAzimuth: 32,
       lanternGlow: 2.4,
-      ambient: this.isMobile ? 1.15 : 0.75,
+      ambient: this.isRpi ? 1.28 : this.isMobile ? 1.15 : 0.75,
       exposure: 1.10,
       marbleRoughness: 0.14,
       marbleClearcoat: 0.35,
       obsidianMetallic: 0.22,
-      bassorilievo: 1.15,
+      bassorilievo: this.isRpi ? 0.0 : 1.15,
       normalScale: 1.0,
       fov: 38,
       camDistance: 11.5,
       autoRotate: false,
-      shadows: !this.isMobile,
+      shadows: !this.isMobile && !this.isRpi,
     };
 
     this.tweens = [];
@@ -489,6 +614,9 @@ class MahjongSolitaireApp {
     this.initLights();
     this.loadManifestAndAssets();
     this.bindUI();
+    if (this.isRpi) {
+      console.log(`🍓 [Sguisatazzo Mode ACTIVE]: ${this.hwProfile.reason}`);
+    }
     this.animate = this.animate.bind(this);
     requestAnimationFrame(this.animate);
   }
@@ -505,6 +633,16 @@ class MahjongSolitaireApp {
     return baseFov;
   }
 
+  computeTargetPixelRatio() {
+    if (this.isRpi) {
+      // Golden Rule #1 from Obsidian `Computers/sguisatazzo.md`:
+      // On 1920x1080 GWD ARZOPA Monitor (Broadcom V3D 4.2 @ 500MHz), use 0.75 (1440x810 upscaled via CSS)
+      // to cut fragment fill-rate by 44% and lock 60 FPS!
+      return window.innerWidth >= 1400 ? 0.75 : 0.85;
+    }
+    return Math.min(window.devicePixelRatio || 1, this.isMobile ? 1.35 : 2.0);
+  }
+
   initThree() {
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x120f14);
@@ -512,12 +650,12 @@ class MahjongSolitaireApp {
     this.camera = new THREE.PerspectiveCamera(this.settings.fov, window.innerWidth / window.innerHeight, 0.1, 100);
 
     this.renderer = new THREE.WebGLRenderer({
-      antialias: !this.isMobile,
+      antialias: !this.isMobile && !this.isRpi,
       powerPreference: "high-performance",
     });
+    this.renderer.setPixelRatio(this.computeTargetPixelRatio());
     this.renderer.setSize(window.innerWidth, window.innerHeight);
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, this.isMobile ? 1.35 : 2.0));
-    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    this.renderer.toneMapping = this.isRpi ? THREE.NoToneMapping : THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = this.settings.exposure;
     this.renderer.shadowMap.enabled = this.settings.shadows;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -565,6 +703,7 @@ class MahjongSolitaireApp {
       const baseFov = basePresets[this.activeCameraPreset] || 38;
       this.camera.fov = this.computeResponsiveFov(baseFov, this.activeCameraPreset);
       this.camera.updateProjectionMatrix();
+      this.renderer.setPixelRatio(this.computeTargetPixelRatio());
       this.renderer.setSize(window.innerWidth, window.innerHeight);
     });
 
@@ -584,7 +723,8 @@ class MahjongSolitaireApp {
           this._pointerDownState.moved = true;
         }
       }
-      if (!this.isMobile) {
+      // Keep hover enabled on Sguisatazzo (throttled to 12Hz inside onPointerMove) so Dragonlance White Dragon hover works!
+      if (!this.isMobile || this.isRpi) {
         this.onPointerMove(e);
       }
     });
@@ -615,9 +755,9 @@ class MahjongSolitaireApp {
     this.sunLight.shadow.bias = -0.0004;
     this.scene.add(this.sunLight);
 
-    // Warm Silk Lantern Glows around Courtyard (skipped on mobile to save 4 dynamic PointLight shader loops per pixel!)
+    // Golden Rule #2 (`Computers/sguisatazzo.md`): Max 1 DirectionalLight + 1 AmbientLight on Sguisatazzo (skip 4 PointLights!)
     this.lanternLights = [];
-    if (!this.isMobile) {
+    if (!this.isMobile && !this.isRpi) {
       const lanternCoords = [
         [-7.5, -5.5, 4.2],
         [7.5, -5.5, 4.2],
@@ -658,31 +798,41 @@ class MahjongSolitaireApp {
     const res = await fetch("./textures/manifest.json");
     this.manifest = await res.json();
 
-    // Preload PBR Textures
+    // Preload PBR Textures (`pbr_rpi` 256x256 in Sguisatazzo Mode vs `pbr` 2048x2048 in High Mode)
+    const pbrFolder = this.isRpi ? "pbr_rpi" : "pbr";
     this.pbrTextures = {
-      marbleBase: texLoader.load("./textures/pbr/marble_basecolor_2k.png"),
-      marbleNorm: texLoader.load("./textures/pbr/marble_normal_2k.png"),
-      obsidianBase: texLoader.load("./textures/pbr/obsidian_basecolor_2k.png"),
-      obsidianNorm: texLoader.load("./textures/pbr/obsidian_normal_2k.png"),
-      rosewoodBase: texLoader.load("./textures/pbr/rosewood_basecolor_2k.png"),
-      jadeBase: texLoader.load("./textures/pbr/jade_basecolor_2k.png"),
-      pavementBase: texLoader.load("./textures/pbr/pavement_basecolor_2k.png"),
-      pavementNorm: texLoader.load("./textures/pbr/pavement_normal_2k.png"),
+      marbleBase: texLoader.load(`./textures/${pbrFolder}/marble_basecolor_2k.png`),
+      marbleNorm: this.isRpi ? null : texLoader.load(`./textures/${pbrFolder}/marble_normal_2k.png`),
+      obsidianBase: texLoader.load(`./textures/${pbrFolder}/obsidian_basecolor_2k.png`),
+      obsidianNorm: this.isRpi ? null : texLoader.load(`./textures/${pbrFolder}/obsidian_normal_2k.png`),
+      rosewoodBase: texLoader.load(`./textures/${pbrFolder}/rosewood_basecolor_2k.png`),
+      jadeBase: texLoader.load(`./textures/${pbrFolder}/jade_basecolor_2k.png`),
+      pavementBase: texLoader.load(`./textures/${pbrFolder}/pavement_basecolor_2k.png`),
+      pavementNorm: this.isRpi ? null : texLoader.load(`./textures/${pbrFolder}/pavement_normal_2k.png`),
     };
     Object.values(this.pbrTextures).forEach((t) => {
+      if (!t) return;
       t.wrapS = THREE.RepeatWrapping;
       t.wrapT = THREE.RepeatWrapping;
+      if (this.isRpi) {
+        t.generateMipmaps = false;
+        t.minFilter = THREE.LinearFilter;
+      }
     });
 
-    // 2. Load 3D Temple Environment GLB (Blender glTF exporter ALREADY outputs +Y Up!)
-    loader.load("./models/temple_environment.glb", (gltf) => {
+    // 2. Load 3D Temple Environment GLB (`temple_environment_rpi.glb` 175KB on Sguisatazzo vs `temple_environment.glb` 941KB)
+    const envGlbUrl = this.isRpi ? "./models/temple_environment_rpi.glb" : "./models/temple_environment.glb";
+    loader.load(envGlbUrl, (gltf) => {
+      if (this.templeEnv) {
+        this.scene.remove(this.templeEnv);
+      }
       this.templeEnv = gltf.scene;
-      // IMPORTANT: Do NOT rotate templeEnv by -PI/2 around X! glTF is already +Y Up; rotating it turned the horizontal table & floor into a vertical wall cutting the board in half!
+      // IMPORTANT: Do NOT rotate templeEnv by -PI/2 around X! glTF is already +Y Up
       this.templeEnv.rotation.set(0, 0, 0);
       this.templeEnv.traverse((child) => {
         if (child.isMesh) {
-          child.castShadow = !this.isMobile;
-          child.receiveShadow = !this.isMobile;
+          child.castShadow = !this.isMobile && !this.isRpi;
+          child.receiveShadow = !this.isMobile && !this.isRpi;
         }
       });
       this.scene.add(this.templeEnv);
@@ -690,11 +840,20 @@ class MahjongSolitaireApp {
       this.updateEnvironmentVisibility();
     });
 
-    // 3. Load Canonical Tile GLB
-    loader.load("./models/tile_generic_white_marble_obsidian.glb", (gltf) => {
+    // 3. Load Canonical Tile GLB (`tile_generic_white_marble_obsidian_rpi.glb` 59KB on Sguisatazzo vs 3.0MB)
+    const tileGlbUrl = this.isRpi
+      ? "./models/tile_generic_white_marble_obsidian_rpi.glb"
+      : "./models/tile_generic_white_marble_obsidian.glb";
+    if (this.isRpi) {
+      // On Sguisatazzo, build the board immediately without blocking on the GLB download!
+      this.setupBoard("master");
+    }
+    loader.load(tileGlbUrl, (gltf) => {
       this.canonicalTileScene = gltf.scene;
       this.canonicalTileAnimations = gltf.animations;
-      this.setupBoard("master");
+      if (!this.isRpi) {
+        this.setupBoard("master");
+      }
     });
   }
 
@@ -843,13 +1002,14 @@ class MahjongSolitaireApp {
     shape.lineTo(x0, y0 + r);
     shape.quadraticCurveTo(x0, y0, x0 + r, y0);
 
+    // Golden Rule #3 (`Computers/sguisatazzo.md`): Keep total triangles < 50k (1 bevelSegment & 1 curveSegment on RPi = ~36 tris/tile!)
     const geo = new THREE.ExtrudeGeometry(shape, {
       depth: Math.max(0.04, d - bevelSize * 2),
       bevelEnabled: true,
       bevelThickness: bevelSize,
       bevelSize: bevelSize,
-      bevelSegments: this.isMobile ? 2 : 3,
-      curveSegments: this.isMobile ? 4 : 6,
+      bevelSegments: this.isRpi ? 1 : this.isMobile ? 2 : 3,
+      curveSegments: this.isRpi ? 1 : this.isMobile ? 4 : 6,
     });
     geo.rotateX(-Math.PI / 2);
     geo.center();
@@ -899,6 +1059,21 @@ class MahjongSolitaireApp {
     return this.debugCornerMatCache[key];
   }
 
+  ensureDebugCornerMesh(root) {
+    if (!root || !root.userData) return null;
+    if (!root.userData.debugCornerMesh) {
+      const debugCornerMesh = new THREE.Mesh(
+        this.sharedGeo.debugCornerPlane,
+        this.getDebugCornerMaterial(root.userData.tileData)
+      );
+      debugCornerMesh.rotation.x = -Math.PI / 2;
+      debugCornerMesh.position.set(0.0, TILE_D * 0.5 + 0.005, -TILE_H * 0.34);
+      root.add(debugCornerMesh);
+      root.userData.debugCornerMesh = debugCornerMesh;
+    }
+    return root.userData.debugCornerMesh;
+  }
+
   toggleDebugSymbols(forceState = null) {
     this.debugSymbols = forceState !== null ? Boolean(forceState) : !this.debugSymbols;
     const btn = document.getElementById("btn-debug-symbols");
@@ -909,14 +1084,22 @@ class MahjongSolitaireApp {
     if (chk) chk.checked = this.debugSymbols;
 
     this.tiles.forEach((t) => {
-      if (t.root.userData.debugCornerMesh) {
-        t.root.userData.debugCornerMesh.visible = this.debugSymbols;
+      if (this.debugSymbols) {
+        const m = this.ensureDebugCornerMesh(t.root);
+        if (m) m.visible = true;
+      } else if (t.root.userData.debugCornerMesh) {
+        t.root.userData.debugCornerMesh.visible = false;
       }
     });
     if (this.wowGroup) {
       this.wowGroup.children.forEach((c) => {
-        if (c.userData && c.userData.debugCornerMesh) {
-          c.userData.debugCornerMesh.visible = this.debugSymbols;
+        if (c.userData) {
+          if (this.debugSymbols) {
+            const m = this.ensureDebugCornerMesh(c);
+            if (m) m.visible = true;
+          } else if (c.userData.debugCornerMesh) {
+            c.userData.debugCornerMesh.visible = false;
+          }
         }
       });
     }
@@ -926,22 +1109,26 @@ class MahjongSolitaireApp {
   initSharedTileResources() {
     if (this.sharedGeo) return;
 
-    // Performance optimization:
-    // - Mobile uses 1x1 face plane (2 triangles instead of 13,824 per tile — 6,900x fewer vertices!) with normal-map relief.
-    // - Desktop board uses 24x32 face plane (fast 60fps vertex displacement) and 48x64 for the single close-up 3D inspector tile.
-    const boardSegX = this.isMobile ? 1 : 24;
-    const boardSegY = this.isMobile ? 1 : 32;
-
+    const boardSegX = (this.isMobile || this.isRpi) ? 1 : 24;
+    const boardSegY = (this.isMobile || this.isRpi) ? 1 : 32;
     this.sharedGeo = {
       body: this.makeBeveledParallelepipedGeometry(TILE_W, TILE_D, TILE_H, 0.042, 0.015),
       face: new THREE.PlaneGeometry(TILE_W * 0.91, TILE_H * 0.92, 1, 1),
-      wowFace: new THREE.PlaneGeometry(TILE_W * 0.91, TILE_H * 0.92, 1, 1),
+      wowFace: new THREE.PlaneGeometry(TILE_W * 0.91, TILE_H * 0.92, boardSegX, boardSegY),
       debugCornerPlane: new THREE.PlaneGeometry(TILE_W * 0.88, TILE_H * 0.22, 1, 1),
       selOuterPurple: this.makeHollowRectGeometry(TILE_W * 1.12, TILE_H * 1.10, TILE_W * 1.01, TILE_H * 1.00),
       selInnerYellow: this.makeHollowRectGeometry(TILE_W * 1.01, TILE_H * 1.00, TILE_W * 0.90, TILE_H * 0.91),
     };
 
     const makeMarbleMat = (hexColor, emissiveHex = 0x000000) => {
+      // Golden Rule #2 (`Computers/sguisatazzo.md`): Use MeshLambertMaterial (Gouraud per-vertex lighting) on Sguisatazzo RPi!
+      if (this.isRpi) {
+        return new THREE.MeshLambertMaterial({
+          color: hexColor,
+          emissive: new THREE.Color(emissiveHex),
+          map: this.pbrTextures?.marbleBase || null,
+        });
+      }
       if (this.isMobile) {
         return new THREE.MeshStandardMaterial({
           color: hexColor,
@@ -963,11 +1150,13 @@ class MahjongSolitaireApp {
       });
     };
 
-    const obsidianMat = new THREE.MeshStandardMaterial({
-      color: 0x111116,
-      roughness: 0.10,
-      metalness: this.settings.obsidianMetallic,
-    });
+    const obsidianMat = this.isRpi
+      ? new THREE.MeshLambertMaterial({ color: 0x111116 })
+      : new THREE.MeshStandardMaterial({
+          color: 0x111116,
+          roughness: 0.10,
+          metalness: this.settings.obsidianMetallic,
+        });
 
     // Uniform white/ivory beveled parallelepiped materials (NO middle kintsugi band, NO black back!)
     const marbleFree = makeMarbleMat(0xfaf6ee, 0x000000);
@@ -1016,13 +1205,39 @@ class MahjongSolitaireApp {
   ensureFaceTexturesLoaded(texId, texLoader = new THREE.TextureLoader()) {
     if (!this.faceTextureCache) this.faceTextureCache = {};
     if (!this.faceTextureCache[texId]) {
-      const faceTex = texLoader.load(`./textures/tiles/${texId}.png`);
+      // Golden Rule #4 (`Computers/sguisatazzo.md`): On Sguisatazzo RPi, load 256x342 `tiles_rpi` (1/9 pixels),
+      // disable mipmaps, and skip normal/depth/onirica maps completely (saving >88% VRAM)!
+      const tilesFolder = this.isRpi ? "tiles_rpi" : "tiles";
+      const oniricaFolder = this.isRpi ? "tiles_onirica_rpi" : "tiles_onirica";
+      const faceTex = texLoader.load(`./textures/${tilesFolder}/${texId}.png`);
       faceTex.colorSpace = THREE.SRGBColorSpace;
-      const oniricaTex = texLoader.load(`./textures/tiles_onirica/${texId}.png`);
-      oniricaTex.colorSpace = THREE.SRGBColorSpace;
-      const normTex = texLoader.load(`./textures/tiles_normal/${texId}_normal.png`);
-      const depthTex = this.isMobile ? null : texLoader.load(`./textures/tiles_depth/${texId}_depth.png`);
+      if (this.isRpi) {
+        faceTex.generateMipmaps = false;
+        faceTex.minFilter = THREE.LinearFilter;
+      }
+
+      let oniricaTex = null;
+      if (!this.isRpi || this.oniricaMode) {
+        oniricaTex = texLoader.load(`./textures/${oniricaFolder}/${texId}.png`);
+        oniricaTex.colorSpace = THREE.SRGBColorSpace;
+        if (this.isRpi) {
+          oniricaTex.generateMipmaps = false;
+          oniricaTex.minFilter = THREE.LinearFilter;
+        }
+      }
+
+      const normTex = this.isRpi ? null : texLoader.load(`./textures/tiles_normal/${texId}_normal.png`);
+      const depthTex = this.isMobile || this.isRpi ? null : texLoader.load(`./textures/tiles_depth/${texId}_depth.png`);
       this.faceTextureCache[texId] = { faceTex, oniricaTex, normTex, depthTex };
+    } else if (this.oniricaMode && !this.faceTextureCache[texId].oniricaTex) {
+      const oniricaFolder = this.isRpi ? "tiles_onirica_rpi" : "tiles_onirica";
+      const oniricaTex = texLoader.load(`./textures/${oniricaFolder}/${texId}.png`);
+      oniricaTex.colorSpace = THREE.SRGBColorSpace;
+      if (this.isRpi) {
+        oniricaTex.generateMipmaps = false;
+        oniricaTex.minFilter = THREE.LinearFilter;
+      }
+      this.faceTextureCache[texId].oniricaTex = oniricaTex;
     }
     return this.faceTextureCache[texId];
   }
@@ -1033,8 +1248,10 @@ class MahjongSolitaireApp {
     const cached = this.ensureFaceTexturesLoaded(targetTexId);
     const mat = tile.root.userData.faceMesh?.material;
     if (mat && cached) {
-      mat.map = this.oniricaMode ? cached.oniricaTex : cached.faceTex;
-      mat.normalMap = cached.normTex;
+      mat.map = this.oniricaMode && cached.oniricaTex ? cached.oniricaTex : cached.faceTex;
+      if (!this.isRpi && mat.normalMap !== undefined) {
+        mat.normalMap = cached.normTex;
+      }
       mat.needsUpdate = true;
     }
     // Chunky "tarchiato" muscular scale when ornate dragon is active on hover/select!
@@ -1165,7 +1382,7 @@ class MahjongSolitaireApp {
 
   createTileMesh(tileData, texLoader, isWowPreview = false) {
     const root = new THREE.Group();
-    const castShad = !this.isMobile && this.settings.shadows;
+    const castShad = !this.isMobile && !this.isRpi && this.settings.shadows;
 
     // 1. Tile Body: Pure White/Ivory Parallelepiped with 8 Beveled Edges/Corners (Half Thickness TILE_D = 0.19, ZERO middle band!)
     const bodyMesh = new THREE.Mesh(this.sharedGeo.body, this.sharedMat.bodyMatFree);
@@ -1180,21 +1397,28 @@ class MahjongSolitaireApp {
       this.ensureFaceTexturesLoaded(`${tileData.id}_ornate`, texLoader);
     }
 
-    const activeMap = this.oniricaMode ? oniricaTex : faceTex;
+    const activeMap = this.oniricaMode && oniricaTex ? oniricaTex : faceTex;
     const activeRelief = this.oniricaMode ? 0.12 : this.settings.bassorilievo;
 
-    const faceMatCfg = {
-      map: activeMap,
-      normalMap: normTex,
-      normalScale: new THREE.Vector2(1.45 * activeRelief, 1.45 * activeRelief),
-      roughness: this.oniricaMode ? 0.11 : 0.17,
-      metalness: 0.06,
-      polygonOffset: true,
-      polygonOffsetFactor: -2,
-      polygonOffsetUnits: -2,
-    };
+    // Golden Rule #2 (`Computers/sguisatazzo.md`): Use MeshLambertMaterial on Sguisatazzo RPi to eliminate per-pixel PBR/normalMap fragment shader overhead!
+    const faceMat = this.isRpi
+      ? new THREE.MeshLambertMaterial({
+          map: activeMap,
+          polygonOffset: true,
+          polygonOffsetFactor: -2,
+          polygonOffsetUnits: -2,
+        })
+      : new THREE.MeshStandardMaterial({
+          map: activeMap,
+          normalMap: normTex,
+          normalScale: new THREE.Vector2(1.45 * activeRelief, 1.45 * activeRelief),
+          roughness: this.oniricaMode ? 0.11 : 0.17,
+          metalness: 0.06,
+          polygonOffset: true,
+          polygonOffsetFactor: -2,
+          polygonOffsetUnits: -2,
+        });
 
-    const faceMat = new THREE.MeshStandardMaterial(faceMatCfg);
     const faceGeo = isWowPreview && this.sharedGeo.wowFace ? this.sharedGeo.wowFace : this.sharedGeo.face;
     const faceMesh = new THREE.Mesh(faceGeo, faceMat);
     faceMesh.rotation.x = -Math.PI / 2;
@@ -1203,15 +1427,18 @@ class MahjongSolitaireApp {
     faceMesh.receiveShadow = castShad;
     root.add(faceMesh);
 
-    // 3. Toggleable "Debug Simboli" Top Corners Overlay (C / S1..S4 / 1..9 + mini-hanzi — OFF BY DEFAULT!)
-    const debugCornerMesh = new THREE.Mesh(
-      this.sharedGeo.debugCornerPlane,
-      this.getDebugCornerMaterial(tileData)
-    );
-    debugCornerMesh.rotation.x = -Math.PI / 2;
-    debugCornerMesh.position.set(0.0, TILE_D * 0.5 + 0.005, -TILE_H * 0.34);
-    debugCornerMesh.visible = Boolean(this.debugSymbols);
-    root.add(debugCornerMesh);
+    // 3. Toggleable "Debug Simboli" Top Corners Overlay (Lazy-created only when `this.debugSymbols` is ON, saving 144 draw calls & 50 CanvasTextures!)
+    let debugCornerMesh = null;
+    if (this.debugSymbols) {
+      debugCornerMesh = new THREE.Mesh(
+        this.sharedGeo.debugCornerPlane,
+        this.getDebugCornerMaterial(tileData)
+      );
+      debugCornerMesh.rotation.x = -Math.PI / 2;
+      debugCornerMesh.position.set(0.0, TILE_D * 0.5 + 0.005, -TILE_H * 0.34);
+      debugCornerMesh.visible = true;
+      root.add(debugCornerMesh);
+    }
 
     // 4. Yellow-Purple Selection Double Border ("bordino giallo-viola" — ok il bordo esterno)
     const selectionBorder = new THREE.Group();
@@ -1302,17 +1529,20 @@ class MahjongSolitaireApp {
   }
 
   onPointerMove(e) {
-    if (this.isMobile || this.isDemoRunning || this.isPairPauseActive) return;
-    // Throttle hover raycast to every 32ms (~30Hz) so mouse movement is zero-cost
+    if ((this.isMobile && !this.isRpi) || this.isDemoRunning || this.isPairPauseActive) return;
+    // Golden Rule #5 (`Computers/sguisatazzo.md`): Throttle hover raycast to 85ms (~12Hz) on Sguisatazzo RPi (32ms on Desktop)
+    // and reuse `this._activeRootsBuffer` so zero temporary arrays are allocated in L2 cache!
     const now = performance.now();
-    if (this._lastHoverCheck && now - this._lastHoverCheck < 32) return;
+    const minIntervalMs = this.isRpi ? 85 : 32;
+    if (this._lastHoverCheck && now - this._lastHoverCheck < minIntervalMs) return;
     this._lastHoverCheck = now;
 
     this.mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
     this.mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
     this.raycaster.setFromCamera(this.mouse, this.camera);
 
-    const activeRoots = [];
+    const activeRoots = this._activeRootsBuffer;
+    activeRoots.length = 0;
     for (let i = 0; i < this.tiles.length; i++) {
       if (!this.tiles[i].removed) activeRoots.push(this.tiles[i].root);
     }
@@ -1584,7 +1814,7 @@ class MahjongSolitaireApp {
     }
 
     overlay.classList.remove("hidden");
-    if (videoEl) {
+    if (videoEl && !this.isRpi) {
       try {
         videoEl.currentTime = 0;
         videoEl.play().catch(() => {});
@@ -1672,7 +1902,7 @@ class MahjongSolitaireApp {
         ctx.globalAlpha = Math.max(0, Math.min(1, fAlpha));
         ctx.drawImage(fireImg, cx - drawW * 0.5, cy - drawH * 0.5, drawW, drawH);
         ctx.restore();
-      } else if (videoEl && videoEl.readyState >= 2 && elapsed > 200 && elapsed < 850) {
+      } else if (!this.isRpi && videoEl && videoEl.readyState >= 2 && elapsed > 200 && elapsed < 850) {
         const keyedCanvas = this.unpremultiplyWhiteVideoFrame(videoEl, W, H);
         if (keyedCanvas) {
           ctx.save();
@@ -1731,7 +1961,7 @@ class MahjongSolitaireApp {
     }
 
     overlay.classList.remove("hidden");
-    if (videoEl) {
+    if (videoEl && !this.isRpi) {
       try {
         videoEl.currentTime = 0;
         videoEl.play().catch(() => {});
@@ -1819,7 +2049,7 @@ class MahjongSolitaireApp {
         ctx.globalAlpha = Math.max(0, Math.min(1, fAlpha));
         ctx.drawImage(celImg, cx - drawW * 0.5, cy - drawH * 0.5, drawW, drawH);
         ctx.restore();
-      } else if (videoEl && videoEl.readyState >= 2 && elapsed > 180 && elapsed < 820) {
+      } else if (!this.isRpi && videoEl && videoEl.readyState >= 2 && elapsed > 180 && elapsed < 820) {
         const keyedCanvas = this.unpremultiplyWhiteVideoFrame(videoEl, W, H);
         if (keyedCanvas) {
           ctx.save();
@@ -2483,6 +2713,50 @@ class MahjongSolitaireApp {
     });
   }
 
+  toggleRpiMode(forceState = null, reason = "Toggle manuale UI") {
+    const nextRpi = forceState !== null ? Boolean(forceState) : !this.isRpi;
+    this.isRpi = nextRpi;
+    this.qualityTier = nextRpi ? "rpi" : "high";
+    const isMobileViewport =
+      typeof window !== "undefined" &&
+      (window.innerWidth <= 768 || ("ontouchstart" in window && window.innerWidth <= 1024));
+    this.isMobile = isMobileViewport || this.isRpi;
+
+    try {
+      if (typeof localStorage !== "undefined") {
+        localStorage.setItem("mahjong_quality_override", nextRpi ? "rpi" : "high");
+      }
+    } catch (_) {}
+
+    const btnRpi = document.getElementById("btn-rpi-mode");
+    const nameRpi = document.getElementById("rpi-mode-name");
+    const chkRpi = document.getElementById("chk-rpi-mode");
+    if (btnRpi) btnRpi.classList.toggle("active", this.isRpi);
+    if (nameRpi) nameRpi.textContent = `Sguisatazzo: ${this.isRpi ? "ON" : "OFF"}`;
+    if (chkRpi) chkRpi.checked = this.isRpi;
+
+    // Reconfigure WebGLRenderer pixelRatio, shadows, and toneMapping on the fly
+    if (this.renderer) {
+      this.renderer.setPixelRatio(this.computeTargetPixelRatio());
+      this.renderer.setSize(window.innerWidth, window.innerHeight);
+      this.renderer.toneMapping = this.isRpi ? THREE.NoToneMapping : THREE.ACESFilmicToneMapping;
+      this.settings.shadows = !this.isMobile && !this.isRpi;
+      this.renderer.shadowMap.enabled = this.settings.shadows;
+      if (this.sunLight) this.sunLight.castShadow = this.settings.shadows;
+    }
+
+    // Clear cached geometries/materials/textures and rebuild board with `_rpi` or `high` assets
+    this.sharedGeo = null;
+    this.sharedMat = null;
+    this.faceTextureCache = {};
+    const trackKey = document.getElementById("track-select")?.value || "master";
+    if (this.manifest) {
+      this.setupBoard(trackKey);
+    }
+    console.log(`🍓 [Sguisatazzo Mode ${this.isRpi ? "ON" : "OFF"}]: ${reason}`);
+    sfx.playClick();
+  }
+
   toggleOniricaMode(forceMode = null) {
     this.oniricaMode = forceMode !== null ? forceMode : !this.oniricaMode;
     const nameEl = document.getElementById("onirica-name");
@@ -2497,12 +2771,16 @@ class MahjongSolitaireApp {
     const activeRelief = this.oniricaMode ? 0.12 : this.settings.bassorilievo;
     this.tiles.forEach((t) => {
       const texId = this.getDisplayTextureId(t.data, t.ornateActive);
-      const cached = this.faceTextureCache[texId] || this.faceTextureCache[t.data.id];
+      const cached = this.ensureFaceTexturesLoaded(texId);
       if (!cached) return;
       const mat = t.root.userData.faceMesh.material;
-      mat.map = this.oniricaMode ? cached.oniricaTex : cached.faceTex;
-      mat.normalScale.set(1.45 * activeRelief, 1.45 * activeRelief);
-      mat.roughness = this.oniricaMode ? 0.11 : 0.17;
+      mat.map = this.oniricaMode && cached.oniricaTex ? cached.oniricaTex : cached.faceTex;
+      if (mat.normalScale) {
+        mat.normalScale.set(1.45 * activeRelief, 1.45 * activeRelief);
+      }
+      if (mat.roughness !== undefined) {
+        mat.roughness = this.oniricaMode ? 0.11 : 0.17;
+      }
       mat.needsUpdate = true;
       if (t.data.coupled && !t.removed) {
         this.pulseTile(t);
@@ -2705,6 +2983,24 @@ class MahjongSolitaireApp {
       });
     }
 
+    // Sguisatazzo / Raspberry Pi 400 Low-Spec Mode Toggle
+    const btnRpiMode = document.getElementById("btn-rpi-mode");
+    const nameRpiMode = document.getElementById("rpi-mode-name");
+    const chkRpiMode = document.getElementById("chk-rpi-mode");
+    if (btnRpiMode) {
+      btnRpiMode.classList.toggle("active", Boolean(this.isRpi));
+      btnRpiMode.addEventListener("click", () => this.toggleRpiMode());
+    }
+    if (nameRpiMode) {
+      nameRpiMode.textContent = `Sguisatazzo: ${this.isRpi ? "ON" : "OFF"}`;
+    }
+    if (chkRpiMode) {
+      chkRpiMode.checked = Boolean(this.isRpi);
+      chkRpiMode.addEventListener("change", (e) => {
+        this.toggleRpiMode(e.target.checked);
+      });
+    }
+
     // Camera buttons (only those with data-cam)
     document.querySelectorAll(".cam-btn[data-cam]").forEach((btn) => {
       btn.addEventListener("click", () => this.setCameraPreset(btn.dataset.cam));
@@ -2736,6 +3032,9 @@ class MahjongSolitaireApp {
       } else if (key === "s") {
         e.preventDefault();
         this.toggleDebugSymbols();
+      } else if (key === "r") {
+        e.preventDefault();
+        this.toggleRpiMode();
       } else if (key === "2") {
         this.toggle2DMode();
       } else if (key === "o") {
@@ -2786,7 +3085,7 @@ class MahjongSolitaireApp {
     bindSlider("sl-marble-roughness", "marbleRoughness", (val) => {
       if (this.sharedMat) {
         [this.sharedMat.marbleFree, this.sharedMat.marbleBlocked, this.sharedMat.marbleSelected].forEach((m) => {
-          if (m) m.roughness = val;
+          if (m && m.roughness !== undefined) m.roughness = val;
         });
       }
     });
@@ -2798,12 +3097,16 @@ class MahjongSolitaireApp {
       }
     });
     bindSlider("sl-obsidian-metallic", "obsidianMetallic", (val) => {
-      if (this.sharedMat) this.sharedMat.obsidian.metalness = val;
+      if (this.sharedMat && this.sharedMat.obsidian.metalness !== undefined) {
+        this.sharedMat.obsidian.metalness = val;
+      }
     });
     bindSlider("sl-bassorilievo", "bassorilievo", (val) => {
       this.tiles.forEach((t) => {
         const mat = t.root.userData.faceMesh.material;
-        mat.normalScale.set(1.45 * val, 1.45 * val);
+        if (mat.normalScale) {
+          mat.normalScale.set(1.45 * val, 1.45 * val);
+        }
       });
     });
     bindSlider("sl-normal-scale", "normalScale", (val) => {
@@ -2811,7 +3114,9 @@ class MahjongSolitaireApp {
         [this.sharedMat.marbleFree, this.sharedMat.marbleBlocked, this.sharedMat.marbleSelected].forEach((m) => {
           if (m && m.normalScale) m.normalScale.set(0.18 * val, 0.18 * val);
         });
-        this.sharedMat.obsidian.normalScale.set(0.22 * val, 0.22 * val);
+        if (this.sharedMat.obsidian.normalScale) {
+          this.sharedMat.obsidian.normalScale.set(0.22 * val, 0.22 * val);
+        }
       }
     });
     bindSlider("sl-fov", "fov", (val) => {
@@ -2857,7 +3162,7 @@ class MahjongSolitaireApp {
           fov: 38,
           camDistance: 11.5,
           autoRotate: false,
-          shadows: !this.isMobile,
+          shadows: !this.isMobile && !this.isRpi,
         });
         this.updateSunPosition();
         this.syncSliderUI();
@@ -2990,18 +3295,39 @@ class MahjongSolitaireApp {
     if (this.sharedMat) {
       [this.sharedMat.marbleFree, this.sharedMat.marbleBlocked, this.sharedMat.marbleSelected].forEach((m) => {
         if (!m) return;
-        m.roughness = this.settings.marbleRoughness;
+        if (m.roughness !== undefined) m.roughness = this.settings.marbleRoughness;
         if (m.clearcoat !== undefined) m.clearcoat = this.settings.marbleClearcoat;
       });
     }
     this.tiles.forEach((t) => {
       const mat = t.root.userData.faceMesh.material;
-      mat.normalScale.set(1.45 * this.settings.bassorilievo, 1.45 * this.settings.bassorilievo);
+      if (mat.normalScale) {
+        mat.normalScale.set(1.45 * this.settings.bassorilievo, 1.45 * this.settings.bassorilievo);
+      }
     });
   }
 
   animate(now) {
     requestAnimationFrame(this.animate);
+
+    // Layer 4: 45-Frame Startup FPS Watchdog (auto-downgrades to Sguisatazzo Mode if median frame > 42ms / < 24 FPS)
+    if (!this._fpsWatchdogDone && this.tiles.length > 0) {
+      if (this._lastFrameTime > 0) {
+        const dtMs = now - this._lastFrameTime;
+        if (dtMs > 4 && dtMs < 500) {
+          this._fpsSamples.push(dtMs);
+          if (this._fpsSamples.length >= 45) {
+            this._fpsWatchdogDone = true;
+            const sorted = [...this._fpsSamples].sort((a, b) => a - b);
+            const medianMs = sorted[Math.floor(sorted.length / 2)];
+            if (medianMs > 42 && !this.isRpi) {
+              this.toggleRpiMode(true, `Auto-Watchdog FPS (mediana ${medianMs.toFixed(1)}ms > 42ms)`);
+            }
+          }
+        }
+      }
+      this._lastFrameTime = now;
+    }
 
     // Update active tweens
     for (let i = this.tweens.length - 1; i >= 0; i--) {
@@ -3029,8 +3355,8 @@ class MahjongSolitaireApp {
     this.updateEnvironmentVisibility();
     this.renderer.render(this.scene, this.camera);
 
-    // Render Top-Left 3D Tile Showcase (#wow-3d-popup) on desktop when visible
-    if (!this.isMobile && this.wowRenderer && this.wowGroup) {
+    // Render Top-Left 3D Tile Showcase (#wow-3d-popup) on desktop when visible (skipped on Sguisatazzo RPi!)
+    if (!this.isMobile && !this.isRpi && this.wowRenderer && this.wowGroup) {
       const wowPopup = document.getElementById("wow-3d-popup");
       if (wowPopup && !wowPopup.classList.contains("hidden")) {
         this.wowGroup.rotation.y = Math.sin(now * 0.0022) * (Math.PI / 6);
@@ -3042,6 +3368,8 @@ class MahjongSolitaireApp {
 }
 
 // Bootstrapping
-window.addEventListener("DOMContentLoaded", () => {
-  window.app = new MahjongSolitaireApp();
-});
+if (typeof window !== "undefined" && typeof window.addEventListener === "function") {
+  window.addEventListener("DOMContentLoaded", () => {
+    window.app = new MahjongSolitaireApp();
+  });
+}

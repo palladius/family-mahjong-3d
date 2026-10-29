@@ -1,5 +1,22 @@
 # Changelog - Carlesso Family Mahjong 3D 🀄🐉
 
+## [1.9.0] - 2026-10-28
+### Added & Optimized (GitHub Issue #4)
+- **🍓 Modalità Sguisatazzo (Raspberry Pi 400 Rev 1.0 • Broadcom `BCM2711` Cortex-A72 + `V3D 4.2` VideoCore VI Auto-Detection & Low-Spec Pipeline)**:
+  - **Multi-Layer Startup Hardware Heuristics (`detectHardwareProfile()` in `src/main.js`)**:
+    1. **WebGL Unmasked GPU Renderer (`WEBGL_debug_renderer_info`)**: Matches `V3D 4.2` / `V3D 7.1` / `VC4` / `VideoCore` / `Broadcom` / `llvmpipe` / `Panfrost` / `Lima` so **Sguisatazzo** (`1920×1080 @ 60Hz` non-touch HDMI monitor where `isMobile === false`) is detected immediately at boot.
+    2. **Linux ARM Desktop Fingerprint**: Matches `Linux aarch64` / `armv7l` / `armv8l` on non-Android desktop browsers even if `UNMASKED_RENDERER_WEBGL` is masked.
+    3. **Hardware Texture Cap & Low-End Flag**: Matches `MAX_TEXTURE_SIZE <= 4096` (V3D 4.2 hardware limit) or Linux `deviceMemory <= 4 && hardwareConcurrency <= 4` (`--enable-low-end-device-mode`).
+    4. **Runtime FPS Watchdog & Manual Toggle**: Monitors frame times over the first 45 frames after board spawn and auto-switches to **Modalità Sguisatazzo** if average FPS drops below `24 FPS`, plus supports `?sguisatazzo=1` / `?quality=rpi` URL overrides and the top-HUD **`🍓 Sguisatazzo: ON/OFF`** button (`#btn-rpi-mode`).
+  - **5 Golden Rules from Obsidian (`Computers/sguisatazzo.md`)**:
+    - **Rule #1 (Fill-Rate)**: Caps `renderer.setPixelRatio(0.75)` on `1920×1080` (`1440×810` internal framebuffer = `-44%` fragments), `antialias: false`, `powerPreference: "low-power"`, and skips the secondary `#wow-3d-popup` WebGL renderer.
+    - **Rule #2 (Materials)**: Uses `THREE.MeshLambertMaterial` (Gouraud per-vertex lighting) instead of `MeshPhysicalMaterial` / `MeshStandardMaterial` across all 144 tiles and the temple environment.
+    - **Rule #3 (Lights & Shadows)**: Disables shadow maps (`shadowMap.enabled = false`) and limits scene lighting to strictly **1 `DirectionalLight` + 1 `AmbientLight`** (zero PointLights/SpotLights).
+    - **Rule #4 (Lightweight GLBs & 256px Textures via `scripts/build_rpi_assets.py` / `just rpi-assets`)**:
+      - Repacked `temple_environment_rpi.glb` (`940.8 KB` $\rightarrow$ **`175.3 KB`, `-81.4%`**) and `tile_generic_white_marble_obsidian_rpi.glb` (`3,078.6 KB` $\rightarrow$ **`59.1 KB`, `-98.1%`**).
+      - Generated 55 `public/textures/tiles_rpi/*.png` (`256×342`, `9×` fewer pixels than `768×1024`), 55 `public/textures/tiles_onirica_rpi/*.png` (`256×342`), and 16 `public/textures/pbr_rpi/*.png` (`256×256`, `64×` fewer pixels than `2048×2048`), with `generateMipmaps = false` and zero normal/depth map uploads (`-93%` VRAM).
+    - **Rule #5 (Cortex-A72 CPU & GC Hygiene)**: Low-poly tile body extrusion (`bevelSegments: 1, curveSegments: 1`, `-78%` vertices), lazy `debugCornerMesh` creation (`-40%` scene-graph meshes), pre-allocated `_activeRootsBuffer` with `12Hz` hover raycast throttling (keeping the magical **Dragonlance White Dragon in Golden Filigree** hover effect!), and hardware-accelerated pre-keyed `*_rgba.png` Power-Up sprites (skipping per-frame CPU video pixel loops).
+
 ## [1.8.5] - 2026-10-25
 ### Changed & Added
 - **🐉✨ White Dragon (`dragon_white` / `白板` *Bái Bǎn*): Classical "Quasi Vuoto" Black China Ink Frame at Rest $\rightarrow$ Magical "Dragonlance White Dragon in 24k Golden Filigree" on Hover/Select**:

@@ -537,3 +537,53 @@
   > "e poi /chumbia qwuando finito"
   > "/learn In 3D board games like Mahjong Solitaire where Left/Right orientation matters for game rules, bind OrbitControls Left-Click / 1-Finger drag to horizontal XZ plane translation (THREE.MOUSE.PAN with screenSpacePanning=false and a 6px click-vs-drag guard) and reserve 3D rotation for Right-Click or Shift+Drag. 🀄🐉🎺"
 - **Status**: Milestone 18 (`v1.8.5`) approved by **RiccardinoCM26 🦖**, `/learn` rule persisted into [`GEMINI.md`](../GEMINI.md), committed, pushed to `origin/main`, and `/chumbia` cleanup completed!
+
+---
+
+## 2026-10-27T07:15:19+01:00 — Architectural Plan (`/plan`): Raspberry Pi (`sguisatazzo`) Auto-Detection Heuristics & Low-Power 3D GLB/Texture Pipeline (GitHub Issue Proposal)
+
+### 1. Verbatim User Request
+> "/plan mi piacerebbe adesso creare un GHI per una potenza grafica abbastanza "bassa" che giri bene sul raspebrryr pi di mio figlio (sguisatazzo). cosa piu importante, mi piacerebbe che all'avvio capisse con qualche tipo di euristica che e' su RASP e quindi parta automaticamente con grafica piu ciofeca. Questo e' complesso, anche perche dobbiamo ridimensionare tutti i GLB in ''qualita raspebrry' Facci una pensata e dimmi"
+
+### 2. Root-Cause Bottleneck Audit for Raspberry Pi (`sguisatazzo`)
+1. **Desktop Viewport False-Positive (`this.isMobile === false`)**:
+   - Because `sguisatazzo` runs on an HDMI monitor/TV (`window.innerWidth > 768`, no touch screen), `src/main.js` classifies it as a **High-End Desktop GPU**, enabling `MeshPhysicalMaterial` (`clearcoat`), `2048×2048` `PCFSoftShadowMap`, 4 dynamic `PointLight`s, MSAA, and `60Hz` `pointermove` raycasting across 144 tiles.
+2. **Oversized GLBs with Embedded 2K Textures (`22.2 MB` total in `public/models/`)**:
+   - `tile_generic_white_marble_obsidian.glb` is **3.0 MB** (despite having only 160 vertices) due to embedded 2K PBR maps, and blocks `setupBoard("master")` at startup even though `createTileMesh` uses procedural `makeBeveledParallelepipedGeometry`!
+   - `temple_environment.glb` is **944 KB**, `tile_carved_intaglio_showcase.glb` is **8.6 MB**, and `tile_coupled_showcase.glb` is **9.7 MB**.
+3. **Eager Texture & VRAM Overload (`~53 MB` PNGs on disk $\rightarrow$ `>450 MB` uncompressed RGBA8 + mipmaps in VideoCore CMA RAM)**:
+   - `ensureFaceTexturesLoaded()` eagerly loads 4 separate `768×1024` maps (`tiles`, `tiles_onirica`, `tiles_normal`, `tiles_depth`) per tile type plus 8 `2048×2048` PBR maps (`pbr/*_2k.png`).
+
+### 3. Proposed Multi-Signal Raspberry Pi Detection & Low-Spec Asset Architecture
+- Formulated a 4-tier startup heuristic (`WEBGL_debug_renderer_info` checking `V3D` / `VC4` / `VideoCore` / `llvmpipe`, `MAX_TEXTURE_SIZE <= 4096`, `Linux aarch64/armv7l` UA, plus a 45-frame FPS watchdog and `?quality=rpi` override) paired with a build-time `_rpi.glb` & `tiles_rpi/` downscaling pipeline.
+
+---
+
+## 2026-10-28T08:03:00+01:00 — Milestone 19 (`v1.9.0`): "🍓 Modalità Sguisatazzo" (Raspberry Pi 400 V3D 4.2 Auto-Detection & Lightweight GLB/Texture Pipeline — GitHub Issue #4)
+
+### 1. Verbatim User Request
+> "vedi specifiche Sguisatazzo su obsidian"
+
+### 2. Obsidian Hardware Profile Inspection (`Computers/sguisatazzo.md`) & GitHub Issue #4
+- Inspected `/Users/ricc/obsidian-pbt26/Personale/PBTPersonaleSync26/Computers/sguisatazzo.md`:
+  - **Model**: `Raspberry Pi 400 Rev 1.0` (Hostname `sguisatazzo`, ex `ghigna`).
+  - **SoC / CPU**: Broadcom `BCM2711` Quad-Core Cortex-A72 (`ARM v8` 64-bit `aarch64`) @ `1.80 GHz`, `1 MiB` shared L2 cache.
+  - **RAM**: `4 GB LPDDR4-3200` (`3.7 GiB` OS visible) shared between Linux, Chromium (`--enable-low-end-device-mode`), and VideoCore VI GPU CMA.
+  - **GPU**: Broadcom `V3D 4.2` (VideoCore VI @ `500 MHz`), OpenGL ES 3.1 / WebGL 2.0, `MAX_TEXTURE_SIZE = 4096`.
+  - **Display**: GWD ARZOPA `1920×1080 @ 60Hz` HDMI monitor (non-touch $\rightarrow$ `isMobile === false`).
+- Created and tracked **GitHub Issue #4** (`https://github.com/palladius/family-mahjong-3d/issues/4`): `🍓 [Perf] Modalità Sguisatazzo (Raspberry Pi 400 V3D 4.2): Auto-Detection Heuristics + Lightweight GLB & Texture Pipeline`.
+
+### 3. Concrete Artifacts & Code Produced
+- **`scripts/build_rpi_assets.py` (`just rpi-assets`)**:
+  - Repacked all 4 GLB models in `public/models/` with downscaled `256×256` embedded textures and stripped normal/roughness maps:
+    * `temple_environment_rpi.glb`: **`175.3 KB`** (down from `940.8 KB`, **`-81.4%`**)
+    * `tile_generic_white_marble_obsidian_rpi.glb`: **`59.1 KB`** (down from `3,078.6 KB`, **`-98.1%`**)
+    * `tile_coupled_showcase_rpi.glb`: **`222.8 KB`** (down from `9,936.6 KB`, **`-97.8%`**)
+    * `tile_carved_intaglio_showcase_rpi.glb`: **`4,704.5 KB`** (down from `8,804.7 KB`, **`-46.6%`**)
+  - Generated 55 `public/textures/tiles_rpi/*.png` (`256×342`, `9×` fewer pixels), 55 `public/textures/tiles_onirica_rpi/*.png` (`256×342`), and 16 `public/textures/pbr_rpi/*.png` (`256×256`, `64×` fewer pixels).
+- **`src/main.js` & `index.html`**:
+  - Exported `detectHardwareProfile(urlParams, envOverrides)` implementing 4-layer Sguisatazzo auto-detection (`UNMASKED_RENDERER_WEBGL` matching `V3D 4.2`/`Broadcom`/`VideoCore`/`llvmpipe`, `Linux aarch64` desktop UA, `MAX_TEXTURE_SIZE <= 4096`, `deviceMemory <= 4 && hardwareConcurrency <= 4`, plus `?sguisatazzo=1` URL override and 45-frame `< 24 FPS` watchdog).
+  - Applied all 5 Golden Rules from `Computers/sguisatazzo.md` (`pixelRatio = 0.75` on 1080p, `MeshLambertMaterial`, 1 `DirectionalLight` + 1 `AmbientLight` with zero shadows, `bevelSegments: 1, curveSegments: 1`, lazy `debugCornerMesh`, `tiles_rpi/` with `generateMipmaps = false`, pre-allocated `_activeRootsBuffer`, `12Hz` hover raycast preserving the **Dragonlance White Dragon in Golden Filigree** hover effect, and pre-keyed `*_rgba.png` Power-Up FX without CPU video pixel loops).
+  - Added `#btn-rpi-mode` (`🍓 Sguisatazzo: ON/OFF`) in top HUD and `#chk-rpi-mode` in Studio Panel.
+- **Verification (`just test`)**:
+  - Added Sguisatazzo GLB/texture assertions to `scripts/verify_build.mjs` and `detectHardwareProfile()` unit tests to `scripts/test_board_integration.mjs`. All tests pass 100%.
