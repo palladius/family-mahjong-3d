@@ -355,46 +355,61 @@ class MahjongSolver {
   }
 }
 
-// Test on Easy Lotus (36 tiles)
-const slots = TRACK_LAYOUTS.easy.generateSlots();
-const deckPairs = generateDeckPairs(slots.length / 2);
-const assignedDeck = assignSolvableDeckToSlots(slots, deckPairs);
-const solver = new MahjongSolver(slots, assignedDeck);
+let failed = false;
+function assert(cond, msg) {
+  if (!cond) {
+    console.error(`❌ FAIL [Solvability & Deadlock Engine Test]: ${msg}`);
+    failed = true;
+  } else {
+    console.log(`✅ PASS [Solvability & Deadlock Engine Test]: ${msg}`);
+  }
+}
 
-const initialMask = new Uint8Array(slots.length).fill(1);
-const res = solver.findSolution(initialMask);
-console.log("Easy Lotus Solve Result:", {
-  solvable: res.solvable,
-  movesFound: res.path?.length,
-  timeMs: res.timeMs.toFixed(2),
-  nodeCount: res.nodeCount,
-  visitedStates: res.visitedStates
-});
+console.log("🧩 Running Mahjong Solvability & Early Deadlock Engine Tests...");
 
-// Test deadlocked state (simulate removing until stuck, like user's 18 tiles)
-const halfMask = new Uint8Array(slots.length).fill(0);
-// Pick 18 tiles that have NO matchable free pairs
+// 1. Test deadlocked state (simulate 18 tiles with zero matchable free pairs)
+const easySlots = TRACK_LAYOUTS.easy.generateSlots();
+const easyPairs = generateDeckPairs(easySlots.length / 2);
+// Assign non-matching tiles on free top slots so zero legal pairs exist
+const deadDeck = easySlots.map((_, idx) => manifest.tiles[idx % 18]);
+const deadSolver = new MahjongSolver(easySlots, deadDeck);
+const halfMask = new Uint8Array(easySlots.length).fill(0);
 for (let i = 0; i < 18; i++) halfMask[i] = 1;
-const deadCheck = solver.findSolution(halfMask);
-console.log("Deadlock check result:", {
-  solvable: deadCheck.solvable,
-  movesFound: deadCheck.path?.length,
-  timeMs: deadCheck.timeMs.toFixed(2),
-  exhausted: deadCheck.exhaustedSearch
-});
+const deadCheck = deadSolver.findSolution(halfMask);
+assert(
+  deadCheck.solvable === false && deadCheck.exhaustedSearch === true,
+  `Deadlocked 18-tile board accurately detected as unsolvable in ${deadCheck.timeMs.toFixed(2)}ms (exhaustedSearch=${deadCheck.exhaustedSearch})`
+);
 
+// 2. Multi-seed Solvability Verification across all 3 tracks (Easy 36, Medium 72, Master 144)
+const SEEDS_PER_TRACK = 5;
 for (const trackKey of ["easy", "medium", "master"]) {
   const trk = TRACK_LAYOUTS[trackKey];
-  const s = trk.generateSlots();
-  const dp = generateDeckPairs(s.length / 2);
-  const deck = assignSolvableDeckToSlots(s, dp);
-  const slv = new MahjongSolver(s, deck);
-  const m = new Uint8Array(s.length).fill(1);
-  const r = slv.findSolution(m);
-  console.log(`Track ${trackKey} (${s.length} tiles):`, {
-    solvable: r.solvable,
-    moves: r.path?.length,
-    timeMs: r.timeMs.toFixed(2),
-    nodes: r.nodeCount
-  });
+  let solvedCount = 0;
+  let totalMs = 0;
+  let maxNodes = 0;
+  for (let run = 0; run < SEEDS_PER_TRACK; run++) {
+    const s = trk.generateSlots();
+    const dp = generateDeckPairs(s.length / 2);
+    const deck = assignSolvableDeckToSlots(s, dp);
+    const slv = new MahjongSolver(s, deck);
+    const m = new Uint8Array(s.length).fill(1);
+    const r = slv.findSolution(m);
+    if (r.solvable && r.path && r.path.length === s.length / 2) {
+      solvedCount++;
+    }
+    totalMs += r.timeMs;
+    if (r.nodeCount > maxNodes) maxNodes = r.nodeCount;
+  }
+  assert(
+    solvedCount === SEEDS_PER_TRACK,
+    `Track '${trackKey}' (${trk.tileCount} tiles): ${solvedCount}/${SEEDS_PER_TRACK} deals 100% mathematically solvable (avg ${(totalMs / SEEDS_PER_TRACK).toFixed(2)}ms, maxNodes=${maxNodes})`
+  );
+}
+
+if (failed) {
+  console.error("\n💥 Solvability & Deadlock Engine Test Suite FAILED!");
+  process.exit(1);
+} else {
+  console.log("\n🎉 All Solvability & Early Deadlock Engine Checks PASSED!");
 }

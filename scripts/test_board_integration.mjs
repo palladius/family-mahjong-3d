@@ -215,8 +215,7 @@ assert(
 // 2. INITIAL CHESSBOARD TEXTURE PIXEL CONTRAST AUDIT (NO WASHED-OUT TILES!)
 // ============================================================================
 
-function parsePngRgbStats(pngPath) {
-  const buf = fs.readFileSync(pngPath);
+function parsePngBufferRgbStats(buf) {
   const width = buf.readUInt32BE(16);
   const height = buf.readUInt32BE(20);
   const bitDepth = buf[24];
@@ -292,6 +291,10 @@ function parsePngRgbStats(pngPath) {
     lumRange: maxLum - minLum,
     colorfulRatio: colorfulPixels / Math.max(1, totalSampled),
   };
+}
+
+function parsePngRgbStats(pngPath) {
+  return parsePngBufferRgbStats(fs.readFileSync(pngPath));
 }
 
 const sampleTileIds = [
@@ -565,37 +568,196 @@ for (const tileId of ["dragon_red", "dragon_green", "dragon_white", "coupled_A1"
 }
 
 // ============================================================================
-// 4. PRE-DEPLOY PRODUCTION BUNDLE (`dist/`) & POST-DEPLOY LIVE URL CHECK
+// 5. PRE-DEPLOY PRODUCTION BUNDLE (`dist/`) BROKEN-PUSH GATE (--check-dist)
 // ============================================================================
 
+const requireDist = process.argv.includes("--check-dist");
+const distDir = path.join(ROOT, "dist");
 const distAssetsDir = path.join(ROOT, "dist/assets");
+
+if (requireDist) {
+  assert(
+    fs.existsSync(distDir) && fs.existsSync(distAssetsDir),
+    "Pre-Deploy Gate (--check-dist): 'dist/' and 'dist/assets/' exist (run 'npm run build' first)"
+  );
+}
+
 if (fs.existsSync(distAssetsDir)) {
+  const distIndexPath = path.join(distDir, "index.html");
+  assert(fs.existsSync(distIndexPath), "dist/index.html exists in built bundle");
+  const distIndexHtml = fs.readFileSync(distIndexPath, "utf8");
+
+  // 5A. Subpath Safety Check: No root-relative src="/assets/..." or href="/assets/..." that 404 on /family-mahjong-3d/
+  const hasRootAssetRef = /(?:src|href)=["']\/(assets|textures|models|fx|fonts|portraits)\//.test(distIndexHtml);
+  assert(
+    !hasRootAssetRef,
+    "dist/index.html uses strictly relative './' asset paths (safe for GitHub Pages '/family-mahjong-3d/' subpath)"
+  );
+
+  // 5B. Referenced JS & CSS bundles physically exist and meet minimum size thresholds
   const jsFiles = fs.readdirSync(distAssetsDir).filter((f) => f.endsWith(".js"));
+  const cssFiles = fs.readdirSync(distAssetsDir).filter((f) => f.endsWith(".css"));
+  assert(
+    jsFiles.length > 0 && cssFiles.length > 0,
+    `dist/assets/ contains compiled JS (${jsFiles.join(", ")}) and CSS (${cssFiles.join(", ")}) bundles`
+  );
+
   if (jsFiles.length > 0) {
-    const bundleCode = fs.readFileSync(path.join(distAssetsDir, jsFiles[0]), "utf8");
+    const jsPath = path.join(distAssetsDir, jsFiles[0]);
+    const jsSize = fs.statSync(jsPath).size;
+    const bundleCode = fs.readFileSync(jsPath, "utf8");
+    assert(jsSize > 400000, `Compiled JS bundle (${jsFiles[0]}) is non-truncated (${(jsSize / 1024).toFixed(1)} KB)`);
     assert(
       !bundleCode.includes("-0.88*") && !bundleCode.includes("-.88*") && bundleCode.includes("polygonOffsetFactor:-2"),
       `Compiled dist/ bundle (${jsFiles[0]}) has polygonOffsetFactor:-2 and zero negative displacementBias`
     );
+    assert(
+      bundleCode.includes("screenSpacePanning=!1") &&
+        bundleCode.includes("dragon_white") &&
+        bundleCode.includes("_ornate") &&
+        bundleCode.includes("triggerGameOver") &&
+        bundleCode.includes("VideoCore"),
+      `Compiled dist/ bundle (${jsFiles[0]}) includes XZ PAN controls, Dragonlance 'dragon_white' + '_ornate', Sguisatazzo VideoCore/V3D auto-detection, and GameOver deadlock protection`
+    );
+    const hasRootFetchInBundle = /fetch\(["']\/(textures|models|fx|fonts)\//.test(bundleCode);
+    assert(
+      !hasRootFetchInBundle,
+      `Compiled dist/ bundle (${jsFiles[0]}) has zero broken root-relative fetch('/textures/...') calls`
+    );
   }
+
+  // 5C. Complete dist/ Public Asset Tree Audit (Classic + Onirica + RPi 256px Textures, 8 GLBs with valid glTF magic header, Videos, Font)
+  const distManifestPath = path.join(distDir, "textures/manifest.json");
+  assert(fs.existsSync(distManifestPath), "dist/textures/manifest.json exists");
+  if (fs.existsSync(distManifestPath)) {
+    const distManifest = JSON.parse(fs.readFileSync(distManifestPath, "utf8"));
+    const allDistTilesExist = distManifest.tiles.every(
+      (t) =>
+        fs.existsSync(path.join(distDir, "textures/tiles", `${t.id}.png`)) &&
+        fs.existsSync(path.join(distDir, "textures/tiles_onirica", `${t.id}.png`)) &&
+        fs.existsSync(path.join(distDir, "textures/tiles_rpi", `${t.id}.png`)) &&
+        fs.existsSync(path.join(distDir, "textures/tiles_onirica_rpi", `${t.id}.png`)) &&
+        fs.existsSync(path.join(distDir, "textures/tiles_normal", `${t.id}_normal.png`)) &&
+        fs.existsSync(path.join(distDir, "textures/tiles_depth", `${t.id}_depth.png`))
+    );
+    const ornateDistExist = ["dragon_red_ornate", "dragon_green_ornate", "dragon_white_ornate"].every(
+      (id) =>
+        fs.existsSync(path.join(distDir, "textures/tiles", `${id}.png`)) &&
+        fs.existsSync(path.join(distDir, "textures/tiles_onirica", `${id}.png`)) &&
+        fs.existsSync(path.join(distDir, "textures/tiles_rpi", `${id}.png`)) &&
+        fs.existsSync(path.join(distDir, "textures/tiles_onirica_rpi", `${id}.png`)) &&
+        fs.existsSync(path.join(distDir, "textures/tiles_normal", `${id}_normal.png`)) &&
+        fs.existsSync(path.join(distDir, "textures/tiles_depth", `${id}_depth.png`))
+    );
+    assert(
+      allDistTilesExist && ornateDistExist,
+      "All 318+ tile textures (Classic + Onirica + RPi 256px + Normal + Depth + Ornate Dragon maps) are present in dist/textures/"
+    );
+  }
+
+  const distGlbs = [
+    "models/tile_generic_white_marble_obsidian.glb",
+    "models/temple_environment.glb",
+    "models/tile_coupled_showcase.glb",
+    "models/tile_carved_intaglio_showcase.glb",
+    "models/tile_generic_white_marble_obsidian_rpi.glb",
+    "models/temple_environment_rpi.glb",
+    "models/tile_coupled_showcase_rpi.glb",
+    "models/tile_carved_intaglio_showcase_rpi.glb",
+  ];
+  for (const relGlb of distGlbs) {
+    const p = path.join(distDir, relGlb);
+    const exists = fs.existsSync(p);
+    let validHeader = false;
+    if (exists) {
+      const fd = fs.openSync(p, "r");
+      const hdr = Buffer.alloc(12);
+      fs.readSync(fd, hdr, 0, 12, 0);
+      fs.closeSync(fd);
+      const magic = hdr.toString("ascii", 0, 4);
+      const version = hdr.readUInt32LE(4);
+      const totalLen = hdr.readUInt32LE(8);
+      validHeader = magic === "glTF" && version === 2 && totalLen === fs.statSync(p).size;
+    }
+    assert(exists && validHeader, `dist/${relGlb} exists and has a valid binary glTF v2 header`);
+  }
+
+  assert(
+    fs.existsSync(path.join(distDir, "fx/dragon_powerup_white.mp4")) &&
+      fs.existsSync(path.join(distDir, "fx/family_powerup_white.mp4")) &&
+      fs.existsSync(path.join(distDir, "fonts/MaShanZheng-Regular.ttf")) &&
+      fs.existsSync(path.join(distDir, "progress.html")),
+    "dist/ includes Power-Up MP4 videos, MaShanZheng-Regular.ttf brush font, and progress.html showcase"
+  );
 }
 
+// ============================================================================
+// 6. POST-DEPLOY LIVE GITHUB PAGES DEEP VERIFICATION (--post-deploy)
+// ============================================================================
+
 if (process.argv.includes("--post-deploy")) {
-  const liveUrl = "https://palladius.github.io/family-mahjong-3d/";
-  console.log(`🌐 Running Post-Deploy Live Check against ${liveUrl} ...`);
-  const res = await fetch(`${liveUrl}?t=${Date.now()}`, { cache: "no-store" });
-  assert(res.ok, `Live GitHub Pages URL responded HTTP ${res.status}`);
+  const liveUrl = process.env.LIVE_GHP_URL || "https://palladius.github.io/family-mahjong-3d/";
+  console.log(`🌐 Running Deep Post-Deploy Live Verification against ${liveUrl} ...`);
+
+  const res = await fetch(`${liveUrl}?t=${Date.now()}`, { cache: "no-store", redirect: "follow" });
+  assert(res.ok, `Live GitHub Pages index.html responded HTTP ${res.status} (${res.url})`);
   const html = await res.text();
-  const match = html.match(/src="\.?\/?assets\/(index-[^"]+\.js)"/);
-  assert(Boolean(match), "Live index.html references compiled Vite JS bundle");
-  if (match) {
-    const jsUrl = `${liveUrl}assets/${match[1]}?t=${Date.now()}`;
+
+  const jsMatch = html.match(/src="\.?\/?assets\/(index-[^"]+\.js)"/);
+  const cssMatch = html.match(/href="\.?\/?assets\/(index-[^"]+\.css)"/);
+  assert(Boolean(jsMatch) && Boolean(cssMatch), "Live index.html references compiled Vite JS and CSS bundles");
+
+  if (jsMatch) {
+    const jsUrl = `${liveUrl}assets/${jsMatch[1]}?t=${Date.now()}`;
     const jsRes = await fetch(jsUrl, { cache: "no-store" });
+    assert(jsRes.ok, `Live JS bundle (${jsMatch[1]}) responded HTTP ${jsRes.status}`);
     const liveBundle = await jsRes.text();
     assert(
-      liveBundle.includes("polygonOffsetFactor:-2") && !liveBundle.includes("-.88*"),
-      `Live deployed bundle (${match[1]}) contains fixed faceMesh elevation and zero negative displacementBias`
+      liveBundle.includes("polygonOffsetFactor:-2") &&
+        !liveBundle.includes("-.88*") &&
+        liveBundle.includes("screenSpacePanning=!1") &&
+        liveBundle.includes("dragon_white") &&
+        liveBundle.includes("_ornate"),
+      `Live deployed JS bundle (${jsMatch[1]}, ${(liveBundle.length / 1024).toFixed(1)} KB) contains all 3D elevation, XZ PAN, and Dragonlance filigree invariants`
     );
+  }
+
+  // Verify live manifest.json
+  const manifestRes = await fetch(`${liveUrl}textures/manifest.json?t=${Date.now()}`, { cache: "no-store" });
+  assert(manifestRes.ok, `Live textures/manifest.json responded HTTP ${manifestRes.status}`);
+  if (manifestRes.ok) {
+    const liveManifest = await manifestRes.json();
+    assert(
+      liveManifest.tileCount === 50 && liveManifest.suitsCount === 34 && liveManifest.coupledCount === 16,
+      `Live manifest.json serves all ${liveManifest.tileCount} tiles (34 suits + 16 coupled family tiles)`
+    );
+  }
+
+  // Verify live binary 3D GLB header over HTTP
+  const glbRes = await fetch(`${liveUrl}models/temple_environment.glb?t=${Date.now()}`, { cache: "no-store" });
+  assert(glbRes.ok, `Live models/temple_environment.glb responded HTTP ${glbRes.status}`);
+  if (glbRes.ok) {
+    const glbBuf = Buffer.from(await glbRes.arrayBuffer());
+    const magic = glbBuf.toString("ascii", 0, 4);
+    const version = glbBuf.readUInt32LE(4);
+    assert(
+      magic === "glTF" && version === 2 && glbBuf.length > 50000,
+      `Live temple_environment.glb is a valid binary glTF v2 asset (${(glbBuf.length / 1024).toFixed(1)} KB)`
+    );
+  }
+
+  // Verify live PNG tile textures & decode their RGB scanlines over HTTP
+  for (const liveTileId of ["dragon_white", "dragon_white_ornate", "coupled_A1"]) {
+    const pngRes = await fetch(`${liveUrl}textures/tiles/${liveTileId}.png?t=${Date.now()}`, { cache: "no-store" });
+    assert(pngRes.ok, `Live tile texture 'textures/tiles/${liveTileId}.png' responded HTTP ${pngRes.status}`);
+    if (pngRes.ok) {
+      const pngBuf = Buffer.from(await pngRes.arrayBuffer());
+      const stats = parsePngBufferRgbStats(pngBuf);
+      assert(
+        stats.lumRange > 85 && stats.colorfulRatio > 0.03,
+        `Live tile texture '${liveTileId}.png' (${stats.width}x${stats.height}) has crisp RGB contrast over HTTP (lumRange=${stats.lumRange.toFixed(1)}, inkCoverage=${(stats.colorfulRatio * 100).toFixed(1)}%)`
+      );
+    }
   }
 }
 

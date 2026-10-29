@@ -7,7 +7,9 @@
     "dev": "vite --host 0.0.0.0 --port 5173",
     "build": "vite build",
     "preview": "vite preview --host 0.0.0.0 --port 4173",
-    "test": "node scripts/verify_build.mjs"
+    "test": "node scripts/verify_build.mjs && node scripts/test_3d_visibility.mjs && node scripts/test_solvability_solver.mjs && node scripts/test_board_integration.mjs",
+    "test:dist": "npm run build && node scripts/test_board_integration.mjs --check-dist",
+    "deploy:manual": "bash scripts/deploy_ghp_manual.sh"
   },
   "dependencies": {
     "three": "^0.170.0"

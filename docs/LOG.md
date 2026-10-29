@@ -587,3 +587,27 @@
   - Added `#btn-rpi-mode` (`🍓 Sguisatazzo: ON/OFF`) in top HUD and `#chk-rpi-mode` in Studio Panel.
 - **Verification (`just test`)**:
   - Added Sguisatazzo GLB/texture assertions to `scripts/verify_build.mjs` and `detectHardwareProfile()` unit tests to `scripts/test_board_integration.mjs`. All tests pass 100%.
+
+---
+
+## 2026-10-29T07:57:00+01:00 — Milestone 20 (`v1.9.1`): SRE Incident Investigation (`/investigation-entrypoint`), Dual-Path GitHub Pages Deployment (`main` Auto-CI + `just deploy` Manual CLI), & Broken-Push Test Gate (`--check-dist` & `--post-deploy`)
+
+### 1. Verbatim User Requests
+> 1. `pls investigate this: [palladius/family-mahjong-3d] Run failed: Deploy to GitHub Pages - main (369818e) /investigation-entrypoint vedi gmail`
+> 2. `a me va bene fare il refactoring ma se non sbaglio l'avevamo fatto cosi perche GHPe ' molto brittle e si rompse sempre. Forse preferisco avere SIA il push automatico da main, SIA il push manuale. E magari avere una suite di test cazzuta per individudare broken pushes`
+> 3. `[palladius/family-mahjong-3d] Run failed: Deploy to GitHub Pages - main (3d7ce9b)`
+
+### 2. SRE Root-Cause Analysis (RCA)
+- **Tools & Skills Invoked**: `investigation-entrypoint`, `gh run list`, `gh run view 40456501591 --verbose`, `gh api repos/palladius/family-mahjong-3d/pages`.
+- **Root Cause**:
+  1. `palladius/family-mahjong-3d` has GitHub Pages configured as `build_type: "legacy"` (serving from branch `gh-pages`, path `/`).
+  2. When `build_type` is `"legacy"`, GitHub locks the `github-pages` environment protection rule to only allow branch `gh-pages` and reject branch `main`.
+  3. Because `.github/workflows/deploy-ghp.yml` declared `environment: name: github-pages` with `actions/deploy-pages@v4`, every push to `main` (`369818e` and `3d7ce9b`) was rejected in `1s` (`X Branch "main" is not allowed to deploy to github-pages due to environment protection rules`).
+
+### 3. Concrete Artifacts & Engineering Fix (`v1.9.1`)
+1. **Dual-Path Deployment (`.github/workflows/deploy-ghp.yml`, `scripts/deploy_ghp_manual.sh`, `justfile`, `package.json`)**:
+   - **Automatic CI Path (`push` to `main`)**: Refactored [`.github/workflows/deploy-ghp.yml`](../.github/workflows/deploy-ghp.yml) to remove `environment: name: github-pages`, run the full **Pre-Deploy Broken-Push Test Gate**, and publish `./dist` directly to the `gh-pages` branch via `peaceiris/actions-gh-pages@v4` (`permissions: contents: write`).
+   - **Manual CLI Path (`just deploy`)**: Created [`scripts/deploy_ghp_manual.sh`](../scripts/deploy_ghp_manual.sh) which builds `./dist`, runs all 4 verification suites (including `--check-dist`), and pushes `./dist` to `origin/gh-pages` via an isolated temporary git repository.
+2. **Broken-Push Test Gate (`scripts/test_board_integration.mjs`, `scripts/test_solvability_solver.mjs`)**:
+   - Wired [`scripts/test_solvability_solver.mjs`](../scripts/test_solvability_solver.mjs) into `just test` (`5/5` solvable deals across `easy`, `medium`, `master` + `< 1ms` deadlock detection).
+   - Upgraded [`scripts/test_board_integration.mjs`](../scripts/test_board_integration.mjs) (`--check-dist` & `--post-deploy`) to audit `dist/index.html` subpath safety (`./`), JS/CSS bundle sizes & invariants (including `V3D 4.2` Sguisatazzo auto-detection), all **318+ tile textures** (Classic, Onirica, RPi 256px, Normal, Depth, Ornate Dragon), binary `glTF` v2 headers (`0x46546C67`) on all **8 `dist/models/*.glb` files** (`*_rpi.glb` included), MP4 videos, and live HTTP 200 + PNG IDAT scanline contrast.

@@ -1,5 +1,16 @@
 # Changelog - Carlesso Family Mahjong 3D 🀄🐉
 
+## [1.9.1] - 2026-10-29
+### Fixed & Added
+- **🛠️ Dual-Path GitHub Pages Deployment (`main` Auto-Push + `just deploy` Manual CLI) & Fix for `environment: github-pages` Rejection (`.github/workflows/deploy-ghp.yml`, `scripts/deploy_ghp_manual.sh`, `justfile`)**:
+  - **Root Cause**: Because GitHub Pages on `palladius/family-mahjong-3d` is configured in `build_type: "legacy"` (serving from branch `gh-pages`), GitHub's `github-pages` environment protection rule rejected any job on branch `main` declaring `environment: name: github-pages` (`actions/deploy-pages@v4`).
+  - **Fix (Automatic CI Deploy from `main`)**: Refactored `.github/workflows/deploy-ghp.yml` to remove `environment: name: github-pages`, run the full **Pre-Deploy Broken-Push Test Gate** (`verify_build.mjs`, `test_3d_visibility.mjs`, `test_solvability_solver.mjs`, `test_board_integration.mjs --check-dist`), and publish `./dist` directly to the `gh-pages` branch via `peaceiris/actions-gh-pages@v4` (`permissions: contents: write`).
+  - **Fix (Manual CLI Deploy Fallback)**: Added `scripts/deploy_ghp_manual.sh` and `just deploy` (`npm run deploy:manual`) so `./dist` can also be built, verified against the Broken-Push Test Gate, and force-pushed to `origin/gh-pages` manually at any time.
+- **🧪 Comprehensive Broken-Push Test Gate (`scripts/test_board_integration.mjs`, `scripts/test_solvability_solver.mjs`, `just test`, `just test-dist`, `just test-post-deploy`)**:
+  - Wired `scripts/test_solvability_solver.mjs` into `just test` with strict assertions verifying that 5 randomized deals across all 3 tracks (`easy` 36, `medium` 72, `master` 144) are 100% mathematically solvable and deadlocked boards are caught in `< 1ms`.
+  - Upgraded `scripts/test_board_integration.mjs --check-dist` to audit `dist/index.html` subpath safety (zero root-relative `/assets/` or `fetch('/textures/...')` calls), non-truncated JS/CSS bundle sizes, all **318+ tile textures** (Classic, Onirica, RPi 256px, Normal, Depth, Ornate Dragon) in `dist/textures/`, binary `glTF` v2 magic headers (`0x46546C67`) on all **8 `dist/models/*.glb` files** (including `*_rpi.glb`), MP4 videos, and brush fonts before allowing a push.
+  - Upgraded `scripts/test_board_integration.mjs --post-deploy` to verify live HTTP 200 responses, live JS bundle invariants, live `manifest.json`, live binary `glTF` v2 headers, and live PNG IDAT scanline contrast over HTTP.
+
 ## [1.9.0] - 2026-10-28
 ### Added & Optimized (GitHub Issue #4)
 - **🍓 Modalità Sguisatazzo (Raspberry Pi 400 Rev 1.0 • Broadcom `BCM2711` Cortex-A72 + `V3D 4.2` VideoCore VI Auto-Detection & Low-Spec Pipeline)**:

@@ -10,11 +10,24 @@ setup:
     npm install
     node node_modules/esbuild/install.js || true
 
-# Run verification tests (3D topology, 3D line-of-sight visibility, initial chessboard self-occlusion & 3D rotation integration, textures, build)
+# Run full verification suite (3D topology, 3D line-of-sight visibility, solvability & deadlock solver, chessboard self-occlusion & XZ pan/rotate integration)
 test:
     node scripts/verify_build.mjs
     node scripts/test_3d_visibility.mjs
+    node scripts/test_solvability_solver.mjs
     node scripts/test_board_integration.mjs
+
+# Build production bundle and run Pre-Deploy Broken-Push Gate against dist/
+test-dist:
+    npm run build
+    node scripts/verify_build.mjs
+    node scripts/test_3d_visibility.mjs
+    node scripts/test_solvability_solver.mjs
+    node scripts/test_board_integration.mjs --check-dist
+
+# Manual fallback deploy: build, run Pre-Deploy Broken-Push Gate, push ./dist to origin/gh-pages
+deploy:
+    bash scripts/deploy_ghp_manual.sh
 
 # Run post-deploy live verification against GitHub Pages (https://palladius.github.io/family-mahjong-3d/)
 test-post-deploy:
