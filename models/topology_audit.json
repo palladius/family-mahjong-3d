@@ -1,0 +1,475 @@
+{
+  "blenderVersion": "5.0.1",
+  "allManifoldPass": true,
+  "assets": [
+    {
+      "asset": "tile_generic_white_marble_obsidian.glb",
+      "meshCount": 3,
+      "totalVertices": 160,
+      "totalFaces": 158,
+      "totalNonManifoldEdges": 0,
+      "totalDegenerateFaces": 0,
+      "manifoldPass": true,
+      "bones": [
+        "Root_Bone",
+        "Tile_Body_Bone",
+        "Face_Overlay_Bone",
+        "Alphabet_Glyph_Bone"
+      ],
+      "actions": [
+        "Disappear",
+        "Idle",
+        "Pair",
+        "Select"
+      ],
+      "meshes": [
+        {
+          "mesh": "CanonicalTile_Alphabet_Glyph_Mesh",
+          "vertices": 56,
+          "faces": 54,
+          "nonManifoldEdges": 0,
+          "degenerateFaces": 0,
+          "looseVertices": 0,
+          "uvLayerPresent": true,
+          "unitScaleApplied": true
+        },
+        {
+          "mesh": "CanonicalTile_Body_Mesh",
+          "vertices": 96,
+          "faces": 98,
+          "nonManifoldEdges": 0,
+          "degenerateFaces": 0,
+          "looseVertices": 0,
+          "uvLayerPresent": true,
+          "unitScaleApplied": true
+        },
+        {
+          "mesh": "CanonicalTile_Face_Overlay_Mesh",
+          "vertices": 8,
+          "faces": 6,
+          "nonManifoldEdges": 0,
+          "degenerateFaces": 0,
+          "looseVertices": 0,
+          "uvLayerPresent": true,
+          "unitScaleApplied": true
+        }
+      ]
+    },
+    {
+      "asset": "tile_coupled_showcase.glb",
+      "meshCount": 25,
+      "totalVertices": 1336,
+      "totalFaces": 1318,
+      "totalNonManifoldEdges": 0,
+      "totalDegenerateFaces": 0,
+      "manifoldPass": true,
+      "bones": [],
+      "actions": [],
+      "meshes": [
+        {
+          "mesh": "Rosewood_Jade_Plinth",
+          "vertices": 56,
+          "faces": 54,
+          "nonManifoldEdges": 0,
+          "degenerateFaces": 0,
+          "looseVertices": 0,
+          "uvLayerPresent": true,
+          "unitScaleApplied": true
+        },
+        {
+          "mesh": "Show_coupled_A1_Alphabet_Glyph_Mesh",
+          "vertices": 56,
+          "faces": 54,
+          "nonManifoldEdges": 0,
+          "degenerateFaces": 0,
+          "looseVertices": 0,
+          "uvLayerPresent": true,
+          "unitScaleApplied": true
+        },
+        {
+          "mesh": "Show_coupled_A1_Body_Mesh",
+          "vertices": 96,
+          "faces": 98,
+          "nonManifoldEdges": 0,
+          "degenerateFaces": 0,
+          "looseVertices": 0,
+          "uvLayerPresent": true,
+          "unitScaleApplied": true
+        },
+        {
+          "mesh": "Show_coupled_A1_Face_Overlay_Mesh",
+          "vertices": 8,
+          "faces": 6,
+          "nonManifoldEdges": 0,
+          "degenerateFaces": 0,
+          "looseVertices": 0,
+          "uvLayerPresent": true,
+          "unitScaleApplied": true
+        },
+        {
+          "mesh": "Show_coupled_A2_Alphabet_Glyph_Mesh",
+          "vertices": 56,
+          "faces": 54,
+          "nonManifoldEdges": 0,
+          "degenerateFaces": 0,
+          "looseVertices": 0,
+          "uvLayerPresent": true,
+          "unitScaleApplied": true
+        },
+        {
+          "mesh": "Show_coupled_A2_Body_Mesh",
+          "vertices": 96,
+          "faces": 98,
+          "nonManifoldEdges": 0,
+          "degenerateFaces": 0,
+          "looseVertices": 0,
+          "uvLayerPresent": true,
+          "unitScaleApplied": true
+        },
+        {
+          "mesh": "Show_coupled_A2_Face_Overlay_Mesh",
+          "vertices": 8,
+          "faces": 6,
+          "nonManifoldEdges": 0,
+          "degenerateFaces": 0,
+          "looseVertices": 0,
+          "uvLayerPresent": true,
+          "unitScaleApplied": true
+        },
+        {
+          "mesh": "Show_coupled_B1_Alphabet_Glyph_Mesh",
+          "vertices": 56,
+          "faces": 54,
+          "nonManifoldEdges": 0,
+          "degenerateFaces": 0,
+          "looseVertices": 0,
+          "uvLayerPresent": true,
+          "unitScaleApplied": true
+        },
+        {
+          "mesh": "Show_coupled_B1_Body_Mesh",
+          "vertices": 96,
+          "faces": 98,
+          "nonManifoldEdges": 0,
+          "degenerateFaces": 0,
+          "looseVertices": 0,
+          "uvLayerPresent": true,
+          "unitScaleApplied": true
+        },
+        {
+          "mesh": "Show_coupled_B1_Face_Overlay_Mesh",
+          "vertices": 8,
+          "faces": 6,
+          "nonManifoldEdges": 0,
+          "degenerateFaces": 0,
+          "looseVertices": 0,
+          "uvLayerPresent": true,
+          "unitScaleApplied": true
+        },
+        {
+          "mesh": "Show_coupled_B2_Alphabet_Glyph_Mesh",
+          "vertices": 56,
+          "faces": 54,
+          "nonManifoldEdges": 0,
+          "degenerateFaces": 0,
+          "looseVertices": 0,
+          "uvLayerPresent": true,
+          "unitScaleApplied": true
+        },
+        {
+          "mesh": "Show_coupled_B2_Body_Mesh",
+          "vertices": 96,
+          "faces": 98,
+          "nonManifoldEdges": 0,
+          "degenerateFaces": 0,
+          "looseVertices": 0,
+          "uvLayerPresent": true,
+          "unitScaleApplied": true
+        },
+        {
+          "mesh": "Show_coupled_B2_Face_Overlay_Mesh",
+          "vertices": 8,
+          "faces": 6,
+          "nonManifoldEdges": 0,
+          "degenerateFaces": 0,
+          "looseVertices": 0,
+          "uvLayerPresent": true,
+          "unitScaleApplied": true
+        },
+        {
+          "mesh": "Show_coupled_C1_Alphabet_Glyph_Mesh",
+          "vertices": 56,
+          "faces": 54,
+          "nonManifoldEdges": 0,
+          "degenerateFaces": 0,
+          "looseVertices": 0,
+          "uvLayerPresent": true,
+          "unitScaleApplied": true
+        },
+        {
+          "mesh": "Show_coupled_C1_Body_Mesh",
+          "vertices": 96,
+          "faces": 98,
+          "nonManifoldEdges": 0,
+          "degenerateFaces": 0,
+          "looseVertices": 0,
+          "uvLayerPresent": true,
+          "unitScaleApplied": true
+        },
+        {
+          "mesh": "Show_coupled_C1_Face_Overlay_Mesh",
+          "vertices": 8,
+          "faces": 6,
+          "nonManifoldEdges": 0,
+          "degenerateFaces": 0,
+          "looseVertices": 0,
+          "uvLayerPresent": true,
+          "unitScaleApplied": true
+        },
+        {
+          "mesh": "Show_coupled_C2_Alphabet_Glyph_Mesh",
+          "vertices": 56,
+          "faces": 54,
+          "nonManifoldEdges": 0,
+          "degenerateFaces": 0,
+          "looseVertices": 0,
+          "uvLayerPresent": true,
+          "unitScaleApplied": true
+        },
+        {
+          "mesh": "Show_coupled_C2_Body_Mesh",
+          "vertices": 96,
+          "faces": 98,
+          "nonManifoldEdges": 0,
+          "degenerateFaces": 0,
+          "looseVertices": 0,
+          "uvLayerPresent": true,
+          "unitScaleApplied": true
+        },
+        {
+          "mesh": "Show_coupled_C2_Face_Overlay_Mesh",
+          "vertices": 8,
+          "faces": 6,
+          "nonManifoldEdges": 0,
+          "degenerateFaces": 0,
+          "looseVertices": 0,
+          "uvLayerPresent": true,
+          "unitScaleApplied": true
+        },
+        {
+          "mesh": "Show_coupled_E1_Alphabet_Glyph_Mesh",
+          "vertices": 56,
+          "faces": 54,
+          "nonManifoldEdges": 0,
+          "degenerateFaces": 0,
+          "looseVertices": 0,
+          "uvLayerPresent": true,
+          "unitScaleApplied": true
+        },
+        {
+          "mesh": "Show_coupled_E1_Body_Mesh",
+          "vertices": 96,
+          "faces": 98,
+          "nonManifoldEdges": 0,
+          "degenerateFaces": 0,
+          "looseVertices": 0,
+          "uvLayerPresent": true,
+          "unitScaleApplied": true
+        },
+        {
+          "mesh": "Show_coupled_E1_Face_Overlay_Mesh",
+          "vertices": 8,
+          "faces": 6,
+          "nonManifoldEdges": 0,
+          "degenerateFaces": 0,
+          "looseVertices": 0,
+          "uvLayerPresent": true,
+          "unitScaleApplied": true
+        },
+        {
+          "mesh": "Show_coupled_E2_Alphabet_Glyph_Mesh",
+          "vertices": 56,
+          "faces": 54,
+          "nonManifoldEdges": 0,
+          "degenerateFaces": 0,
+          "looseVertices": 0,
+          "uvLayerPresent": true,
+          "unitScaleApplied": true
+        },
+        {
+          "mesh": "Show_coupled_E2_Body_Mesh",
+          "vertices": 96,
+          "faces": 98,
+          "nonManifoldEdges": 0,
+          "degenerateFaces": 0,
+          "looseVertices": 0,
+          "uvLayerPresent": true,
+          "unitScaleApplied": true
+        },
+        {
+          "mesh": "Show_coupled_E2_Face_Overlay_Mesh",
+          "vertices": 8,
+          "faces": 6,
+          "nonManifoldEdges": 0,
+          "degenerateFaces": 0,
+          "looseVertices": 0,
+          "uvLayerPresent": true,
+          "unitScaleApplied": true
+        }
+      ]
+    },
+    {
+      "asset": "temple_environment.glb",
+      "meshCount": 14,
+      "totalVertices": 1216,
+      "totalFaces": 1192,
+      "totalNonManifoldEdges": 0,
+      "totalDegenerateFaces": 0,
+      "manifoldPass": true,
+      "bones": [],
+      "actions": [],
+      "meshes": [
+        {
+          "mesh": "Low_Rosewood_Jade_Table",
+          "vertices": 96,
+          "faces": 98,
+          "nonManifoldEdges": 0,
+          "degenerateFaces": 0,
+          "looseVertices": 0,
+          "uvLayerPresent": true,
+          "unitScaleApplied": true
+        },
+        {
+          "mesh": "Rosewood_Table_Leg_1",
+          "vertices": 8,
+          "faces": 6,
+          "nonManifoldEdges": 0,
+          "degenerateFaces": 0,
+          "looseVertices": 0,
+          "uvLayerPresent": true,
+          "unitScaleApplied": true
+        },
+        {
+          "mesh": "Rosewood_Table_Leg_2",
+          "vertices": 8,
+          "faces": 6,
+          "nonManifoldEdges": 0,
+          "degenerateFaces": 0,
+          "looseVertices": 0,
+          "uvLayerPresent": true,
+          "unitScaleApplied": true
+        },
+        {
+          "mesh": "Rosewood_Table_Leg_3",
+          "vertices": 8,
+          "faces": 6,
+          "nonManifoldEdges": 0,
+          "degenerateFaces": 0,
+          "looseVertices": 0,
+          "uvLayerPresent": true,
+          "unitScaleApplied": true
+        },
+        {
+          "mesh": "Rosewood_Table_Leg_4",
+          "vertices": 8,
+          "faces": 6,
+          "nonManifoldEdges": 0,
+          "degenerateFaces": 0,
+          "looseVertices": 0,
+          "uvLayerPresent": true,
+          "unitScaleApplied": true
+        },
+        {
+          "mesh": "Temple_Crimson_Pillar_1",
+          "vertices": 48,
+          "faces": 26,
+          "nonManifoldEdges": 0,
+          "degenerateFaces": 0,
+          "looseVertices": 0,
+          "uvLayerPresent": true,
+          "unitScaleApplied": true
+        },
+        {
+          "mesh": "Temple_Crimson_Pillar_2",
+          "vertices": 48,
+          "faces": 26,
+          "nonManifoldEdges": 0,
+          "degenerateFaces": 0,
+          "looseVertices": 0,
+          "uvLayerPresent": true,
+          "unitScaleApplied": true
+        },
+        {
+          "mesh": "Temple_Crimson_Pillar_3",
+          "vertices": 48,
+          "faces": 26,
+          "nonManifoldEdges": 0,
+          "degenerateFaces": 0,
+          "looseVertices": 0,
+          "uvLayerPresent": true,
+          "unitScaleApplied": true
+        },
+        {
+          "mesh": "Temple_Crimson_Pillar_4",
+          "vertices": 48,
+          "faces": 26,
+          "nonManifoldEdges": 0,
+          "degenerateFaces": 0,
+          "looseVertices": 0,
+          "uvLayerPresent": true,
+          "unitScaleApplied": true
+        },
+        {
+          "mesh": "Temple_Silk_Lantern_1",
+          "vertices": 222,
+          "faces": 240,
+          "nonManifoldEdges": 0,
+          "degenerateFaces": 0,
+          "looseVertices": 0,
+          "uvLayerPresent": true,
+          "unitScaleApplied": true
+        },
+        {
+          "mesh": "Temple_Silk_Lantern_2",
+          "vertices": 222,
+          "faces": 240,
+          "nonManifoldEdges": 0,
+          "degenerateFaces": 0,
+          "looseVertices": 0,
+          "uvLayerPresent": true,
+          "unitScaleApplied": true
+        },
+        {
+          "mesh": "Temple_Silk_Lantern_3",
+          "vertices": 222,
+          "faces": 240,
+          "nonManifoldEdges": 0,
+          "degenerateFaces": 0,
+          "looseVertices": 0,
+          "uvLayerPresent": true,
+          "unitScaleApplied": true
+        },
+        {
+          "mesh": "Temple_Silk_Lantern_4",
+          "vertices": 222,
+          "faces": 240,
+          "nonManifoldEdges": 0,
+          "degenerateFaces": 0,
+          "looseVertices": 0,
+          "uvLayerPresent": true,
+          "unitScaleApplied": true
+        },
+        {
+          "mesh": "Temple_Stone_Pavement",
+          "vertices": 8,
+          "faces": 6,
+          "nonManifoldEdges": 0,
+          "degenerateFaces": 0,
+          "looseVertices": 0,
+          "uvLayerPresent": true,
+          "unitScaleApplied": true
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Progress Gallery • Carlesso Family 3D Mahjong Solitaire 🀄</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🀄</text></svg>" />
+  <!-- Google Model Viewer for Auto-Rotating 3D GLBs -->
+  <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js"></script>
+  <style>
+    :root {
+      --bg: #0f0c12;
+      --card-bg: #1a1520;
+      --gold: #f5d470;
+      --crimson: #c82626;
+      --jade: #3bb273;
+      --text: #f5f0e6;
+      --text-muted: #9e958c;
+      --border: rgba(245, 212, 112, 0.25);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      padding: 32px 24px 80px;
+      line-height: 1.6;
+    }
+    header {
+      max-width: 1280px;
+      margin: 0 auto 36px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 20px;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .header-title h1 {
+      font-size: 28px;
+      color: var(--gold);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .header-title p {
+      color: var(--text-muted);
+      font-size: 14px;
+      margin-top: 4px;
+    }
+    .header-links {
+      display: flex;
+      gap: 12px;
+    }
+    .header-links a {
+      background: var(--crimson);
+      color: #fff;
+      text-decoration: none;
+      font-weight: 700;
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-size: 13px;
+      transition: all 0.2s;
+    }
+    .header-links a.secondary {
+      background: rgba(245, 212, 112, 0.14);
+      border: 1px solid var(--gold);
+      color: var(--gold);
+    }
+    .header-links a:hover {
+      transform: translateY(-2px);
+      filter: brightness(1.1);
+    }
+    main {
+      max-width: 1280px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 48px;
+    }
+    section h2 {
+      font-size: 20px;
+      color: var(--gold);
+      border-left: 4px solid var(--gold);
+      padding-left: 12px;
+      margin-bottom: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .badge {
+      font-size: 11px;
+      background: rgba(245, 212, 112, 0.15);
+      border: 1px solid var(--gold);
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-weight: 600;
+    }
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(540px, 1fr));
+      gap: 24px;
+    }
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+      gap: 20px;
+    }
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+    }
+    .grid-6 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(185px, 1fr));
+      gap: 14px;
+    }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+    .card:hover {
+      transform: translateY(-3px);
+      border-color: var(--gold);
+    }
+    .card img, .card model-viewer {
+      width: 100%;
+      height: 340px;
+      object-fit: cover;
+      background: #151119;
+    }
+    .card.tile-card img {
+      height: 310px;
+      object-fit: contain;
+      padding: 12px;
+      background: radial-gradient(circle at 50% 45%, #272030, #120e17);
+    }
+    .card-info {
+      padding: 16px;
+    }
+    .card-info h3 {
+      font-size: 15px;
+      color: var(--gold);
+      margin-bottom: 6px;
+    }
+    .card-info p {
+      font-size: 12.5px;
+      color: var(--text-muted);
+    }
+    .meta-tag {
+      display: inline-block;
+      font-size: 10.5px;
+      font-weight: 700;
+      color: var(--jade);
+      margin-top: 8px;
+    }
+    .qa-table-wrap {
+      overflow-x: auto;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+    }
+    table.qa-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12.5px;
+    }
+    table.qa-table th, table.qa-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(245, 212, 112, 0.14);
+      text-align: left;
+      vertical-align: top;
+    }
+    table.qa-table th {
+      color: var(--gold);
+      font-weight: 700;
+      background: rgba(245, 212, 112, 0.08);
+    }
+    table.qa-table tr:last-child td {
+      border-bottom: none;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-title">
+      <h1>🀄 Carlesso Family 3D Mahjong Solitaire (v1.7.0)</h1>
+      <p>Choreographic & Artistic Director Showcase • Ornate 3D Carved Red Dragon (紅中), Ma Shan Zheng Brush Calligraphy, Transparent "Puff → Frame 2 Dragon Emerge Biribip Power-Up" & S1 Winner (top3)</p>
+    </div>
+    <div class="header-links">
+      <a href="./?onirica=1" class="secondary" target="_blank">🌙 Play Modalità Onirica (?onirica=1)</a>
+      <a href="./?debug=1" class="secondary" target="_blank">🎛️ Studio Look-Dev (?debug=1)</a>
+      <a href="./" target="_blank">🎮 Open Playable Web App</a>
+    </div>
+  </header>
+
+  <main>
+    <!-- Section 0A: Ornate 3D Carved Red Dragon & Transparent "Puff -> Frame 2 Dragon Emerge Biribip Power-Up" (GitHub Issue #1) -->
+    <section>
+      <h2>
+        <span>🐉 0A. Ornate 3D Carved Red Dragon (`紅中`) &amp; Transparent 2D-over-3D "Biribip" Power-Up (`v1.7.0` • Issue #1)</span>
+        <span class="badge">Adversarial VFX &amp; 3D Carving Duel • Zero-Halo White Un-Premultiplication</span>
+      </h2>
+      <div class="grid-3">
+        <div class="card">
+          <img src="./renders/cycles/cycles_cam5_carved_intaglio.png" alt="Ornate 3D Carved Red Dragon Cycles Render" />
+          <div class="card-info">
+            <h3>🔥 Ornate 3D Carved Red Dragon (`紅中`) &amp; Brush Calligraphy (`8萬`)</h3>
+            <p>Replaced mechanical orthogonal strokes with authentic <em>Ma Shan Zheng</em> Chinese brush calligraphy, multi-scale V-groove + medial-axis spine carving, and a coiled 3D crimson-gold Imperial Dragon around `中`!</p>
+            <span class="meta-tag">cycles_cam5_carved_intaglio.png • 4筒 + 紅中 + 八萬</span>
+          </div>
+        </div>
+        <div class="card tile-card">
+          <img src="./fx/powerup_frame2_dragon_emerge_rgba.png" alt="Hero Frame 2 Dragon Emerge RGBA" />
+          <div class="card-info">
+            <h3>⭐ HERO: Frame 2 Dragon Emerge (`powerup_frame2_dragon_emerge_rgba.png`)</h3>
+            <p>RiccardinoCM26 🦖's favorite effect! Generated on pure `#FFFFFF` white background and extracted to zero-halo RGBA via border-seeded flood-fill + exact white un-premultiplication (`C_clean = (C - (1-a))/a`).</p>
+            <span class="meta-tag">Triggered on Ale, Sebi, or Dragon Match • Key D</span>
+          </div>
+        </div>
+        <div class="card">
+          <img src="./fx/dragon_powerup_audit_comparison.png" alt="3-Panel White-to-Transparent Audit" />
+          <div class="card-info">
+            <h3>🔬 Adversarial Audit: White Base → Naive Halo vs. Zero-Halo 3D Composite</h3>
+            <p>Proof of clean white-background removal over the dark 3D Temple board without milky smoke fringes or punched-out dragon eyes/teeth, plus `dragon_powerup_white.mp4` live video keying.</p>
+            <span class="meta-tag">dragon_powerup_audit_comparison.png • Issue #1</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 0B: Adversarial Net Winner & Runner-Up S1 Papà Riccardo -->
+    <section>
+      <h2>
+        <span>🏆 0B. `S1 春 • Solo Papà Riccardo` — Vincitrice (`top3`) &amp; Riserva in Subordine (`top1`)</span>
+        <span class="badge">Choreographic Director Selection • top2 Removed</span>
+      </h2>
+      <div class="grid-2">
+        <div class="card tile-card">
+          <img src="./textures/tiles/coupled_A1_top3.png" alt="Winner Top 3 S1 Tile" />
+          <div class="card-info">
+            <h3>🏆 VINCITRICE ATTIVA (`quartet_S1_papa_riccardo_top3.png` → `coupled_A1.png`)</h3>
+            <p>Scelta da RiccardinoCM26 🦖 come ritratto canonico attivo di Papà Riccardo (`S1 春`): posa naturale a 3/4 stile wine-tasting selfie, sorriso caldo a labbra chiuse, ciuffo argento/grigio sulla sommità e colletto imperiale blu notte e cremisi.</p>
+            <span class="meta-tag">DEFAULT ATTIVO: coupled_A1.png • coupled_A1_top3.png • quartet_S1_papa_riccardo_top3.png</span>
+          </div>
+        </div>
+        <div class="card tile-card">
+          <img src="./textures/tiles/coupled_A1_top1.png" alt="Runner-Up Top 1 S1 Tile" />
+          <div class="card-info">
+            <h3>🥈 IN SUBORDINE (`quartet_S1_papa_riccardo_top1.png` → `coupled_A1_top1.png`)</h3>
+            <p>Conservata nel repository in subordine: broccato imperiale blu/oro sul ponte di marmo bianco con lanterne rosse in armonia con Mamma Kate (S2).</p>
+            <span class="meta-tag">RISERVA IN SUBORDINE: coupled_A1_top1.png • quartet_S1_papa_riccardo_top1.png</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 1: Auto-Rotating 3D GLB Models -->
+    <section>
+      <h2>
+        <span>💎 1. Auto-Rotating 3D GLB Models (Headless Blender 5.0.1 & Three.js)</span>
+        <span class="badge">Manifold Verified • 3D Incandescent-Pen Carved Intaglio</span>
+      </h2>
+      <div class="grid-4">
+        <div class="card">
+          <model-viewer
+            src="./models/tile_carved_intaglio_showcase.glb"
+            camera-controls
+            auto-rotate
+            rotation-per-second="22deg"
+            shadow-intensity="1.2"
+            exposure="1.15"
+            alt="3D Incandescent-Pen Carved Intaglio Showcase"
+          ></model-viewer>
+          <div class="card-info">
+            <h3>🔥 3D Carved Intaglio Showcase (4筒, 紅中, 8萬)</h3>
+            <p>Real 3D vertex-excavated grooves on 120×160 subdivided Imperial Marble meshes featuring 4-Circles (4筒), the Ornate Coiled Red Dragon (紅中), and Ma Shan Zheng brush-calligraphy 8-Characters (八萬)!</p>
+            <span class="meta-tag">tile_carved_intaglio_showcase.glb • 9.2 MB • 3D Excavated Cavities</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <model-viewer
+            src="./models/tile_generic_white_marble_obsidian.glb"
+            camera-controls
+            auto-rotate
+            rotation-per-second="25deg"
+            shadow-intensity="1"
+            exposure="1.1"
+            alt="Canonical Generic 3D Tile"
+          ></model-viewer>
+          <div class="card-info">
+            <h3>Canonical Generic 3D Mahjong Tile</h3>
+            <p>Manifold Imperial White Marble body with Volcanic Black Obsidian backing, Gold Kintsugi waist seam, 2D Oval Cameo face, top-center crown inlay badge, and 4-bone Armature.</p>
+            <span class="meta-tag">tile_generic_white_marble_obsidian.glb • 3.0 MB • 0 Non-Manifold</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <model-viewer
+            src="./models/tile_coupled_showcase.glb"
+            camera-controls
+            auto-rotate
+            rotation-per-second="20deg"
+            shadow-intensity="1"
+            exposure="1.1"
+            alt="Coupled Family Pairs Showcase"
+          ></model-viewer>
+          <div class="card-info">
+            <h3>Carlesso Family & Diptyque 3D Plinth</h3>
+            <p>Showcase of Quartet 1 (Papà Riccardo & Mamma Kate S1↔S2, Ale & Sebi Tang S3↔S4), Quartet 2 (Ale+Ghigna & Sebi+Pupurabbu), and Chengdu Pandas (H1↔H2) on a carved rosewood & jade base.</p>
+            <span class="meta-tag">tile_coupled_showcase.glb • 9.7 MB • 8 Showcase Tiles</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <model-viewer
+            src="./models/temple_environment.glb"
+            camera-controls
+            auto-rotate
+            rotation-per-second="15deg"
+            shadow-intensity="1"
+            exposure="1.1"
+            alt="3D Chinese Temple Courtyard"
+          ></model-viewer>
+          <div class="card-info">
+            <h3>3D Chinese Temple Courtyard & Table</h3>
+            <p>Sacred stone pavement, low carved Ming rosewood and celadon jade playing table, crimson dragon pillars, and warm silk lanterns.</p>
+            <span class="meta-tag">temple_environment.glb • 940 KB • Switchable Surface</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 2: Offline Blender Cycles Master Ground-Truth Renders -->
+    <section>
+      <h2>
+        <span>🏛️ 2. Offline Blender 5.0.1 Cycles Ground-Truth Renders (3D Carved Intaglio & Unobstructed Glyphs)</span>
+        <span class="badge">Path-Traced Ground Truth • 1280×720</span>
+      </h2>
+      <div class="grid-2">
+        <div class="card">
+          <img src="./renders/cycles/cycles_cam5_carved_intaglio.png" alt="Cycles Cam 5 3D Carved Intaglio" />
+          <div class="card-info">
+            <h3>🔥 Camera 5: 3D Incandescent-Pen Carved Intaglio Macro (4筒, 紅中, 8萬)</h3>
+            <p>Oblique raking-light Cycles render showing the physical 3D excavated cavities ('il buco bassorilievo') on 4-Circles (4筒), Ornate Coiled Red Dragon (紅中), and Brush-Calligraphy 8-Characters (八萬).</p>
+            <span class="meta-tag">Blender Cycles • 1280x720 • 120×160 Displaced Mesh</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <img src="./renders/cycles/cycles_cam1_hero.png" alt="Cycles Cam 1 Hero" />
+          <div class="card-info">
+            <h3>Camera 1: Temple Hero Perspective (3/4 Angle)</h3>
+            <p>Full 4-tier Imperial Turtle Mahjong Solitaire pyramid on the celadon jade tabletop with Quartet 1 (S1..S4) and Quartet 2 (M1..M4) displayed along the front row.</p>
+            <span class="meta-tag">Blender Cycles • 1280x720 • FOV 38°</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <img src="./renders/cycles/cycles_cam2_topdown.png" alt="Cycles Cam 2 Top-Down" />
+          <div class="card-info">
+            <h3>Camera 2: Zen Top-Down Solitaire View</h3>
+            <p>Orthogonal overview of the 4-tier stepped layout showing all free tiles, unobstructed top-left/top-right corner glyphs, traditional Hanzi suits, and coupled family medallions.</p>
+            <span class="meta-tag">Blender Cycles • 1280x720 • FOV 40°</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <img src="./renders/cycles/cycles_cam4_tile_macro.png" alt="Cycles Cam 4 Tile Macro" />
+          <div class="card-info">
+            <h3>Camera 4: Family Quartet Macro (S1..S4) & Top-Center Crown Bar</h3>
+            <p>Close-up macro showing Solo Papà Riccardo (S1 春), Solo Mamma Kate (S2 夏), Solo Ale (S3 秋), and Solo Sebi (S4 冬) with 100% unobstructed corner calligraphy.</p>
+            <span class="meta-tag">Blender Cycles • 1280x720 • FOV 55° • Zero Corner Occlusion</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 3: Quartet 1 — Carlesso Family Seasons (Cardinality 4) -->
+    <section>
+      <h2>
+        <span>👑 3. Quartet 1: Carlesso Family Seasons (Cardinality 4 — Any 2 Match: 春 夏 秋 冬)</span>
+        <span class="badge">matchGroup: quartet_family_seasons • CC 9.9/10</span>
+      </h2>
+      <div class="grid-4">
+        <div class="card tile-card">
+          <img src="./textures/tiles/coupled_A1.png" alt="S1 Solo Papa Riccardo" />
+          <div class="card-info">
+            <h3>S1 春 • Solo Papà Riccardo</h3>
+            <p>Left slice of shared Imperial Bridge scene. Warm smile, glasses, navy blazer with gold trim. Matches with Mamma, Ale, or Sebi!</p>
+            <span class="meta-tag">coupled_A1.png • Cardinality 4 • CC 9.9/10</span>
+          </div>
+        </div>
+
+        <div class="card tile-card">
+          <img src="./textures/tiles/coupled_A2.png" alt="S2 Solo Mamma Kate" />
+          <div class="card-info">
+            <h3>S2 夏 • Solo Mamma Kate</h3>
+            <p>Right slice of shared Imperial Bridge scene. Fresh natural "acqua e sapone" look in royal purple & emerald silk. Matches any Family Season!</p>
+            <span class="meta-tag">coupled_A2.png • Cardinality 4 • CC 9.9/10</span>
+          </div>
+        </div>
+
+        <div class="card tile-card">
+          <img src="./textures/tiles/coupled_B1.png" alt="S3 Solo Ale Tang Silk" />
+          <div class="card-info">
+            <h3>S3 秋 • Solo Ale (Tang Silk)</h3>
+            <p>Left slice of shared Tang Dynasty courtyard portrait. 12yo Alessandro in crimson & gold dragon silk. Matches any Family Season!</p>
+            <span class="meta-tag">coupled_B1.png • Cardinality 4 • CC 9.9/10</span>
+          </div>
+        </div>
+
+        <div class="card tile-card">
+          <img src="./textures/tiles/coupled_B2.png" alt="S4 Solo Sebi Tang Silk" />
+          <div class="card-info">
+            <h3>S4 冬 • Solo Sebi (Tang Silk)</h3>
+            <p>Right slice of shared Tang Dynasty courtyard portrait. 7yo Sebastian with light brown/dark blonde hair in crimson & gold silk.</p>
+            <span class="meta-tag">coupled_B2.png • Cardinality 4 • CC 9.9/10</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 4: Quartet 2 — Magical Companions Flowers (Cardinality 4) -->
+    <section>
+      <h2>
+        <span>🐹👾 4. Quartet 2: Magical Companions Flowers (Cardinality 4 — Any 2 Match: 梅 蘭 菊 竹)</span>
+        <span class="badge">matchGroup: quartet_magic_flowers • CC 9.9/10</span>
+      </h2>
+      <div class="grid-4">
+        <div class="card tile-card">
+          <img src="./textures/tiles/coupled_C1.png" alt="M1 Ale and Ghigna" />
+          <div class="card-info">
+            <h3>M1 梅 • Ale & Ghigna 🐹</h3>
+            <p>Alessandro holding Ghigna the nerdy tricolour calico guinea pig with round black eyeglasses and tiny red bow tie.</p>
+            <span class="meta-tag">coupled_C1.png • Cardinality 4 • CC 9.8/10</span>
+          </div>
+        </div>
+
+        <div class="card tile-card">
+          <img src="./textures/tiles/coupled_C2.png" alt="M2 Sebi and Pupurabbu" />
+          <div class="card-info">
+            <h3>M2 蘭 • Sebi & Pupurabbu 👾</h3>
+            <p>Sebastian laughing beside giant fluffy purple monster Pupurabbu wearing his rainbow propeller beanie cap.</p>
+            <span class="meta-tag">coupled_C2.png • Cardinality 4 • CC 9.8/10</span>
+          </div>
+        </div>
+
+        <div class="card tile-card">
+          <img src="./textures/tiles/coupled_D1.png" alt="M3 Solo Ghigna Genius" />
+          <div class="card-info">
+            <h3>M3 菊 • Solo Ghigna Genius 🐹</h3>
+            <p>Solo portrait of Ghigna in a miniature Mandarin scholar vest with a tiny jade abacus and ancient scroll.</p>
+            <span class="meta-tag">coupled_D1.png • Cardinality 4 • CC 10.0/10</span>
+          </div>
+        </div>
+
+        <div class="card tile-card">
+          <img src="./textures/tiles/coupled_D2.png" alt="M4 Solo Pupurabbu" />
+          <div class="card-info">
+            <h3>M4 竹 • Solo Pupurabbu Lantern 👾</h3>
+            <p>Solo portrait of Pupurabbu in a moonlit temple courtyard holding a glowing crimson silk lantern.</p>
+            <span class="meta-tag">coupled_D2.png • Cardinality 4 • CC 10.0/10</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 5: 4 Diptyque Split-Pairs (Cardinality 2: Left=Ale <-> Right=Sebi) -->
+    <section>
+      <h2>
+        <span>⚔️🐼 5. Four Diptyque Split-Pairs (Cardinality 2 — Shared Scene Sliced into Solo Ale ↔ Solo Sebi)</span>
+        <span class="badge">Deterministic Coupled Pairs • E1↔E2 .. H1↔H2</span>
+      </h2>
+      <div class="grid-4">
+        <div class="card tile-card">
+          <img src="./textures/tiles/coupled_E1.png" alt="E1 Solo Ale Great Wall" />
+          <div class="card-info">
+            <h3>E1 長 • Ale Great Wall (Left)</h3>
+            <p>Left half of shared Great Wall golden-hour scene. Pairs deterministically with E2 (Sebi Great Wall).</p>
+            <span class="meta-tag">pair_E_great_wall • Cardinality 2</span>
+          </div>
+        </div>
+        <div class="card tile-card">
+          <img src="./textures/tiles/coupled_E2.png" alt="E2 Solo Sebi Great Wall" />
+          <div class="card-info">
+            <h3>E2 城 • Sebi Great Wall (Right)</h3>
+            <p>Right half of shared Great Wall golden-hour scene. Pairs deterministically with E1 (Ale Great Wall).</p>
+            <span class="meta-tag">pair_E_great_wall • Cardinality 2</span>
+          </div>
+        </div>
+        <div class="card tile-card">
+          <img src="./textures/tiles/coupled_F1.png" alt="F1 Solo Ale Cantonese Rice" />
+          <div class="card-info">
+            <h3>F1 飯 • Ale Cantonese Rice (Left)</h3>
+            <p>Left half of shared Cantonese Dim Sum banquet scene. Pairs deterministically with F2 (Sebi Cantonese Rice).</p>
+            <span class="meta-tag">pair_F_cantonese_rice • Cardinality 2</span>
+          </div>
+        </div>
+        <div class="card tile-card">
+          <img src="./textures/tiles/coupled_F2.png" alt="F2 Solo Sebi Cantonese Rice" />
+          <div class="card-info">
+            <h3>F2 味 • Sebi Cantonese Rice (Right)</h3>
+            <p>Right half of shared Cantonese Dim Sum banquet scene. Pairs deterministically with F1 (Ale Cantonese Rice).</p>
+            <span class="meta-tag">pair_F_cantonese_rice • Cardinality 2</span>
+          </div>
+        </div>
+        <div class="card tile-card">
+          <img src="./textures/tiles/coupled_G1.png" alt="G1 Solo Ale Shaolin Dragon" />
+          <div class="card-info">
+            <h3>G1 龍 • Ale Shaolin Dragon (Left)</h3>
+            <p>Left half of shared Shaolin courtyard Kung Fu scene. Pairs deterministically with G2 (Sebi Shaolin Tiger).</p>
+            <span class="meta-tag">pair_G_shaolin_kungfu • Cardinality 2</span>
+          </div>
+        </div>
+        <div class="card tile-card">
+          <img src="./textures/tiles/coupled_G2.png" alt="G2 Solo Sebi Shaolin Tiger" />
+          <div class="card-info">
+            <h3>G2 虎 • Sebi Shaolin Tiger (Right)</h3>
+            <p>Right half of shared Shaolin courtyard Kung Fu scene. Pairs deterministically with G1 (Ale Shaolin Dragon).</p>
+            <span class="meta-tag">pair_G_shaolin_kungfu • Cardinality 2</span>
+          </div>
+        </div>
+        <div class="card tile-card">
+          <img src="./textures/tiles/coupled_H1.png" alt="H1 Solo Ale Chengdu Panda" />
+          <div class="card-info">
+            <h3>H1 熊 • Ale Chengdu Panda (Left)</h3>
+            <p>Left half of shared Chengdu Bamboo Sanctuary scene. Pairs deterministically with H2 (Sebi Chengdu Panda).</p>
+            <span class="meta-tag">pair_H_chengdu_pandas • Cardinality 2</span>
+          </div>
+        </div>
+        <div class="card tile-card">
+          <img src="./textures/tiles/coupled_H2.png" alt="H2 Solo Sebi Chengdu Panda" />
+          <div class="card-info">
+            <h3>H2 貓 • Sebi Chengdu Panda (Right)</h3>
+            <p>Right half of shared Chengdu Bamboo Sanctuary scene. Pairs deterministically with H1 (Ale Chengdu Panda).</p>
+            <span class="meta-tag">pair_H_chengdu_pandas • Cardinality 2</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 6: Shared Diptyque Unsplit Source Portraits & 1-Bamboo Imperial Sparrow -->
+    <section>
+      <h2>
+        <span>🖼️ 6. Unsplit Shared Diptyque Source Portraits & Remastered 1-Bamboo Sparrow</span>
+        <span class="badge">Nano Banana Pro 2D Sources</span>
+      </h2>
+      <div class="grid-3">
+        <div class="card">
+          <img src="./portraits/diptyque_S1_S2_papa_mamma.png" alt="Papa Riccardo and Mamma Kate Shared Scene" />
+          <div class="card-info">
+            <h3>Diptyque Source: Papà Riccardo & Mamma Kate</h3>
+            <p>Unsplit 2D portrait on an Imperial marble bridge, sliced left/right into S1 (Papà) and S2 (Mamma).</p>
+          </div>
+        </div>
+        <div class="card">
+          <img src="./portraits/diptyque_S3_S4_ale_sebi_tang.png" alt="Ale and Sebi Tang Silk Shared Scene" />
+          <div class="card-info">
+            <h3>Diptyque Source: Ale & Sebi Tang Silk</h3>
+            <p>Unsplit 2D portrait in crimson & gold Tang silk, sliced left/right into S3 (Ale) and S4 (Sebi).</p>
+          </div>
+        </div>
+        <div class="card">
+          <img src="./portraits/diptyque_A_great_wall.png" alt="Ale and Sebi Great Wall Shared Scene" />
+          <div class="card-info">
+            <h3>Diptyque Source: Great Wall Explorers</h3>
+            <p>Unsplit 2D portrait at the Great Wall of China, sliced left/right into E1 (Ale) and E2 (Sebi).</p>
+          </div>
+        </div>
+        <div class="card">
+          <img src="./portraits/diptyque_B_cantonese_rice.png" alt="Ale and Sebi Cantonese Rice Shared Scene" />
+          <div class="card-info">
+            <h3>Diptyque Source: Cantonese Fried Rice</h3>
+            <p>Unsplit 2D portrait with porcelain bowls of Cantonese fried rice, sliced into F1 (Ale) and F2 (Sebi).</p>
+          </div>
+        </div>
+        <div class="card">
+          <img src="./portraits/diptyque_C_shaolin_kungfu.png" alt="Ale and Sebi Shaolin Kung Fu Shared Scene" />
+          <div class="card-info">
+            <h3>Diptyque Source: Shaolin Kung Fu</h3>
+            <p>Unsplit 2D portrait in Shaolin martial arts stances, sliced into G1 (Ale) and G2 (Sebi).</p>
+          </div>
+        </div>
+        <div class="card">
+          <img src="./portraits/diptyque_D_chengdu_pandas.png" alt="Ale and Sebi Chengdu Pandas Shared Scene" />
+          <div class="card-info">
+            <h3>Diptyque Source: Chengdu Giant Pandas</h3>
+            <p>Unsplit 2D portrait hugging baby giant pandas in Chengdu, sliced into H1 (Ale) and H2 (Sebi).</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-6" style="margin-top: 20px;">
+        <div class="card tile-card">
+          <img src="./textures/tiles/bamboo_1.png" alt="1-Bamboo Imperial Sparrow" />
+          <div class="card-info">
+            <h3>1-Bamboo 1索</h3>
+            <p>Carved Imperial Jade, Crimson & Gold Sparrow inside Gold Oval Cameo.</p>
+          </div>
+        </div>
+        <div class="card tile-card">
+          <img src="./textures/tiles/bamboo_2.png" alt="2-Bamboo Hot Wheels" />
+          <div class="card-info">
+            <h3>2-Bamboo 2索 🏎️🎋</h3>
+            <p>Comedic Chinese Bamboo, Celadon Jade & 24k Gold Hot Wheels Flame Supercar!</p>
+          </div>
+        </div>
+        <div class="card tile-card">
+          <img src="./textures/tiles/bamboo_3.png" alt="3-Bamboo Sirio il Dragone" />
+          <div class="card-info">
+            <h3>3-Bamboo 3索 🐉🛡️</h3>
+            <p>Sirio il Dragone (Saint Seiya Dragon Shiryu) & Towering Chinese Shenlong in Jade & Gold!</p>
+          </div>
+        </div>
+        <div class="card tile-card">
+          <img src="./textures/tiles/bamboo_4.png" alt="4-Bamboo Ale's Gems & Rubies" />
+          <div class="card-info">
+            <h3>4-Bamboo 4索 💎👑</h3>
+            <p>Ale's Imperial Rubies, Diamonds & Emeralds in a 4-Bamboo & 24k Gold Filigree Cradle!</p>
+          </div>
+        </div>
+        <div class="card tile-card">
+          <img src="./textures/tiles/dragon_red.png" alt="Red Dragon Zhong" />
+          <div class="card-info">
+            <h3>Red Dragon 中</h3>
+            <p>Crimson Hong Zhong honour medallion.</p>
+          </div>
+        </div>
+        <div class="card tile-card">
+          <img src="./textures/tiles/dragon_green.png" alt="Green Dragon Fa" />
+          <div class="card-info">
+            <h3>Green Dragon 發</h3>
+            <p>Imperial Jade Fa Cai (+10% Larger Hanzi &amp; 3D Incandescent Carving).</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-4" style="margin-top: 20px;">
+        <div class="card tile-card">
+          <img src="./textures/tiles/dots_2.png" alt="2-Circles Enlarged & Carved" />
+          <div class="card-info">
+            <h3>2-Circles 2筒 (r=148px, +56% Larger)</h3>
+            <p>Enlarged 2-pallini coin medallions with scorched-umber inner groove wall &amp; molten-gold rim.</p>
+          </div>
+        </div>
+        <div class="card tile-card">
+          <img src="./textures/tiles/dots_4.png" alt="4-Circles Enlarged & Carved" />
+          <div class="card-info">
+            <h3>4-Circles 4筒 (r=124px, +51% Larger)</h3>
+            <p>Enlarged 4-pallini medallions filling the marble face with deep 3D incandescent carving.</p>
+          </div>
+        </div>
+        <div class="card tile-card">
+          <img src="./textures/tiles/char_8.png" alt="8-Characters +10% Larger & Carved" />
+          <div class="card-info">
+            <h3>8-Characters 八萬 (+10% Larger Hanzi)</h3>
+            <p>Enlarged Chinese calligraphy (276px / 298px) with incandescent-pen pyro-carved groove shading.</p>
+          </div>
+        </div>
+        <div class="card tile-card">
+          <img src="./textures/tiles_depth/dots_4_depth.png" alt="4-Circles 3D Displacement Heightmap" />
+          <div class="card-info">
+            <h3>3D Displacement Map (dots_4_depth.png)</h3>
+            <p>Smooth chamfered 8-bit heightfield driving the 72×96 Three.js &amp; 120×160 Blender 3D carved holes.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 6B: Modalità Onirica ("Less is More" A/B Testing) -->
+    <section>
+      <h2>
+        <span>🌙 6B. A/B Testing: Modalità Onirica ("Less is More" Whisper-Fade on White Marble)</span>
+        <span class="badge">75%+ Pure White Marble • Zero Solid Oval Frame • Live Toggle</span>
+      </h2>
+      <div class="grid-6">
+        <div class="card tile-card">
+          <img src="./textures/tiles_onirica/coupled_A1.png" alt="S1 Onirica Papà Riccardo" />
+          <div class="card-info">
+            <h3>S1 Onirica 春</h3>
+            <p>Papà Riccardo NB21 whisper-fade on pure White Marble.</p>
+          </div>
+        </div>
+        <div class="card tile-card">
+          <img src="./textures/tiles_onirica/coupled_A2.png" alt="S2 Onirica Mamma Kate 2016" />
+          <div class="card-info">
+            <h3>S2 Onirica 夏</h3>
+            <p>Mamma Kate 2016 NB21 whisper-fade on pure White Marble.</p>
+          </div>
+        </div>
+        <div class="card tile-card">
+          <img src="./textures/tiles_onirica/coupled_B1.png" alt="S3 Onirica Solo Ale" />
+          <div class="card-info">
+            <h3>S3 Onirica 秋</h3>
+            <p>Solo Ale Tang Silk whisper-fade on pure White Marble.</p>
+          </div>
+        </div>
+        <div class="card tile-card">
+          <img src="./textures/tiles_onirica/coupled_B2.png" alt="S4 Onirica Solo Sebi" />
+          <div class="card-info">
+            <h3>S4 Onirica 冬</h3>
+            <p>Solo Sebi Tang Silk whisper-fade on pure White Marble.</p>
+          </div>
+        </div>
+        <div class="card tile-card">
+          <img src="./textures/tiles_onirica/bamboo_2.png" alt="2-Bamboo Onirica Hot Wheels" />
+          <div class="card-info">
+            <h3>2索 Onirica 🏎️</h3>
+            <p>Bamboo & Gold Hot Wheels whisper-fade on White Marble.</p>
+          </div>
+        </div>
+        <div class="card tile-card">
+          <img src="./textures/tiles_onirica/bamboo_3.png" alt="3-Bamboo Onirica Sirio il Dragone" />
+          <div class="card-info">
+            <h3>3索 Onirica 🐉</h3>
+            <p>Sirio il Dragone whisper-fade on White Marble.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 7: 10-Round 3-Critic Iterative QA Loop -->
+    <section>
+      <h2>
+        <span>🔬 7. Milestone 4: 10-Round 3-Critic Iterative QA Loop Audit</span>
+        <span class="badge">30/30 Critic Refinements Resolved • All Passed</span>
+      </h2>
+      <div class="qa-table-wrap">
+        <table class="qa-table">
+          <thead>
+            <tr>
+              <th>Round</th>
+              <th>Critic 1: Topology & Manifold (bpy 5.0.1)</th>
+              <th>Critic 2: 60 FPS WebGL & Solvable Gameplay</th>
+              <th>Critic 3: Cycles vs. WebGL Visual & Character Consistency</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Round 1</strong><br/>Raw Photo Audit</td>
+              <td>Verified canonical tile bevel segments and UV bounds for 600×700 oval cameo face.</td>
+              <td>Designed `matchGroup` schema supporting both Cardinality 2 pairs and Cardinality 4 quartets.</td>
+              <td>Removed raw Cape Town reference selfie (`coupled_H1.png`) and replaced with pure Nano Banana 2D shared portrait (`diptyque_S1_S2_papa_mamma.png`).</td>
+              <td>✅ PASS</td>
+            </tr>
+            <tr>
+              <td><strong>Round 2</strong><br/>Quartet 1 S1..S4</td>
+              <td>Checked UV aspect ratio mapping (`0.857`) between 2D oval portrait and 3D `Portrait_Face_Plane`.</td>
+              <td>Implemented `quartet_family_seasons` (`S1..S4`) so any 2 of Papà, Mamma, Ale, and Sebi match in Solitaire.</td>
+              <td>Tuned crop boxes for S1/S2 (`(0.02,0.10,0.49,0.72)`) and S3/S4 (`(0.01,0.25,0.495,0.65)`) so all 4 heads and hair have generous headroom.</td>
+              <td>✅ PASS</td>
+            </tr>
+            <tr>
+              <td><strong>Round 3</strong><br/>Quartet 2 M1..M4</td>
+              <td>Verified Sobel height-to-normal relief map generation (`_normal.png`) for all 4 Magical Companion tiles.</td>
+              <td>Implemented `quartet_magic_flowers` (`M1..M4`) dealing all 4 distinct companion tiles onto the 88-tile pyramid.</td>
+              <td>Adjusted `M2` (`Sebi & Pupurabbu`) crop box to `(0.05,0.03,0.95,0.88)` so Pupurabbu's rainbow propeller beanie is 100% visible inside the gold rim.</td>
+              <td>✅ PASS</td>
+            </tr>
+            <tr>
+              <td><strong>Round 4</strong><br/>Diptyque Split-Pairs</td>
+              <td>Verified left/right split coordinates across all 4 shared Diptyque scenes (`E1..H2`).</td>
+              <td>Configured deterministic `Cardinality 2` matching (`pair_E_great_wall` .. `pair_H_chengdu_pandas`) so Solo Ale (`X1`) pairs with Solo Sebi (`X2`).</td>
+              <td>Fixed `G1/G2` (`Shaolin Kung Fu`) vertical crop window (`0.18..0.63`) so Ale & Sebi's heads are centered with zero top clipping.</td>
+              <td>✅ PASS</td>
+            </tr>
+            <tr>
+              <td><strong>Round 5</strong><br/>1-Bamboo Sparrow</td>
+              <td>Generated high-detail Sobel normal map (`bamboo_1_normal.png`) for carved jade & gold feathers.</td>
+              <td>Verified 4 copies of `bamboo_1` in standard suit pool and immediate texture loading in WebGL.</td>
+              <td>Cropped inner carved ivory emblem (`(0.235,0.215,0.785,0.765)`) to fill 100% of the oval cameo without dark teal outer corners.</td>
+              <td>✅ PASS</td>
+            </tr>
+            <tr>
+              <td><strong>Round 6</strong><br/>Corner Glyph Fix</td>
+              <td>Repositioned `Alphabet_Glyph_Mesh` & `Alphabet_Glyph_Bone` from `(-0.36, 0.36)` to top-center `(0.0, TILE_H * 0.422)` (`0` non-manifold edges).</td>
+              <td>Updated Three.js `badgeMesh` to matching top-center golden crown inlay bar `(0, TILE_H * 0.415, TILE_D / 2 + 0.008)`.</td>
+              <td>Verified in `cycles_cam4_tile_macro.png` that top-left (`S1..S4`) and top-right (`春 夏 秋 冬`) glyphs are 100% unobstructed.</td>
+              <td>✅ PASS</td>
+            </tr>
+            <tr>
+              <td><strong>Round 7</strong><br/>Solvable Generator</td>
+              <td>Confirmed 88-tile 4-tier Imperial Turtle slot coordinates (`z=0..3`) have zero intersecting bounding boxes.</td>
+              <td>Replaced random shuffle with reverse-peel solvable allocator (`assignSolvableDeckToSlots`) guaranteeing a solvable board on every deal.</td>
+              <td>Added live 2D tile artwork preview (`#sel-thumb`) inside the HUD Selection Card showing the exact character portrait and match rule.</td>
+              <td>✅ PASS</td>
+            </tr>
+            <tr>
+              <td><strong>Round 8</strong><br/>WebGL Instancing</td>
+              <td>Added `kintsugiMesh` golden waist seam (`TILE_W * 1.006`) between white marble upper and black obsidian lower body.</td>
+              <td>Factored geometries and materials into `initSharedTileResources()` so all 88 tiles share 4 geometries and 3 base materials (`60 FPS` steady).</td>
+              <td>Synchronized WebGL key/fill/rim/lantern lights and ACES Filmic exposure (`1.12`) with Blender Cycles ground-truth renders.</td>
+              <td>✅ PASS</td>
+            </tr>
+            <tr>
+              <td><strong>Round 9</strong><br/>Studio Look-Dev</td>
+              <td>Verified 4-bone armature actions (`Idle_Breathing`, `Select_Lift_Tilt`, `Pair_Match_Ascend`, `Victory_Orbit_Dance`) in exported GLBs.</td>
+              <td>Wired all Studio Look-Dev sliders (`#sl-normal-scale`, `#sl-cam-distance`, `#chk-auto-rotate`, `#chk-shadows`, `#btn-paste-json`, `#btn-reset-settings`).</td>
+              <td>Wired interactive Rig Inspector timeline scrubber (`#rig-scrubber`) and Play/Pause/Reset controls to live-scrub selected tile bone poses.</td>
+              <td>✅ PASS</td>
+            </tr>
+            <tr>
+              <td><strong>Round 10</strong><br/>Final Build & Audit</td>
+              <td>Re-ran `topology_audit.json` check (`allManifoldPass: true`, `0` non-manifold edges, `0` degenerate faces across all 10 meshes).</td>
+              <td>Verified `just test`, `node scripts/verify_build.mjs`, and `npm run build` succeed with zero warnings or missing assets.</td>
+              <td>Updated `artistic_director_gallery.md`, `public/progress.html`, `docs/LOG.md`, `VERSION` (`1.1.0`), and `CHANGELOG.md`.</td>
+              <td>✅ PASS</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
