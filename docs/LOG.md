@@ -611,3 +611,8 @@
 2. **Broken-Push Test Gate (`scripts/test_board_integration.mjs`, `scripts/test_solvability_solver.mjs`)**:
    - Wired [`scripts/test_solvability_solver.mjs`](../scripts/test_solvability_solver.mjs) into `just test` (`5/5` solvable deals across `easy`, `medium`, `master` + `< 1ms` deadlock detection).
    - Upgraded [`scripts/test_board_integration.mjs`](../scripts/test_board_integration.mjs) (`--check-dist` & `--post-deploy`) to audit `dist/index.html` subpath safety (`./`), JS/CSS bundle sizes & invariants (including `V3D 4.2` Sguisatazzo auto-detection), all **318+ tile textures** (Classic, Onirica, RPi 256px, Normal, Depth, Ornate Dragon), binary `glTF` v2 headers (`0x46546C67`) on all **8 `dist/models/*.glb` files** (`*_rpi.glb` included), MP4 videos, and live HTTP 200 + PNG IDAT scanline contrast.
+
+### 4. `/learn` Rule Persisted (`2026-11-01T16:16:11+01:00`)
+- **Verbatim User Request**:
+  > `/learn When a GitHub Pages repository uses build_type="legacy" (deploying from the gh-pages branch), never declare "environment: github-pages" with actions/deploy-pages in workflows running on main (GitHub's environment protection rules reject main in 1s). Instead, run a pre-deploy test gate on ./dist and push ./dist to the gh-pages branch (via peaceiris/actions-gh-pages in CI plus a manual "just deploy" fallback script) so both automatic pushes to main and manual CLI deploys work seamlessly. 🀄🐉🎺`
+- **Action**: Persisted rule #5 into [`GEMINI.md`](../GEMINI.md).
